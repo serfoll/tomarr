@@ -1,0 +1,599 @@
+{
+  "milestones": [
+    {
+      "title": "M0 Scaffolding",
+      "description": "Repo, tooling, container, CI, and the core plumbing every feature uses."
+    },
+    {
+      "title": "M1 Domain and parser",
+      "description": "Data model, release parser, chapter normalization, matching."
+    },
+    {
+      "title": "M2 Metadata",
+      "description": "Providers, add-series flow, metadata refresh with provenance."
+    },
+    {
+      "title": "M3 Gemini",
+      "description": "Bring-your-own-key Gemini: translation and fallback extraction."
+    },
+    {
+      "title": "M4 Search and grab",
+      "description": "Prowlarr, decisions, monitoring, review, download clients."
+    },
+    {
+      "title": "M5 Import and library",
+      "description": "Import pipeline, existing library, Kavita."
+    },
+    {
+      "title": "M6 Suwayomi fallback",
+      "description": "Optional chapter source after Prowlarr."
+    },
+    {
+      "title": "M7 UI and ops",
+      "description": "Main screens, settings, backups."
+    }
+  ],
+  "labels": [
+    {
+      "name": "type:scaffold",
+      "color": "5319e7"
+    },
+    {
+      "name": "type:feature",
+      "color": "1d76db"
+    },
+    {
+      "name": "type:spike",
+      "color": "fbca04"
+    },
+    {
+      "name": "area:backend",
+      "color": "0e8a16"
+    },
+    {
+      "name": "area:frontend",
+      "color": "c5def5"
+    },
+    {
+      "name": "area:infra",
+      "color": "bfd4f2"
+    },
+    {
+      "name": "area:parser",
+      "color": "d93f0b"
+    },
+    {
+      "name": "area:metadata",
+      "color": "0052cc"
+    },
+    {
+      "name": "area:llm",
+      "color": "8a2be2"
+    },
+    {
+      "name": "area:search",
+      "color": "006b75"
+    },
+    {
+      "name": "area:import",
+      "color": "b60205"
+    },
+    {
+      "name": "area:suwayomi",
+      "color": "e99695"
+    }
+  ],
+  "issues": [
+    {
+      "milestone": "M0 Scaffolding",
+      "title": "Spike: measure manga chapter availability on real Prowlarr indexers",
+      "labels": [
+        "type:spike",
+        "area:search"
+      ],
+      "body": "## Goal\nFind out how often single chapters versus volumes are available on the indexers users actually run, before chapter monitoring is built around it.\n\n## Scope\n- Search 15 to 20 series (mix of ongoing, finished, manhwa, webtoon) through a real Prowlarr\n- Record hits per series: chapters, volumes, packs, by indexer and category\n- Save every release name found into `backend/tests/fixtures/releases/raw/` for the parser corpus\n\n## Acceptance criteria\n- [ ] Short written summary in `docs/spikes/chapter-availability.md`\n- [ ] Raw release names committed (no URLs, no keys)\n- [ ] Recommendation for the default monitor mode and fallback delay\n\n## Refs\n- CONTEXT/PRODUCT.md (Risks 1)"
+    },
+    {
+      "milestone": "M0 Scaffolding",
+      "title": "Scaffold repo layout, license and docs",
+      "labels": [
+        "type:scaffold",
+        "area:infra"
+      ],
+      "body": "## Goal\nCreate the monorepo skeleton the rest of the work lands in.\n\n## Scope\n- `backend/`, `frontend/`, `docker/`, `docs/adr/`, `CONTEXT/` as in architecture-context\n- AGPL-3.0 `LICENSE`\n- README stub with what Tomarr is and a status note\n- `.gitignore`, `.editorconfig`\n\n## Acceptance criteria\n- [ ] Layout matches CONTEXT/architecture-context.md\n- [ ] CONTEXT docs and ADRs committed\n- [ ] LICENSE is the full AGPL-3.0 text\n\n## Refs\n- CLAUDE.md\n- CONTEXT/architecture-context.md (Repo layout)"
+    },
+    {
+      "milestone": "M0 Scaffolding",
+      "title": "Sign off the initial dependency list",
+      "labels": [
+        "type:scaffold",
+        "area:infra"
+      ],
+      "body": "## Goal\nAgree on every package the scaffold installs, so later issues don't add dependencies without sign-off.\n\n## Scope\n- Backend, proposed: fastapi, uvicorn, pydantic, pydantic-settings, sqlalchemy, alembic, httpx, rapidfuzz, lxml, pillow, google-genai; dev: ruff, pyright, pytest, pytest-asyncio, pytest-recording\n- Frontend, proposed: react, react-dom, vite, typescript, @tanstack/react-router, @tanstack/react-query, @tanstack/react-table, @tanstack/react-virtual, openapi-typescript, openapi-fetch; dev: @biomejs/biome, vitest\n- System: 7-Zip in the image\n- Each entry gets a one-line reason; anything rejected gets an alternative\n\n## Acceptance criteria\n- [ ] Approved list recorded in an \"Approved dependencies\" section of CLAUDE.md\n- [ ] Scaffold issues install only packages on that list\n- [ ] Anything added later still goes through sign-off\n\n## Refs\n- CONTEXT/ai-workflow-rules.md (Dependencies need sign-off)"
+    },
+    {
+      "milestone": "M0 Scaffolding",
+      "title": "Contribution policy: DCO or CLA",
+      "labels": [
+        "type:scaffold",
+        "area:infra"
+      ],
+      "body": "## Goal\nDecide how outside contributions are accepted before the first one arrives.\n\n## Scope\n- Decide between a DCO (contributors certify they may submit the code) and a CLA (contributors also grant rights that allow relicensing)\n- Note: a DCO alone does not let the maintainer dual-license contributed code. Keeping dual licensing open needs a CLA or accepting no outside code until one exists\n- CONTRIBUTING.md with the chosen policy\n- Enforcement: DCO sign-off check or a CLA bot on pull requests\n\n## Acceptance criteria\n- [ ] Decision recorded in PRODUCT.md (Business model) and an ADR\n- [ ] CONTRIBUTING.md committed\n- [ ] A PR without sign-off or signed CLA fails the check\n\n## Refs\n- CONTEXT/PRODUCT.md (Business model)"
+    },
+    {
+      "milestone": "M0 Scaffolding",
+      "title": "Scaffold backend: uv, FastAPI app factory, ruff, pyright, pytest",
+      "labels": [
+        "type:scaffold",
+        "area:backend"
+      ],
+      "body": "## Goal\nA runnable FastAPI app with the lint, type and test tooling the standards require.\n\n## Scope\n- uv project in `backend/` targeting Python 3.13\n- App factory, `/api/v1/system/status` returning version\n- ruff (lint and format) and pyright strict on `src/tomarr`\n- pytest with async support and pytest-recording (packages from the approved dependency list); network blocked in tests; cassette filter for keys\n\n## Acceptance criteria\n- [ ] `uv run pytest`, `ruff check`, `ruff format --check`, `pyright` all pass\n- [ ] A test proves live network is blocked\n- [ ] Status endpoint covered by a test\n\n## Refs\n- CONTEXT/code-standards.md (Python, Tests)"
+    },
+    {
+      "milestone": "M0 Scaffolding",
+      "title": "Config file, env overrides, logging with secret redaction",
+      "labels": [
+        "type:scaffold",
+        "area:backend"
+      ],
+      "body": "## Goal\nLoad startup config and make sure secrets never reach logs.\n\n## Scope\n- `/config/config.toml`: bind address, port, URL base, API key, log level; created with defaults on first run\n- `TOMARR__SECTION__KEY` env overrides\n- Structured logging to stdout and rotating file in `/config/logs`\n- Redaction filter for API keys, tokens and query strings\n\n## Acceptance criteria\n- [ ] First run creates config with a random API key\n- [ ] Env override wins over file (tested)\n- [ ] Test shows a key and a URL query string are redacted in log output\n\n## Refs\n- CONTEXT/architecture-context.md (Configuration, Error handling)\n- CONTEXT/CONTEXT.md (Secrets and logs)"
+    },
+    {
+      "milestone": "M0 Scaffolding",
+      "title": "Database: SQLAlchemy 2.0, Alembic, SQLite WAL",
+      "labels": [
+        "type:scaffold",
+        "area:backend"
+      ],
+      "body": "## Goal\nDatabase session, migrations and the settings table.\n\n## Scope\n- SQLite at `/config/tomarr.db`, WAL and foreign keys on at connect\n- Alembic wired to the models\n- `setting` table and a typed settings service\n- Migrations run on startup\n\n## Acceptance criteria\n- [ ] Fresh start creates the DB and runs migrations\n- [ ] WAL and FK pragmas verified by a test\n- [ ] Settings service reads and writes typed values\n\n## Refs\n- docs/adr/0001\n- CONTEXT/code-standards.md (Database)"
+    },
+    {
+      "milestone": "M0 Scaffolding",
+      "title": "Auth: API key header and form login",
+      "labels": [
+        "type:scaffold",
+        "area:backend"
+      ],
+      "body": "## Goal\nEvery API request is authenticated the way *arr users expect.\n\n## Scope\n- `X-Api-Key` header dependency\n- Form login with a session cookie; username and password set on first run\n- Option to allow local addresses without auth, off by default\n\n## Acceptance criteria\n- [ ] Requests without key or session get 401\n- [ ] Login and logout covered by tests\n- [ ] Local bypass only applies when enabled and the client is on a local address\n\n## Refs\n- CONTEXT/architecture-context.md (Auth)"
+    },
+    {
+      "milestone": "M0 Scaffolding",
+      "title": "API error responses and request IDs",
+      "labels": [
+        "type:scaffold",
+        "area:backend"
+      ],
+      "body": "## Goal\nEvery API error has the same shape and can be traced to a log line without leaking details.\n\n## Scope\n- Middleware assigns a request ID to every request and returns it in an `X-Request-ID` header\n- Exception handlers return `{ code, message, request_id }`: a stable error code, a generic message, the request ID\n- Error codes defined in one module; domain errors from `core/errors.py` map to codes and status codes\n- Full details (exception, stack) logged with the request ID through the redaction filter\n- Error schema documented in OpenAPI so the generated client knows it\n\n## Acceptance criteria\n- [ ] Unexpected exception returns 500 with the generic shape and no stack trace (tested)\n- [ ] Validation error returns 400 with code and request ID (tested)\n- [ ] Log line for the error carries the same request ID (tested)\n\n## Refs\n- CONTEXT/architecture-context.md (Error handling and logging)\n- CONTEXT/code-standards.md (API)"
+    },
+    {
+      "milestone": "M0 Scaffolding",
+      "title": "HTTP client factory with per-provider rate limits and response cache",
+      "labels": [
+        "type:scaffold",
+        "area:backend"
+      ],
+      "body": "## Goal\nOne place that creates outbound HTTP clients so limits and caching are never skipped.\n\n## Scope\n- `core/http.py` returns an httpx AsyncClient per adapter\n- Per-adapter rate limiter (requests per interval)\n- Response cache table keyed by request, TTL per adapter\n- 429 raises `RateLimited` with retry-after\n\n## Acceptance criteria\n- [ ] Two concurrent calls respect the limiter (tested)\n- [ ] Cached response is returned without a network call (tested with cassette)\n- [ ] No other module creates an AsyncClient\n\n## Refs\n- CONTEXT/architecture-context.md (Rate limits and caching)"
+    },
+    {
+      "milestone": "M0 Scaffolding",
+      "title": "Command queue, scheduler and SSE stream",
+      "labels": [
+        "type:scaffold",
+        "area:backend"
+      ],
+      "body": "## Goal\nBackground work that survives restarts and shows up in the UI.\n\n## Scope\n- `command` table: type, payload, status, priority, timestamps, result\n- asyncio worker pool; interrupted commands requeued on startup\n- Scheduler inserting recurring commands from settings\n- SSE endpoint pushing command status changes\n- Backoff on `RateLimited`\n\n## Acceptance criteria\n- [ ] A test command runs, completes and records its result\n- [ ] Restart requeues a running command (tested)\n- [ ] SSE client receives status events\n- [ ] Rate-limited command is rescheduled, not retried in a loop\n\n## Refs\n- docs/adr/0004\n- CONTEXT/architecture-context.md (Command queue)"
+    },
+    {
+      "milestone": "M0 Scaffolding",
+      "title": "Scaffold frontend: Vite, React, TypeScript, TanStack, Biome, Vitest",
+      "labels": [
+        "type:scaffold",
+        "area:frontend"
+      ],
+      "body": "## Goal\nAn empty app shell with routing and data fetching, served by FastAPI in production.\n\n## Scope\n- Vite React TS in `frontend/` with pnpm\n- TanStack Router (file routes) and Query\n- Biome and Vitest\n- Dev server proxies `/api` to the backend; FastAPI serves the built files in production\n- Unstyled headless primitives only, no design system\n\n## Acceptance criteria\n- [ ] `pnpm lint` and `pnpm test` pass\n- [ ] Shell page shows backend version from the status endpoint\n- [ ] Production build served by FastAPI at `/`\n\n## Refs\n- CONTEXT/code-standards.md (TypeScript)\n- CLAUDE.md (design note)"
+    },
+    {
+      "milestone": "M0 Scaffolding",
+      "title": "Generated API client from OpenAPI",
+      "labels": [
+        "type:scaffold",
+        "area:frontend"
+      ],
+      "body": "## Goal\nFrontend types never drift from the backend.\n\n## Scope\n- Client generation packages from the approved dependency list (proposed: openapi-typescript, openapi-fetch)\n- `pnpm gen:api` reads the backend schema\n- Query hooks wrap the generated client\n\n## Acceptance criteria\n- [ ] `pnpm gen:api` regenerates without manual edits\n- [ ] `pnpm gen:api:check` regenerates to a temp location and exits non-zero when committed files differ (wired into CI by the CI issue)\n\n## Refs\n- CONTEXT/code-standards.md (TypeScript, API)"
+    },
+    {
+      "milestone": "M0 Scaffolding",
+      "title": "Dockerfile and entrypoint",
+      "labels": [
+        "type:scaffold",
+        "area:infra"
+      ],
+      "body": "## Goal\nOne multi-arch image users can run like any other *arr.\n\n## Scope\n- Multi-stage: node build, then `python:3.13-slim`\n- PUID/PGID entrypoint, `/config` volume, configurable port\n- 7-Zip installed for CBR and RAR5\n- Container healthcheck on the status endpoint\n\n## Acceptance criteria\n- [ ] Image builds for amd64 and arm64\n- [ ] Files in `/config` are owned by PUID/PGID\n- [ ] Container reports healthy\n\n## Refs\n- docs/adr/0001\n- CONTEXT/architecture-context.md (Configuration)"
+    },
+    {
+      "milestone": "M0 Scaffolding",
+      "title": "Dev stack compose: Prowlarr, qBittorrent, SABnzbd, Suwayomi, Kavita",
+      "labels": [
+        "type:scaffold",
+        "area:infra"
+      ],
+      "body": "## Goal\nReal services to develop and record cassettes against.\n\n## Scope\n- `docker/docker-compose.dev.yml` with all five services and shared volumes\n- Shared media and download paths matching the import design\n- README section on first-time setup of each service\n\n## Acceptance criteria\n- [ ] `docker compose up` starts everything\n- [ ] Tomarr dev server can reach each service by name\n\n## Refs\n- CLAUDE.md (Commands)"
+    },
+    {
+      "milestone": "M0 Scaffolding",
+      "title": "CI: lint, types, tests, image publish",
+      "labels": [
+        "type:scaffold",
+        "area:infra"
+      ],
+      "body": "## Goal\nEvery PR is checked; tags publish an image.\n\n## Scope\n- GitHub Actions job for backend (ruff, pyright, pytest)\n- Job for frontend (Biome, Vitest, `pnpm gen:api:check`)\n- On tag: multi-arch image to GHCR\n\n## Acceptance criteria\n- [ ] PRs show both jobs\n- [ ] CI fails when generated API files are out of date\n- [ ] A tag produces `ghcr.io/<owner>/tomarr:<tag>` for amd64 and arm64\n\n## Refs\n- CONTEXT/ai-workflow-rules.md (Lint before calling it done)"
+    },
+    {
+      "milestone": "M1 Domain and parser",
+      "title": "Domain models: Series, Edition, Volume, Chapter, Episode, Mapping",
+      "labels": [
+        "type:feature",
+        "area:backend"
+      ],
+      "body": "## Goal\nThe core data model from ADR 0003.\n\n## Scope\n- Series (format, reading direction), Edition (primary flag), Volume (optional), Chapter (decimal number), Episode (platform number, season)\n- Mapping per Edition with Provenance, confidence and Locked\n- ExternalId and Alias\n- Alembic migration\n\n## Acceptance criteria\n- [ ] Models and migration match CONTEXT.md terms\n- [ ] Provenance priority helper refuses lower-priority overwrites and Locked values (tested)\n- [ ] Decimal chapter numbers sort correctly (10, 10.5, 11)\n\n## Refs\n- docs/adr/0003\n- CONTEXT/CONTEXT.md"
+    },
+    {
+      "milestone": "M1 Domain and parser",
+      "title": "Chapter number normalization",
+      "labels": [
+        "type:feature",
+        "area:parser"
+      ],
+      "body": "## Goal\nOne set of rules for chapter numbers from release names, providers and Suwayomi.\n\n## Scope\n- Decimals, `0`, extras and specials, leading zeros, `Ch.`/`c`/`Episode` prefixes\n- Lands before the parser; the parser and the Suwayomi adapter both import it\n\n## Acceptance criteria\n- [ ] Table-driven tests cover each rule\n- [ ] Public function documented for the parser and Suwayomi adapter to use\n\n## Refs\n- docs/adr/0006"
+    },
+    {
+      "milestone": "M1 Domain and parser",
+      "title": "Release parser v1 with golden corpus",
+      "labels": [
+        "type:feature",
+        "area:parser"
+      ],
+      "body": "## Goal\nTurn release names into Parsed releases, tested against real names.\n\n## Scope\n- Series title, volume and chapter ranges, packs, group, digital or scan, language, edition hints, file format\n- Japanese and Korean names (`第03巻`, `권`, `화`)\n- Pure functions, no I/O\n- Golden corpus in `tests/fixtures/releases/*.yaml` seeded from the availability spike\n\n## Acceptance criteria\n- [ ] Chapter numbers go through the normalization module (no duplicate rules)\n- [ ] At least 300 corpus cases pass\n- [ ] Unparseable names return a reason, never a silent drop\n- [ ] Each corpus case can fail if the parser is broken\n\n## Refs\n- CONTEXT/code-standards.md (Tests)\n- CONTEXT/PRODUCT.md (Risks 4)"
+    },
+    {
+      "milestone": "M1 Domain and parser",
+      "title": "Title matcher and Confidence",
+      "labels": [
+        "type:feature",
+        "area:parser"
+      ],
+      "body": "## Goal\nMatch Parsed releases and search results to a Series with an explicit Confidence.\n\n## Scope\n- rapidfuzz against title and Aliases, script-aware (Latin, kana, kanji, hangul)\n- Confidence `high`, `medium`, `low` from title match and parse cleanliness\n- Rejection reasons for near-misses (for example a spin-off with a longer title)\n\n## Acceptance criteria\n- [ ] `One Piece Party` does not match `One Piece` at high Confidence (tested)\n- [ ] Confidence thresholds are settings, not constants\n\n## Refs\n- CONTEXT/CONTEXT.md (Confidence, Alias)"
+    },
+    {
+      "milestone": "M2 Metadata",
+      "title": "Provider interface and MangaBaka adapter",
+      "labels": [
+        "type:feature",
+        "area:metadata"
+      ],
+      "body": "## Goal\nThe identity hub that links IDs across providers.\n\n## Scope\n- `providers/base.py` interface (search, get_series, get_volumes as supported)\n- MangaBaka client and mapper; respect its rate limit\n- Cassettes recorded against the real API\n\n## Acceptance criteria\n- [ ] Search returns candidates with External IDs for other providers\n- [ ] Rate limit configured in the adapter\n- [ ] No field used that isn't in a recorded response\n\n## Refs\n- CONTEXT/architecture-context.md (Refreshing metadata)\n- CONTEXT/ai-workflow-rules.md (No invented solutions)"
+    },
+    {
+      "milestone": "M2 Metadata",
+      "title": "AniList adapter",
+      "labels": [
+        "type:feature",
+        "area:metadata"
+      ],
+      "body": "## Goal\nTitles in all scripts, format, cover, character names for the translation glossary.\n\n## Scope\n- GraphQL client and mapper\n- Character names exposed for glossary building\n\n## Acceptance criteria\n- [ ] Titles (romaji, English, native) and format mapped\n- [ ] Cassette-backed tests\n\n## Refs\n- docs/adr/0005 (glossary)"
+    },
+    {
+      "milestone": "M2 Metadata",
+      "title": "MangaDex aggregate adapter",
+      "labels": [
+        "type:feature",
+        "area:metadata"
+      ],
+      "body": "## Goal\nVolume to chapter Mappings with provenance `mangadex_aggregate`.\n\n## Scope\n- Aggregate endpoint client and mapper\n- Mappings attached to the primary Edition\n\n## Acceptance criteria\n- [ ] Known series produces expected volume ranges (fixture)\n- [ ] Gaps are left empty, not guessed\n\n## Refs\n- docs/adr/0003"
+    },
+    {
+      "milestone": "M2 Metadata",
+      "title": "MangaUpdates adapter",
+      "labels": [
+        "type:feature",
+        "area:metadata"
+      ],
+      "body": "## Goal\nLatest released chapters, used to know what should exist.\n\n## Scope\n- Series lookup and latest-release fetch\n\n## Acceptance criteria\n- [ ] Latest chapter number mapped through chapter normalization\n- [ ] Cassette-backed tests\n\n## Refs\n- CONTEXT/architecture-context.md (Refreshing metadata)"
+    },
+    {
+      "milestone": "M2 Metadata",
+      "title": "Rakuten Books adapter",
+      "labels": [
+        "type:feature",
+        "area:metadata"
+      ],
+      "body": "## Goal\nJapanese volumes: ISBN, date, synopsis, cover, upcoming volumes.\n\n## Scope\n- Application ID setting\n- Search by series title, filter to the series' volumes\n- Upcoming volumes flagged for the calendar\n- Strict rate limit\n\n## Acceptance criteria\n- [ ] Volumes attach to the Japanese Edition with release dates\n- [ ] Upcoming volumes stored\n- [ ] Synopsis stored as original text\n\n## Refs\n- CONTEXT/PRODUCT.md (MVP scope)"
+    },
+    {
+      "milestone": "M2 Metadata",
+      "title": "NDL search adapter",
+      "labels": [
+        "type:feature",
+        "area:metadata"
+      ],
+      "body": "## Goal\nAuthoritative list of published Japanese volumes and ISBNs.\n\n## Scope\n- OpenSearch or SRU client and mapper\n\n## Acceptance criteria\n- [ ] Series query returns volume numbers and ISBNs\n- [ ] Cassette-backed tests\n\n## Refs\n- CONTEXT/architecture-context.md"
+    },
+    {
+      "milestone": "M2 Metadata",
+      "title": "openBD adapter",
+      "labels": [
+        "type:feature",
+        "area:metadata"
+      ],
+      "body": "## Goal\nEnrich volumes by ISBN, including publisher descriptions.\n\n## Scope\n- Batch lookup by ISBN\n- Description stored for chapter-range parsing and translation\n\n## Acceptance criteria\n- [ ] Batch call for a series' ISBNs\n- [ ] Missing ISBNs handled without errors\n\n## Refs\n- CONTEXT/architecture-context.md"
+    },
+    {
+      "milestone": "M2 Metadata",
+      "title": "Description chapter-range parser",
+      "labels": [
+        "type:feature",
+        "area:parser"
+      ],
+      "body": "## Goal\nExtract `第18話〜第26話収録` style ranges into Mappings with provenance `description_parse`.\n\n## Scope\n- Regex rules for common Japanese phrasings\n- Applies to Rakuten and openBD descriptions\n\n## Acceptance criteria\n- [ ] Table-driven tests with real descriptions\n- [ ] Never overwrites `user` or `mangadex_aggregate`\n\n## Refs\n- docs/adr/0003"
+    },
+    {
+      "milestone": "M2 Metadata",
+      "title": "WEBTOON RSS adapter",
+      "labels": [
+        "type:feature",
+        "area:metadata"
+      ],
+      "body": "## Goal\nEpisode release detection for webtoon series.\n\n## Scope\n- The user sets the series' WEBTOON URL on the series (add-series form or series settings); Tomarr reads `title_no` and the language from it and builds the RSS URL\n- If a metadata provider returns a WEBTOON link (check MangaBaka's recorded responses before relying on it), prefill the field for the user to confirm\n- Per-series RSS fetch\n- Episodes stored with platform number and season, mapped to Chapters\n- No downloads from the platform\n\n## Acceptance criteria\n- [ ] Invalid or non-WEBTOON URL is rejected with a message saying what's expected\n- [ ] New episode creates a Wanted Chapter for monitored series\n- [ ] Season resets handled through the Episode mapping\n\n## Refs\n- CONTEXT/CONTEXT.md (Episode)"
+    },
+    {
+      "milestone": "M2 Metadata",
+      "title": "Add series: resolve, suggest, override title and aliases",
+      "labels": [
+        "type:feature",
+        "area:backend",
+        "area:frontend"
+      ],
+      "body": "## Goal\nUsers find and add a series with the right identity.\n\n## Scope\n- `POST /series/lookup` returning ranked suggestions with match reasons\n- Add with display title override, Aliases, format, primary Edition, monitor mode, root folder\n- Add-series page\n\n## Acceptance criteria\n- [ ] Search shows the best match first with its reasons\n- [ ] Display title and Aliases saved\n- [ ] Adding queues RefreshSeriesMetadata\n\n## Refs\n- CONTEXT/CONTEXT.md (Alias, Edition, Monitor mode)"
+    },
+    {
+      "milestone": "M2 Metadata",
+      "title": "RefreshSeriesMetadata command with provenance merge",
+      "labels": [
+        "type:feature",
+        "area:metadata"
+      ],
+      "body": "## Goal\nPull from every linked provider and merge safely.\n\n## Scope\n- Calls each provider through the interface\n- Merge by Provenance priority; skip Locked\n- Queues translation when a Gemini key is set\n\n## Acceptance criteria\n- [ ] Locked mapping survives a refresh (tested)\n- [ ] Provider failure doesn't abort the others\n- [ ] Scheduled refresh interval is a setting\n\n## Refs\n- docs/adr/0003\n- CONTEXT/architecture-context.md (Refreshing metadata)"
+    },
+    {
+      "milestone": "M3 Gemini",
+      "title": "LLM interface and Gemini adapter",
+      "labels": [
+        "type:feature",
+        "area:llm"
+      ],
+      "body": "## Goal\nBring-your-own-key Gemini behind a provider interface.\n\n## Scope\n- `llm/base.py` interface: translate, extract_chapter_ranges, disambiguate_titles, parse_release_name\n- `llm/gemini.py` using google-genai with Pydantic response schemas\n- Settings: API key (masked), model name; free-tier privacy note on the settings page\n- All features off when no key is set\n\n## Acceptance criteria\n- [ ] Invalid model output is discarded and logged by command ID\n- [ ] Fake provider used in non-adapter tests\n- [ ] Adapter tests use cassettes with the key filtered\n\n## Refs\n- docs/adr/0005"
+    },
+    {
+      "milestone": "M3 Gemini",
+      "title": "TranslateSynopses command",
+      "labels": [
+        "type:feature",
+        "area:llm"
+      ],
+      "body": "## Goal\nReadable synopses for Japanese volumes.\n\n## Scope\n- Batch several synopses per request\n- Cache by input hash\n- Glossary from AniList titles and character names\n- Store original, translation, model, timestamp; edits can be Locked\n\n## Acceptance criteria\n- [ ] Repeat runs make no new calls for cached input (tested)\n- [ ] Locked translations are never replaced\n- [ ] Backs off on rate limits through the queue\n\n## Refs\n- docs/adr/0005\n- CONTEXT/CONTEXT.md (Translation)"
+    },
+    {
+      "milestone": "M3 Gemini",
+      "title": "LLM fallbacks: chapter ranges and title disambiguation",
+      "labels": [
+        "type:feature",
+        "area:llm"
+      ],
+      "body": "## Goal\nUse Gemini only where deterministic code fails.\n\n## Scope\n- Chapter-range extraction when the description parser finds nothing (provenance `llm_extraction`)\n- Disambiguation when the matcher returns several close candidates\n\n## Acceptance criteria\n- [ ] Called only after the deterministic path fails (tested)\n- [ ] Results stored with their provenance\n\n## Refs\n- docs/adr/0005"
+    },
+    {
+      "milestone": "M4 Search and grab",
+      "title": "Prowlarr connection, indexer tag and categories",
+      "labels": [
+        "type:feature",
+        "area:search"
+      ],
+      "body": "## Goal\nUse the user's Prowlarr indexers, scoped by tag and category.\n\n## Scope\n- URL and API key settings with a test button\n- Pull indexers carrying the configured Prowlarr tag\n- Per-indexer categories, default 7030 and 7000, chosen from each indexer's capabilities\n- Search through Prowlarr\n\n## Acceptance criteria\n- [ ] Only tagged indexers are used (tested)\n- [ ] Category changes affect search requests\n- [ ] Connection errors explain what to fix\n\n## Refs\n- docs/adr/0002\n- CONTEXT/CONTEXT.md (Indexer tag, Category)"
+    },
+    {
+      "milestone": "M4 Search and grab",
+      "title": "Direct Torznab and Newznab indexers",
+      "labels": [
+        "type:feature",
+        "area:search"
+      ],
+      "body": "## Goal\nSupport users without Prowlarr.\n\n## Scope\n- Add an indexer by URL and key\n- Capabilities and categories from the caps endpoint\n\n## Acceptance criteria\n- [ ] Search works against a recorded Torznab response\n\n## Refs\n- docs/adr/0002"
+    },
+    {
+      "milestone": "M4 Search and grab",
+      "title": "Quality profiles and the Decision engine",
+      "labels": [
+        "type:feature",
+        "area:search"
+      ],
+      "body": "## Goal\nAccept or reject every Parsed release with a score and readable reasons.\n\n## Scope\n- Profile: digital vs scan, file format order, languages, preferred groups, cutoff\n- Decision includes score, Confidence and reasons\n- Pack handling (skip volumes already on disk)\n\n## Acceptance criteria\n- [ ] Every rejection has a reason string\n- [ ] Tests cover at least these cases:\n  - Full digital volume in the profile's language: accepted, scored above a scan of the same volume\n  - Chapter range that matches Wanted chapters: accepted\n  - Pack with some volumes already on disk: accepted, with a reason noting which volumes are skipped\n  - Release in a language not in the profile: rejected, \"Language not in profile\"\n  - Spin-off whose title contains the series title: rejected as a different series\n  - Release for an Edition that isn't monitored (for example an omnibus): rejected, \"Edition not monitored\"\n\n## Refs\n- CONTEXT/CONTEXT.md (Decision, Confidence, Quality profile)"
+    },
+    {
+      "milestone": "M4 Search and grab",
+      "title": "Monitor modes and Wanted",
+      "labels": [
+        "type:feature",
+        "area:backend"
+      ],
+      "body": "## Goal\nKnow exactly what to look for.\n\n## Scope\n- Modes: chapters_then_volume, volumes_only, chapters_only, future_only, none\n- Wanted includes missing items and upgrades below cutoff\n\n## Acceptance criteria\n- [ ] chapters_then_volume wants loose chapters, then the volume once it exists (tested)\n- [ ] Wanted list endpoint\n\n## Refs\n- CONTEXT/CONTEXT.md (Monitor mode, Wanted)"
+    },
+    {
+      "milestone": "M4 Search and grab",
+      "title": "SearchWanted command and interactive search",
+      "labels": [
+        "type:feature",
+        "area:search",
+        "area:frontend"
+      ],
+      "body": "## Goal\nAutomatic search plus a manual view of every release.\n\n## Scope\n- Queries from title and Aliases\n- Grab when Confidence meets the threshold\n- Interactive search endpoint and UI with grab and override\n\n## Acceptance criteria\n- [ ] Low-Confidence accepts are not grabbed automatically\n- [ ] Interactive search shows parse, decision, Confidence for each release\n\n## Refs\n- CONTEXT/architecture-context.md (Searching)"
+    },
+    {
+      "milestone": "M4 Search and grab",
+      "title": "Pending review",
+      "labels": [
+        "type:feature",
+        "area:search",
+        "area:frontend"
+      ],
+      "body": "## Goal\nApprove uncertain matches with one click and learn from it.\n\n## Scope\n- Pending review list\n- Approve grabs; reject blocklists\n- On approve or override: offer to save the name as a parser test case or add an Alias\n\n## Acceptance criteria\n- [ ] Saved test cases land in the corpus format\n- [ ] Alias added from an override is used in the next search\n\n## Refs\n- CONTEXT/CONTEXT.md (Pending review)"
+    },
+    {
+      "milestone": "M4 Search and grab",
+      "title": "RssSync command",
+      "labels": [
+        "type:feature",
+        "area:search"
+      ],
+      "body": "## Goal\nCatch new releases without searching.\n\n## Scope\n- Fetch recent releases from tagged indexers\n- Same parser, matcher and Decision path\n\n## Acceptance criteria\n- [ ] Interval is a setting\n- [ ] Matching release for a Wanted item is grabbed or sent to Pending review\n\n## Refs\n- CONTEXT/architecture-context.md (Searching)"
+    },
+    {
+      "milestone": "M4 Search and grab",
+      "title": "qBittorrent adapter",
+      "labels": [
+        "type:feature",
+        "area:search"
+      ],
+      "body": "## Goal\nSend torrents and track them.\n\n## Scope\n- Add torrent with category\n- Status polling\n\n## Acceptance criteria\n- [ ] Grab creates a torrent in the configured category\n- [ ] Cassette-backed tests\n\n## Refs\n- CONTEXT/PRODUCT.md (MVP scope)"
+    },
+    {
+      "milestone": "M4 Search and grab",
+      "title": "SABnzbd adapter",
+      "labels": [
+        "type:feature",
+        "area:search"
+      ],
+      "body": "## Goal\nSend NZBs and track them.\n\n## Scope\n- Add NZB with category\n- Status polling\n\n## Acceptance criteria\n- [ ] Grab creates a job in the configured category\n- [ ] Cassette-backed tests\n\n## Refs\n- CONTEXT/PRODUCT.md (MVP scope)"
+    },
+    {
+      "milestone": "M4 Search and grab",
+      "title": "Blocklist",
+      "labels": [
+        "type:feature",
+        "area:search"
+      ],
+      "body": "## Goal\nNever grab a rejected or failed release twice.\n\n## Scope\n- Blocklist on manual reject and failed download\n- UI to view and remove entries\n\n## Acceptance criteria\n- [ ] Blocklisted release is rejected with that reason\n\n## Refs\n- CONTEXT/PRODUCT.md (MVP scope)"
+    },
+    {
+      "milestone": "M5 Import and library",
+      "title": "Import pipeline: extract, CBZ, ComicInfo.xml, rename, link",
+      "labels": [
+        "type:feature",
+        "area:import"
+      ],
+      "body": "## Goal\nTurn a finished download into clean library files.\n\n## Scope\n- Extract zip, rar (7-Zip), folders of images\n- Convert to CBZ\n- Write ComicInfo.xml (series, volume, chapter, title, summary, language)\n- Rename from templates\n- Hardlink when on the same filesystem, else copy\n- Upgrade replaces loose chapters with the volume\n\n## Acceptance criteria\n- [ ] Fixture archives import to the expected paths and names\n- [ ] ComicInfo.xml validates against the schema\n- [ ] Upgrade removes replaced files only after the new file is in place\n\n## Refs\n- CONTEXT/architecture-context.md (Importing)"
+    },
+    {
+      "milestone": "M5 Import and library",
+      "title": "CheckDownloads command and failed downloads",
+      "labels": [
+        "type:feature",
+        "area:import"
+      ],
+      "body": "## Goal\nNotice finished and failed downloads.\n\n## Scope\n- Poll download clients\n- Queue ImportDownload on completion\n- Failed: blocklist and search again\n\n## Acceptance criteria\n- [ ] Completed item imports once only\n- [ ] Failed item triggers blocklist and a new search\n\n## Refs\n- docs/adr/0004"
+    },
+    {
+      "milestone": "M5 Import and library",
+      "title": "Manual import",
+      "labels": [
+        "type:feature",
+        "area:import",
+        "area:frontend"
+      ],
+      "body": "## Goal\nImport files the automation couldn't place.\n\n## Scope\n- Pick a folder, see parsed results per file, fix series, volume or chapter, import\n\n## Acceptance criteria\n- [ ] Manual corrections can be saved as parser test cases\n\n## Refs\n- CONTEXT/PRODUCT.md (MVP scope)"
+    },
+    {
+      "milestone": "M5 Import and library",
+      "title": "Existing library import",
+      "labels": [
+        "type:feature",
+        "area:import",
+        "area:frontend"
+      ],
+      "body": "## Goal\nAdopt a library users already have.\n\n## Scope\n- Scan a root folder, group by series, resolve each through the add-series flow\n- Map existing files to Volumes and Chapters without moving them\n\n## Acceptance criteria\n- [ ] Unmatched folders are listed for manual resolution\n- [ ] No file is moved or renamed unless the user asks\n\n## Refs\n- CONTEXT/PRODUCT.md (MVP scope)"
+    },
+    {
+      "milestone": "M5 Import and library",
+      "title": "Kavita adapter: scan after import",
+      "labels": [
+        "type:feature",
+        "area:import"
+      ],
+      "body": "## Goal\nKavita shows new files without a full rescan.\n\n## Scope\n- URL and API key settings with a test button\n- Folder scan call after each import\n- Library picker per root folder\n\n## Acceptance criteria\n- [ ] Import triggers a scan of that series folder\n- [ ] Kavita errors don't fail the import\n\n## Refs\n- CONTEXT/architecture-context.md (Importing)"
+    },
+    {
+      "milestone": "M6 Suwayomi fallback",
+      "title": "Suwayomi adapter: connect, version check, auth",
+      "labels": [
+        "type:feature",
+        "area:suwayomi"
+      ],
+      "body": "## Goal\nTalk to a user-run Suwayomi through GraphQL.\n\n## Scope\n- URL and credentials settings with a test button\n- Version check on connect; refuse unsupported versions with a clear message\n- Queries: installed sources, search, chapter list; mutations: enqueue download; download status\n- Cassettes per supported version\n\n## Acceptance criteria\n- [ ] Every query matches the server's schema (recorded)\n- [ ] Tomarr never installs extensions or adds stores\n- [ ] Credentials masked in UI and logs\n\n## Refs\n- docs/adr/0006\n- CONTEXT/architecture-context.md (Suwayomi adapter)"
+    },
+    {
+      "milestone": "M6 Suwayomi fallback",
+      "title": "Source link for a series",
+      "labels": [
+        "type:feature",
+        "area:suwayomi",
+        "area:frontend"
+      ],
+      "body": "## Goal\nConnect a Series to one manga on one Suwayomi source.\n\n## Scope\n- Search installed sources with title and Aliases\n- Ranked suggestions using the matcher\n- User confirms; one active Source link per Series\n\n## Acceptance criteria\n- [ ] Link stored and shown on the series page\n- [ ] Changing the link doesn't touch existing files\n\n## Refs\n- CONTEXT/CONTEXT.md (Source link)"
+    },
+    {
+      "milestone": "M6 Suwayomi fallback",
+      "title": "FallbackToChapterSource command and Suwayomi import",
+      "labels": [
+        "type:feature",
+        "area:suwayomi",
+        "area:import"
+      ],
+      "body": "## Goal\nFill chapter gaps after Prowlarr had its chance.\n\n## Scope\n- Scheduled; picks wanted Chapters older than the Fallback delay with no grab in progress\n- Enqueues download in Suwayomi; never for Volumes or Upgrades\n- Import from the shared Suwayomi download folder (CBZ on)\n\n## Acceptance criteria\n- [ ] Chapter with a pending Prowlarr grab is skipped (tested)\n- [ ] Chapter missing from the source list stays Wanted\n- [ ] Imported chapters follow the normal pipeline\n\n## Refs\n- docs/adr/0006"
+    },
+    {
+      "milestone": "M7 UI and ops",
+      "title": "Series detail page",
+      "labels": [
+        "type:feature",
+        "area:frontend"
+      ],
+      "body": "## Goal\nThe main screen: editions, volumes, chapters and where data came from.\n\n## Scope\n- Edition switcher; volume list for the selected Edition\n- Expandable volume rows with a chapter grid\n- Mapping provenance with edit and lock\n- Synopsis with original and translation toggle\n- Unstyled headless primitives; no design system yet\n\n## Acceptance criteria\n- [ ] Each volume row shows: number, title for the selected Edition, chapter range and count, mapping provenance, status (downloaded, partial with x of y, wanted, unmonitored)\n- [ ] Switching Edition changes volume titles and splits; Chapters on disk stay the same\n- [ ] Expanded row shows each chapter as on disk or wanted, and the mapping's provenance detail\n- [ ] Synopsis shows a machine-translated label with the model name, and switches to the original text\n- [ ] Lock and edit call the API and survive a metadata refresh\n- [ ] Status is shown with text, not color alone\n\n## Refs\n- CONTEXT/CONTEXT.md (Edition, Mapping, Provenance, Locked, Translation)\n- docs/adr/0003"
+    },
+    {
+      "milestone": "M7 UI and ops",
+      "title": "Library, Wanted, Calendar and Activity pages",
+      "labels": [
+        "type:feature",
+        "area:frontend"
+      ],
+      "body": "## Goal\nThe rest of the navigation.\n\n## Scope\n- Library list (virtualized)\n- Wanted with search actions\n- Calendar of upcoming volumes from Rakuten\n- Activity: command queue and downloads over SSE\n\n## Acceptance criteria\n- [ ] Library handles 1,000 series without lag\n- [ ] Activity updates live\n\n## Refs\n- CONTEXT/PRODUCT.md (MVP scope)"
+    },
+    {
+      "milestone": "M7 UI and ops",
+      "title": "Settings pages",
+      "labels": [
+        "type:feature",
+        "area:frontend"
+      ],
+      "body": "## Goal\nEvery integration and profile configurable in the UI.\n\n## Scope\n- Prowlarr, indexers, download clients, Kavita, Suwayomi, Rakuten, Gemini\n- Quality profiles, root folders, naming templates, schedules, Confidence threshold, Fallback delay\n- Secrets shown masked after save\n\n## Acceptance criteria\n- [ ] Each integration has a working test button\n- [ ] No secret is ever returned by the API\n\n## Refs\n- CONTEXT/CONTEXT.md (Secrets and logs)"
+    },
+    {
+      "milestone": "M7 UI and ops",
+      "title": "Backups",
+      "labels": [
+        "type:feature",
+        "area:backend"
+      ],
+      "body": "## Goal\nRecover from a broken upgrade or disk.\n\n## Scope\n- Scheduled backup of DB and config to `/config/backups`\n- Manual backup and restore\n\n## Acceptance criteria\n- [ ] Restore of a backup produces the same series and settings (tested)\n- [ ] Retention count is a setting\n\n## Refs\n- CONTEXT/PRODUCT.md (MVP scope)"
+    }
+  ]
+}
