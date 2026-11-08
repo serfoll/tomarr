@@ -1,0 +1,103 @@
+import os
+import re
+import secrets
+import tomllib
+from pathlib import Path
+from typing import Literal
+
+import tomli_w
+from pydantic import BaseModel, Field, field_validator
+from pydantic_settings import (
+    BaseSettings,
+    PydanticBaseSettingsSource,
+    SettingsConfigDict,
+    TomlConfigSettingsSource,
+)
+
+CONFIG_FILE_NAME = "config.toml"
+
+LogLevel = Literal["debug", "info", "warning", "error", "critical"]
+
+_URL_SEGMENT = re.compile(r"[A-Za-z0-9._~-]+")
+
+
+class Server(BaseModel):
+    bindaddress: str = "0.0.0.0"
+    port: int = Field(default=6464, ge=1, le=65535)
+    urlbase: str = ""
+
+    @field_validator("urlbase")
+    @classmethod
+    def _normalise_urlbase(cls, value: str) -> str:
+        segment = value.strip("/")
+        if not segment:
+            return ""
+        if not _URL_SEGMENT.fullmatch(segment):
+            raise ValueError("urlbase must be a single path segment such as /tomarr")
+        return f"/{segment}"
+
+
+class Auth(BaseModel):
+    apikey: str
+
+
+class Log(BaseModel):
+    level: LogLevel = "info"
+
+    @field_validator("level", mode="before")
+    @classmethod
+    def _lower_case_level(cls, value: object) -> object:
+        return value.lower() if isinstance(value, str) else value
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(env_prefix="TOMARR__", env_nested_delimiter="__")
+
+    server: Server = Server()
+    auth: Auth
+    log: Log = Log()
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: PydanticBaseSettingsSource,
+        file_secret_settings: PydanticBaseSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        return (init_settings, env_settings, TomlConfigSettingsSource(settings_cls))
+
+
+def config_dir() -> Path:
+    # The container always uses /config, so users only change the host side of the mount.
+    # TOMARR_CONFIG_DIR exists so tests and local runs can avoid writing to /config.
+    return Path(os.environ.get("TOMARR_CONFIG_DIR", "/config"))
+
+
+def load_settings(config_dir: Path) -> Settings:
+    path = config_dir / CONFIG_FILE_NAME
+    if not path.exists():
+        _write_first_run_file(path)
+
+    class _FileSettings(Settings):
+        model_config = SettingsConfigDict(toml_file=path)
+
+    try:
+        # The sources fill every field, which pyright cannot see from the signature.
+        return _FileSettings()  # pyright: ignore[reportCallIssue]
+    except tomllib.TOMLDecodeError as error:
+        # tomllib messages give a line and column but not the text, and the file holds the API key.
+        raise ValueError(f"{path} is not valid TOML: {error}") from None
+
+
+def _write_first_run_file(path: Path) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    defaults = {
+        "server": Server().model_dump(),
+        "auth": {"apikey": secrets.token_urlsafe(32)},
+        "log": Log().model_dump(),
+    }
+    descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    with os.fdopen(descriptor, "wb") as file:
+        tomli_w.dump(defaults, file)
