@@ -71,7 +71,7 @@ The parser and the mapping data are the moat. The LLM features are the easiest p
 
 ## Business model
 
-None for MVP. Open source under AGPL-3.0. AGPL keeps hosted, modified versions open; as the sole copyright holder, dual licensing stays possible later. External contributions need a DCO or CLA before that option is relied on.
+None for MVP. Open source under AGPL-3.0. AGPL keeps hosted, modified versions open; as the sole copyright holder, dual licensing stays possible later. Contributions come under the DCO and contributors keep their copyright, so dual licensing is not relied on; a CLA is the route if that changes ([ADR 0007](../docs/adr/0007-dco-for-contributions.md)).
 
 ## Open questions
 
