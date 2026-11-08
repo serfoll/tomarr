@@ -8,6 +8,7 @@ Early development. Not usable yet.
 
 - `CONTEXT/` has the product scope, glossary, architecture and the rules for working in this repo. Start with `CONTEXT/PRODUCT.md`.
 - `docs/adr/` has the architecture decision records.
+- Contributions are welcome under the DCO. See `CONTRIBUTING.md`.
 
 ## License
 
