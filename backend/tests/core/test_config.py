@@ -141,3 +141,36 @@ def test_invalid_value_in_the_file_is_rejected(tmp_path: Path) -> None:
 def test_auth_requires_an_api_key() -> None:
     with pytest.raises(ValidationError):
         Auth()  # pyright: ignore[reportCallIssue]
+
+
+@pytest.mark.parametrize(
+    ("section", "name"),
+    [("server", "bind_address"), ("server", "url_base"), ("auth", "api_key"), ("log", "lvl")],
+)
+def test_unknown_key_in_the_file_is_rejected(tmp_path: Path, section: str, name: str) -> None:
+    sections = {"server": "", "auth": 'apikey = "k"\n', "log": ""}
+    sections[section] += f'{name} = "x"\n'
+    (tmp_path / "config.toml").write_text(
+        "".join(f"[{title}]\n{body}" for title, body in sections.items())
+    )
+
+    with pytest.raises(ValidationError, match=re.escape(f"{section}.{name}")):
+        load_settings(tmp_path)
+
+
+def test_unknown_key_in_the_environment_is_rejected(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("TOMARR__SERVER__URL_BASE", "/x")
+
+    with pytest.raises(ValidationError, match=re.escape("server.url_base")):
+        load_settings(tmp_path)
+
+
+def test_validation_error_names_the_field_and_hides_the_value(tmp_path: Path) -> None:
+    (tmp_path / "config.toml").write_text("[auth]\napikey = 123456789012\n")
+
+    with pytest.raises(ValidationError, match=re.escape("auth.apikey")) as excinfo:
+        load_settings(tmp_path)
+
+    assert "123456789012" not in str(excinfo.value)

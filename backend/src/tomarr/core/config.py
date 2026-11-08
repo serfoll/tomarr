@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Literal
 
 import tomli_w
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 from pydantic_settings import (
     BaseSettings,
     PydanticBaseSettingsSource,
@@ -22,6 +22,8 @@ _URL_SEGMENT = re.compile(r"[A-Za-z0-9._~-]+")
 
 
 class Server(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     bindaddress: str = "0.0.0.0"
     port: int = Field(default=6464, ge=1, le=65535)
     urlbase: str = ""
@@ -38,10 +40,14 @@ class Server(BaseModel):
 
 
 class Auth(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     apikey: str
 
 
 class Log(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     level: LogLevel = "info"
 
     @field_validator("level", mode="before")
@@ -51,7 +57,10 @@ class Log(BaseModel):
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_prefix="TOMARR__", env_nested_delimiter="__")
+    # Validation errors reach the startup traceback, and the input may be the API key.
+    model_config = SettingsConfigDict(
+        env_prefix="TOMARR__", env_nested_delimiter="__", hide_input_in_errors=True
+    )
 
     server: Server = Server()
     auth: Auth
