@@ -14,6 +14,8 @@ pr_author="$1"
 exempt="$2"
 
 if [[ -n "$exempt" && "$pr_author" == "$exempt" ]]; then
+  # Drain stdin so the producer is not killed by SIGPIPE, which fails the step under pipefail.
+  cat >/dev/null
   echo "DCO check skipped: the PR author is the repository owner."
   exit 0
 fi
@@ -36,7 +38,7 @@ filter='
       checked: ($checked | length),
       failed: [
         $checked[] | select(signed_off | not)
-        | {sha: .sha[0:7], subject: (.commit.message | gsub("\r"; "") | split("\n")[0])}
+        | {sha: .sha[0:7], subject: (.commit.message | gsub("\r"; "") | split("\n")[0] // "")}
       ]
     }
 '
@@ -48,6 +50,12 @@ result="$(jq -s "$filter" 2>/dev/null)" || {
 
 if [[ "$(jq '.total' <<<"$result")" -eq 0 ]]; then
   echo "DCO check failed: no commits were passed in." >&2
+  exit 2
+fi
+
+# GitHub lists at most 250 commits per PR, so a count of 250 may be a truncated list.
+if [[ "$(jq '.total' <<<"$result")" -ge 250 ]]; then
+  echo "DCO check failed: GitHub lists at most 250 commits per PR, so this PR cannot be fully checked." >&2
   exit 2
 fi
 
