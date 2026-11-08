@@ -38,7 +38,7 @@ Signed off 2026-11-08. Versions are the current stable releases on that date. Th
 | `uvicorn[standard]` | 0.54.0 | ASGI server. `standard` adds uvloop, httptools and watchfiles for `--reload` (uvicorn README) |
 | `pydantic` | 2.14.3 | API schemas, settings, Gemini response schemas (ADR 0001, ADR 0005) |
 | `pydantic-settings` | 2.16.2 | Reads `config.toml` and `TOMARR__SECTION__KEY` overrides (#6) |
-| `sqlalchemy[asyncio]` | 2.1.8 | ORM (ADR 0001, #7). 2.1 no longer installs greenlet by default, so the extra is needed. Alembic 1.20.1 supports 2.1 |
+| `sqlalchemy[asyncio]` | 2.1.8 | ORM (ADR 0001, #7). 2.1 no longer installs greenlet by default, so the extra is needed. Alembic 1.20.1 requires SQLAlchemy 2.0 or later and its changelog names 2.1 fixes |
 | `alembic` | 1.20.1 | Migrations (#7) |
 | `httpx2` | 2.16.0 | Outbound HTTP through `core/http.py` (#10). Replaces `httpx`, last released 2024-12-06. `google-genai` 3.0.0 already requires it |
 | `rapidfuzz` | 3.14.6 | Title matching (ADR 0001, #20) |
