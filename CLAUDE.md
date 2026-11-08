@@ -2,6 +2,8 @@
 
 Tomarr is a self-hosted *arr for manga, manhwa and webtoons. It tracks series down to volumes and chapters, finds releases through Prowlarr (with Suwayomi as an optional fallback for single chapters), sends them to a download client, imports them with clean metadata and tells Kavita to rescan.
 
+Project Board: https://github.com/users/serfoll/projects/16
+
 ## Read first
 
 | File | Read when |
