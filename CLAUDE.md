@@ -35,12 +35,12 @@ Signed off 2026-11-08. Versions are the current stable releases on that date. Th
 | Package | Version | Reason |
 |---|---|---|
 | `fastapi` | 0.162.2 | API, OpenAPI schema and built-in SSE (ADR 0001, #11). Plain, not `[standard]` |
-| `uvicorn[standard]` | 0.54.0 | ASGI server. `standard` adds uvloop, httptools and watchfiles for `--reload` (#5) |
+| `uvicorn[standard]` | 0.54.0 | ASGI server. `standard` adds uvloop, httptools and watchfiles for `--reload` (uvicorn README) |
 | `pydantic` | 2.14.3 | API schemas, settings, Gemini response schemas (ADR 0001, ADR 0005) |
 | `pydantic-settings` | 2.16.2 | Reads `config.toml` and `TOMARR__SECTION__KEY` overrides (#6) |
-| `sqlalchemy[asyncio]` | 2.1.8 | ORM (ADR 0001, #7). Alembic 1.20.1 supports 2.1. The `asyncio` extra is needed because 2.1 no longer installs greenlet by default |
+| `sqlalchemy[asyncio]` | 2.1.8 | ORM (ADR 0001, #7). 2.1 no longer installs greenlet by default, so the extra is needed. Alembic 1.20.1 supports 2.1 |
 | `alembic` | 1.20.1 | Migrations (#7) |
-| `httpx2` | 2.16.0 | Outbound HTTP through `core/http.py` (#10). Replaces `httpx` (last release 2024-12-06); `google-genai` 3.0.0 already requires it. Records and replays with vcrpy 9.4.2 and pytest-recording 0.14.1 (checked 2026-11-08) |
+| `httpx2` | 2.16.0 | Outbound HTTP through `core/http.py` (#10). Replaces `httpx`, last released 2024-12-06. `google-genai` 3.0.0 already requires it |
 | `rapidfuzz` | 3.14.6 | Title matching (ADR 0001, #20) |
 | `lxml` | 6.1.3 | Torznab, Newznab, WEBTOON RSS and `ComicInfo.xml`, with schema validation (#29, #36, #45) |
 | `google-genai` | 3.0.0 | Gemini adapter (ADR 0005, #32) |
@@ -55,16 +55,18 @@ Signed off 2026-11-08. Versions are the current stable releases on that date. Th
 | `pyyaml` | 6.0.3 | Dev. Loads the golden corpus in `tests/fixtures/releases/*.yaml` (#19). Added by audit |
 | `types-lxml` | 2026.2.16 | Dev. lxml ships no types and pyright runs strict. Added by audit |
 
+`httpx2` records and replays with `vcrpy` 9.4.2 and `pytest-recording` 0.14.1, checked 2026-11-08.
+
 ### Frontend
 
 | Package | Version | Reason |
 |---|---|---|
 | `react`, `react-dom` | 19.3.1 | UI (ADR 0001, #12) |
 | `vite` | 8.3.6 | Build and dev server (#12) |
-| `typescript` | 5.9.3 | Held at 5.x. `openapi-typescript` 7.13.0 peers `^5.x` and newest 5.x is 5.9.3. Revisit when `openapi-typescript` widens its range |
+| `typescript` | 5.9.3 | Held at 5.x: `openapi-typescript` 7.13.0 peers `^5.x` and 5.9.3 is the newest 5.x. Revisit when it widens its range |
 | `@tanstack/react-router` | 1.170.46 | File routes (#12) |
 | `@tanstack/react-query` | 5.107.1 | Server state (#12) |
-| `@tanstack/react-table` | 9.3.1 | Data tables (Stack notes, #54) |
+| `@tanstack/react-table` | 9.3.1 | Data tables (Stack notes) |
 | `@tanstack/react-virtual` | 3.14.26 | Virtualized Library list (#54) |
 | `openapi-typescript` | 7.13.0 | Generates API types from the OpenAPI schema (#13) |
 | `openapi-fetch` | 0.17.0 | Typed client over the generated types (#13) |
@@ -78,18 +80,18 @@ Signed off 2026-11-08. Versions are the current stable releases on that date. Th
 | `@testing-library/react` | 16.3.3 | Dev. Component tests. Added by audit |
 | `@testing-library/dom` | 10.4.2 | Dev. Peer of `@testing-library/react`. Added by audit |
 
-Vitest 5.1 and jsdom 31 need Node 22.22.2 or later, so the Dockerfile's Node stage must be at least that.
+Vitest 5.1 and jsdom 31 set the Node floor for the Dockerfile's Node stage: 22.22.2 or later in 22, 24.15 or later in 24, or 26 and up.
 
 ### System
 
 | Package | Version | Reason |
 |---|---|---|
 | `7zip` | 25.01+dfsg-1~deb13u2 | Extracts zip and RAR for Import (#14, #45). Debian main |
-| `7zip-rar` | 25.00+ds-1+deb13u1 | Lets `7z` read CBR and RAR5. Debian drops the RAR code from `7zip`, so this package is in the `non-free` component and the image must enable it |
+| `7zip-rar` | 25.00+ds-1+deb13u1 | Lets `7z` read CBR and RAR5. Debian puts it in `non-free` because of the unRAR licence, so the image must enable that apt component |
 
 Base image: `python:3.13-slim` (3.13.18, Debian 13 trixie).
 
-Deferred: `pillow` (the importer issue asks for sign-off once it knows what the images need), `itsdangerous` and `aiosqlite` (#8 and #7 ask for sign-off once the session and database design is chosen).
+Deferred by the user until the work needs them: `pillow` (image conversion), `itsdangerous` (session cookie, #8), `aiosqlite` (async SQLite driver, #7). Each is asked for sign-off when that work starts.
 
 Scaffold issues install only packages listed here. Any later addition is asked first, then added to this list in the same PR.
 
