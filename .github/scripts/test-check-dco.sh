@@ -130,6 +130,45 @@ expect_exit "n: an empty exempt login never exempts anyone" 1
 run "not json" alice owner
 expect_exit "extra: input that is not JSON is unusable" 2
 
+# The workflow runs the script behind `gh api ... |` under pipefail, so an owner PR that
+# exits without draining stdin would turn the producer's SIGPIPE (141) into a red check.
+pipe_statuses() {
+  (
+    set +e
+    set -o pipefail
+    "$@" | bash "$script" owner owner >/dev/null 2>&1
+    echo "${PIPESTATUS[*]}"
+  )
+}
+
+slow_producer() { sleep 0.2; printf '%s\n' "$unsigned"; }
+large_producer() { for _ in $(seq 3000); do printf '%s\n' "$unsigned"; done; }
+
+code=0
+out="$(pipe_statuses slow_producer)"
+[[ "$out" == "0 0" ]] || fail "o: owner PR behind a slow producer under pipefail" "expected pipe statuses '0 0'"
+out="$(pipe_statuses large_producer)"
+[[ "$out" == "0 0" ]] || fail "o: owner PR behind a large producer under pipefail" "expected pipe statuses '0 0'"
+
+many() { for _ in $(seq "$1"); do printf '%s\n' "$2"; done; }
+signed_one="$(commit 9999999aaaaaaa "$me" "Add thing
+
+$sign" 1)"
+
+run "$(many 250 "$signed_one")" alice owner
+expect_exit "p: 250 commits cannot be fully listed and are unusable" 2
+expect_out "p: says GitHub lists at most 250 commits" "at most 250"
+
+run "$(many 249 "$signed_one")" alice owner
+expect_exit "p: 249 signed commits still pass" 0
+
+run "$(many 250 "$signed_one")" owner owner
+expect_exit "p: an owner PR with 250 commits is still exempt" 0
+
+run "$(commit 0000000aaaaaaa "$me" "" 1)" alice owner
+expect_exit "q: empty commit message fails" 1
+expect_no_out "q: empty subject is not printed as null" "null"
+
 if [[ "$failures" -gt 0 ]]; then
   echo "$failures assertion(s) failed"
   exit 1
