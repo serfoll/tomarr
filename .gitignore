@@ -1,0 +1,28 @@
+# Python
+__pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/
+.pyright/
+*.egg-info/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Local state
+.env*
+/config/
+*.db
+*.db-wal
+*.db-shm
+
+# Editor and OS
+.DS_Store
+.idea/
+.vscode/
+
+# Agent working files
+/tmp/
+/.superpowers/
