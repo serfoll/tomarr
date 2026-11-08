@@ -38,3 +38,4 @@ pythonVersion = "3.13"
 testpaths = ["tests"]
 addopts = ["--block-network"]
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
