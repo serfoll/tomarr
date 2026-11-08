@@ -97,12 +97,13 @@ Scaffold issues install only packages listed here. Any later addition is asked f
 
 ## Commands
 
-The project is not scaffolded yet. These are the commands the scaffold should provide. Until a command exists in `pyproject.toml` or `package.json`, don't reference it as if it does.
+The backend is scaffolded; the frontend and Docker parts are not yet. Backend commands run from `backend/` and exist now. Until a frontend or Docker command exists in `package.json` or a compose file, don't reference it as if it does.
 
 | Task | Command |
 |---|---|
-| Backend tests | `uv run pytest` |
-| Backend lint and types | `uv run ruff check . && uv run ruff format --check . && uv run pyright` |
+| Backend tests (from `backend/`) | `uv run pytest` |
+| Backend lint and types (from `backend/`) | `uv run ruff check . && uv run ruff format --check . && uv run pyright` |
+| Backend dev server (from `backend/`) | `uv run uvicorn tomarr.app:create_app --factory --reload` |
 | Frontend lint | `pnpm lint` |
 | Frontend tests | `pnpm test` |
 | Regenerate API types | `pnpm gen:api` |
