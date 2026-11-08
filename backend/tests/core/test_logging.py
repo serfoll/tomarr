@@ -69,6 +69,11 @@ def json_lines(text: str) -> list[dict[str, object]]:
         ("Request headers: %s", ({"X-Api-Key": "abc123"},)),
         ("Sent Authorization: Bearer abc123 to the indexer", ()),
         ("Sent X-Api-Key: abc123 to the indexer", ()),
+        ("Sent Authorization: Negotiate abc123 to the proxy", ()),
+        ("Sending x-goog-api-key: abc123", ()),
+        ("Request headers: %s", ({"x-goog-api-key": "abc123"},)),
+        ("Request api-key=abc123 cookie=abc123", ()),
+        ("Token exchange with client_secret=abc123", ()),
     ],
 )
 def test_credentials_in_the_message_are_redacted(
@@ -93,6 +98,28 @@ def test_query_string_is_replaced_whole(capsys: pytest.CaptureFixture[str], log_
 
     for text in outputs(capsys, log_dir):
         assert json_lines(text)[0]["message"] == "Fetching https://x.test/p?[redacted] done"
+
+
+@pytest.mark.parametrize(
+    ("message", "expected"),
+    [
+        ('Login with password="my abc123 phrase" done', 'Login with password="[redacted]" done'),
+        ("Login with password='my abc123 phrase", "Login with password='[redacted]"),
+        (
+            "Connecting to http://admin:abc123@qbit.local:8080/api",
+            "Connecting to http://admin:[redacted]@qbit.local:8080/api",
+        ),
+    ],
+)
+def test_credential_value_is_replaced_whole(
+    capsys: pytest.CaptureFixture[str], log_dir: Path, message: str, expected: str
+) -> None:
+    configure(log_dir)
+
+    logger.info(message)
+
+    for text in outputs(capsys, log_dir):
+        assert json_lines(text)[0]["message"] == expected
 
 
 def test_credential_in_an_extra_field_is_redacted(
@@ -123,6 +150,10 @@ class UrlLike:
         ),
         ({"url": UrlLike()}, {"url": "https://x.test/p?[redacted]"}),
         ({"access_token": SECRET}, {"access_token": "[redacted]"}),
+        ({"client_secret": SECRET}, {"client_secret": "[redacted]"}),
+        ({"x_api_key": SECRET}, {"x_api_key": "[redacted]"}),
+        ({"headers": {"x-goog-api-key": SECRET}}, {"headers": {"x-goog-api-key": "[redacted]"}}),
+        ({"headers": {"Set-Cookie": SECRET}}, {"headers": {"Set-Cookie": "[redacted]"}}),
         ({"urls": ["https://x.test/p?token=abc123"]}, {"urls": ["https://x.test/p?[redacted]"]}),
     ],
 )
@@ -143,15 +174,30 @@ def test_credential_in_a_structured_extra_is_redacted(
             assert line[name] == value
 
 
-def test_mismatched_format_args_do_not_raise_and_are_redacted(
-    capsys: pytest.CaptureFixture[str], log_dir: Path
+class RaisesOnStr:
+    def __str__(self) -> str:
+        raise RuntimeError("cannot render")
+
+
+@pytest.mark.parametrize(
+    ("msg", "args", "prefix"),
+    [
+        ("Fetching %s from %s", (f"token={SECRET}",), "Fetching %s from %s"),
+        ("Fetching %(a)s with %(b)s", ({"a": f"token={SECRET}"},), "Fetching %(a)s with %(b)s"),
+        ("Fetching %s", (RaisesOnStr(),), "Fetching %s"),
+    ],
+)
+def test_bad_format_args_do_not_raise_and_are_redacted(
+    capsys: pytest.CaptureFixture[str],
+    log_dir: Path,
+    msg: str,
+    args: tuple[object, ...],
+    prefix: str,
 ) -> None:
     root = logging.getLogger()
     before = list(root.handlers)
     configure(log_dir)
-    record = logger.makeRecord(
-        logger.name, logging.INFO, __file__, 1, "Fetching %s from %s", (f"token={SECRET}",), None
-    )
+    record = logger.makeRecord(logger.name, logging.INFO, __file__, 1, msg, args, None)
 
     # pytest's own capture handler on root re-raises format errors, so only ours are driven.
     for handler in root.handlers:
@@ -162,7 +208,7 @@ def test_mismatched_format_args_do_not_raise_and_are_redacted(
         assert SECRET not in text
         message = json_lines(text)[0]["message"]
         assert isinstance(message, str)
-        assert message.startswith("Fetching %s from %s")
+        assert message.startswith(prefix)
 
 
 def test_credential_in_a_traceback_is_redacted(
@@ -201,16 +247,24 @@ def test_ordinary_lines_are_json_and_unchanged(
 ) -> None:
     configure(log_dir)
 
-    logger.warning("Imported %s volume %d", "Berserk", 3, extra={"series_id": 42, "title": "Vol 3"})
+    logger.warning(
+        "Imported %s volume %d",
+        "鬼滅の刃",
+        3,
+        extra={"series_id": 42, "title": "Vol 3", "input_tokens": 1234, "tokens_used": 56},
+    )
 
     for text in outputs(capsys, log_dir):
+        assert "鬼滅の刃" in text
         [line] = json_lines(text)
         assert isinstance(line["timestamp"], str)
         assert line["level"] == "WARNING"
         assert line["logger"] == "tomarr.test"
-        assert line["message"] == "Imported Berserk volume 3"
+        assert line["message"] == "Imported 鬼滅の刃 volume 3"
         assert line["series_id"] == 42
         assert line["title"] == "Vol 3"
+        assert line["input_tokens"] == 1234
+        assert line["tokens_used"] == 56
 
 
 @pytest.fixture

@@ -14,20 +14,34 @@ LOG_BACKUP_COUNT = 5
 UVICORN_LOGGERS = ("uvicorn", "uvicorn.error", "uvicorn.access")
 
 # The bare name "key" is left out: it matches too much ordinary text ("sort key", "key=value").
-CREDENTIAL_KEYS = ("apikey", "api_key", "token", "password", "authorization", "x-api-key")
+CREDENTIAL_KEYS = (
+    "apikey",
+    "api_key",
+    "api-key",
+    "token",
+    "password",
+    "authorization",
+    "x-api-key",
+    "secret",
+    "cookie",
+)
 REDACTED = "[redacted]"
 
 _KEY = "|".join(re.escape(key) for key in CREDENTIAL_KEYS)
 _QUERY_STRING = re.compile(r"""(?<=[\w/.~%-])\?[^\s"'<>#]+""")
+_USERINFO_PASSWORD = re.compile(r"(?P<head>[A-Za-z][A-Za-z0-9+.-]*://[^\s/:@]+:)[^\s/@]+(?=@)")
 _QUOTED_PAIR = re.compile(
-    rf"""(?P<head>(?P<q>['"])(?:{_KEY})(?P=q)\s*:\s*(?P<vq>['"]))(?:\\.|(?!(?P=vq)).)*""",
+    rf"""(?P<head>(?P<q>['"])(?:[^'"\s]*[^A-Za-z0-9'"\s])?(?:{_KEY})(?P=q)\s*:\s*(?P<vq>['"]))"""
+    r"""(?:\\.|(?!(?P=vq)).)*""",
     re.IGNORECASE,
 )
 _PAIR = re.compile(
-    rf"""(?P<head>(?<![A-Za-z0-9])(?:{_KEY})\s*[:=]\s*['"]?(?:(?:bearer|basic|digest|token)\s+)?)"""
-    r"""[^\s&,;'"]+""",
+    rf"""(?P<head>(?<![A-Za-z0-9])(?:{_KEY})\s*[:=]\s*(?P<q>['"])?"""
+    r"""(?:(?:bearer|basic|digest|token|negotiate|ntlm)\s+)?)"""
+    r"""(?(q)(?:(?!(?P=q)).)*|[^\s&,;'"]+)""",
     re.IGNORECASE,
 )
+_CREDENTIAL_NAMES = tuple(f"_{key.replace('-', '_')}_" for key in CREDENTIAL_KEYS)
 _RECORD_ATTRS = frozenset(vars(logging.makeLogRecord({}))) | {"message", "asctime"}
 
 _installed: list[logging.Handler] = []
@@ -38,8 +52,9 @@ def _extra_fields(record: logging.LogRecord) -> dict[str, object]:
 
 
 def _names_a_credential(name: str) -> bool:
-    lowered = name.lower()
-    return any(key in lowered for key in CREDENTIAL_KEYS)
+    # Whole words only, so usage counts such as "input_tokens" stay readable.
+    words = f"_{name.lower().replace('-', '_')}_"
+    return any(key in words for key in _CREDENTIAL_NAMES)
 
 
 class RedactionFilter(logging.Filter):
@@ -51,6 +66,7 @@ class RedactionFilter(logging.Filter):
         for secret in self._secrets:
             text = text.replace(secret, REDACTED)
         text = _QUERY_STRING.sub(f"?{REDACTED}", text)
+        text = _USERINFO_PASSWORD.sub(rf"\g<head>{REDACTED}", text)
         text = _QUOTED_PAIR.sub(rf"\g<head>{REDACTED}", text)
         return _PAIR.sub(rf"\g<head>{REDACTED}", text)
 
@@ -71,9 +87,9 @@ class RedactionFilter(logging.Filter):
     def filter(self, record: logging.LogRecord) -> bool:
         try:
             message = record.getMessage()
-        except (TypeError, ValueError):
-            # A bad format call must not raise into the caller: stdlib logging only reports it
-            # from inside emit, and filters run before emit.
+        except Exception:
+            # A bad format call or an argument whose __str__ raises must not reach the caller:
+            # stdlib logging only reports these from inside emit, and filters run before emit.
             message = f"{record.msg} {record.args!r}"
         record.msg = self.redact(message)
         record.args = ()
@@ -103,7 +119,7 @@ class _JsonLinesFormatter(logging.Formatter):
             line["exception"] = record.exc_text
         for name, value in _extra_fields(record).items():
             line.setdefault(name, value)
-        return json.dumps(line, default=str)
+        return json.dumps(line, default=str, ensure_ascii=False)
 
 
 def configure_logging(level: str, log_dir: Path, secrets: Iterable[str]) -> None:
