@@ -44,4 +44,5 @@ def test_post_value_is_filtered(vcr_config: dict[str, Any], tmp_path: Path, name
 
     result = filtered(vcr_config, tmp_path, request)
 
+    assert isinstance(result.body, bytes)
     assert SECRET.encode() not in result.body

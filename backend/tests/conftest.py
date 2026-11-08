@@ -11,4 +11,8 @@ def vcr_cassette_dir() -> str:
 
 @pytest.fixture
 def vcr_config() -> dict[str, Any]:
-    return {}
+    return {
+        "filter_headers": ["authorization", "x-api-key", "x-goog-api-key"],
+        "filter_query_parameters": ["apikey", "api_key", "key", "token"],
+        "filter_post_data_parameters": ["apikey", "api_key", "key", "token"],
+    }
