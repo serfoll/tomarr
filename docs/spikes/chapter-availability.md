@@ -5,7 +5,7 @@ Run on 2026-11-08 for issue #1. Risk 1 in `CONTEXT/PRODUCT.md` says indexers car
 ## Result in short
 
 - Single chapters turned up for 2 of the 18 series: One Piece and Dandadan, the two biggest ongoing titles. Nothing for the other three ongoing manga, the manhwa or the webtoons.
-- Volumes or complete-series packs turned up for 15 of the 18 series. The three with nothing are Tower of God, unOrdinary and Lore Olympus.
+- Volumes or complete-series packs turned up for 15 of the 18 series through Prowlarr, and 16 once MyAnonamouse is searched directly. Tower of God and unOrdinary have nothing.
 - 1337x had a DNS resolver problem on the first pass and returned nothing, so all 44 of its searches were repeated after the fix. It works, but it carries almost no manga.
 - Webtoons and most manhwa are close to absent from torrent indexers. The category filter is not the cause. The unfiltered searches added anime and ebooks, not more manga.
 - Recommendation: default Monitor mode `volumes_only`, with or without Suwayomi. Torrent volumes are the better source for scan and translation quality, so chapters stay an explicit opt-in per series. The Fallback delay should vary per series and count from the chapter's release timestamp (MangaDex or MangaUpdates). No source checked publishes a future chapter date. A flat 24 hours is only the starting value.
@@ -49,7 +49,7 @@ Total across the 18 series: 69 chapter names, 162 volume names, 156 pack or seri
 | Indexer | Chapter | Volume | Pack or series | Comment |
 |---|---:|---:|---:|---|
 | Knaben | 32 | 31 | 95 | Aggregates other trackers, so many names duplicate Nyaa.si |
-| MyAnonamouse | 2 | 126 | 36 | Mostly volumes, in English, German, Russian and other languages. Also returns many unrelated novels |
+| MyAnonamouse | 2 | 126 | 36 | Mostly volumes, in English, German, Russian and other languages. Also returns many unrelated novels. A direct search finds more than three times as many volumes (see Direct MyAnonamouse check) |
 | Nyaa.si | 33 | 5 | 23 | Where nearly all single chapters come from |
 | RetroToon | 0 | 0 | 0 | Nothing under the Books categories. The unfiltered search added 4 manga-like names, plus anime video |
 | 1337x | 2 | 0 | 2 | Almost no manga. The 2 chapters are the old Tower of God files and the 2 packs are Jujutsu Kaisen. Other title matches were game repacks, anime, adult image sets and unrelated ebooks |
@@ -85,11 +85,41 @@ How long torrents lag behind these dates, measured against MangaDex release time
 
 So the first torrent for a chapter is not always the one a reader wants. Which language and edition a torrent is, and which one the user wants, decides how long to wait. This is a point for the parser (#19) and the Decision engine (#37), not only for the delay.
 
+## Direct MyAnonamouse check
+
+Prowlarr's MyAnonamouse results were capped at 100 per query and came from an account setup without VIP content. To see what they hid, the same 18 series were searched directly through MyAnonamouse's own JSON search (`/tor/js/loadSearchJSONbasic.php`, which needs a logged-in session), with the text matched against title, series and author and results paged past the cap.
+
+- All manga sits in one category, 61 "Ebooks - Comics/Graphic novels". Other categories returned fantasy novels, audiobooks and art books.
+- The direct search found 386 volume names, 47 pack or whole-run names and no single chapters, against 126 volumes, 36 packs and 2 chapters through Prowlarr. The 23 "chapters" a first pass flagged were German volumes numbered like `Solo Leveling 13`, volume ranges and English webtoon chapter ranges such as `Solo Leveling #000-116`.
+- 225 of the 386 volumes are flagged VIP. Without them the direct search still finds 161 volumes against Prowlarr's 126, so the result cap and relevance trimming hid some as well. Whether the account used here can download VIP-flagged releases was not tested.
+- By language the volumes are 212 English, 141 German, 18 Russian, 8 French, 5 Italian and 2 Portuguese. Counting only English volumes that are not VIP-flagged leaves 137, 97 of them One Piece.
+- Series with something new: Lore Olympus gains two pack names, so 16 of the 18 series now have a volume or pack somewhere. Tower of God and unOrdinary still have none.
+- MyAnonamouse is not a webtoon source. Of the 7 manhwa and webtoon series, 5 returned nothing (Tower of God, The Beginning After the End, Omniscient Reader's Viewpoint, unOrdinary, True Beauty). The only hits were Solo Leveling and Lore Olympus, both of which exist as print books, plus three English chapter-range packs for Solo Leveling. Webtoons will need other sources: Suwayomi as the chapter source (ADR 0006) and the WEBTOON RSS feed as the release signal (`CONTEXT/PRODUCT.md`).
+- The result does not change the recommendation. MyAnonamouse has no single chapters, and its volumes are what the default Monitor mode relies on.
+
+The direct names are not in the fixtures. They carry no `by Author [ENG / CBZ]` suffix, so they differ from what the parser will see coming through Prowlarr. Whether Tomarr should ever call MyAnonamouse directly instead of through Prowlarr is a separate decision, and ADR 0002 currently says to pull indexers from Prowlarr.
+
+### Getting Prowlarr close to the direct result
+
+Two things made Prowlarr's MyAnonamouse view smaller than the direct one. One is set per request and one is set on the indexer in Prowlarr.
+
+Per request, which Tomarr controls:
+
+- `GET /api/v1/search` accepts `limit` and `offset` (confirmed on this instance, not found in the Swagger page, which sits behind the login). The default of 100 is not a hard limit. `limit=300` returned 300 distinct results and `offset=100` returned a new page with no overlap.
+- Sending only the Comics category (7030) to MyAnonamouse cut One Piece from 1,000 results to 333 and removed the novels.
+- With `limit=1000` and `categories=7030`, relevant non-VIP results matched the direct search almost exactly: One Piece 98 volumes and 14 packs against 99 and 14, Jujutsu Kaisen 8 and 1 against 8 and 1, Blue Box 3 and 0 against 3 and 0, Dandadan 17 and 3 against 17 and 3. Solo Leveling did not match (4 volumes against 19), and the cause was not found.
+
+On the indexer in Prowlarr, which the user controls and a request cannot change:
+
+- The indexer's Search Type is set to "Not VIP". Setting it to "All torrents" is what would bring in the 225 VIP-flagged volumes. Whether the account can then download them was not tested, and the setting was not changed.
+- Search in description, series and filenames are all on. The direct search matched title, series and author only. Turning off description and filenames is the likely way to cut noise, but this was not tested.
+
+Prowlarr pages upstream when `limit` is large, so a big limit probably costs several requests to the tracker per search. How many was not measured, and it matters for trackers with query limits.
+
 ## Caveats
 
 - One setup, five indexers. A user with different indexers, especially private trackers with strong manga coverage, may see more chapters.
-- MyAnonamouse hit its 100 result cap on 6 of the series (Blue Box, Demon Slayer, One Piece, The Beginning After the End, Tower of God, True Beauty), because their titles share words with many novels. Some volumes there may be hidden. The other indexers never reached the cap.
-- The MyAnonamouse account used has no VIP content, sources or uploads enabled, so releases restricted to those are not in the results. This is another reason volumes may be hidden, and a user with a fuller account could see more.
+- Through Prowlarr, MyAnonamouse hit its 100 result cap on 6 of the series (Blue Box, Demon Slayer, One Piece, The Beginning After the End, Tower of God, True Beauty), and the account has no VIP content, sources or uploads enabled. A direct search showed that this hid a lot: 386 volumes against 126, 225 of them VIP-flagged. The Per series and Per indexer tables still show the Prowlarr view, which is what Tomarr would see with the same setup.
 - Series status (ongoing or finished) is from memory, not checked against a provider.
 - The classifier is regex based. About 3% of relevant names (14 of roughly 480) stayed unclassified. Language editions are counted together with English ones.
 
