@@ -109,6 +109,62 @@ def test_credential_in_an_extra_field_is_redacted(
         assert line["api_key"] == "[redacted]"
 
 
+class UrlLike:
+    def __str__(self) -> str:
+        return "https://x.test/p?apikey=abc123"
+
+
+@pytest.mark.parametrize(
+    ("extra", "expected"),
+    [
+        (
+            {"headers": {"Authorization": "Bearer abc123", "Accept": "application/json"}},
+            {"headers": {"Authorization": "[redacted]", "Accept": "application/json"}},
+        ),
+        ({"url": UrlLike()}, {"url": "https://x.test/p?[redacted]"}),
+        ({"access_token": SECRET}, {"access_token": "[redacted]"}),
+        ({"urls": ["https://x.test/p?token=abc123"]}, {"urls": ["https://x.test/p?[redacted]"]}),
+    ],
+)
+def test_credential_in_a_structured_extra_is_redacted(
+    capsys: pytest.CaptureFixture[str],
+    log_dir: Path,
+    extra: dict[str, object],
+    expected: dict[str, object],
+) -> None:
+    configure(log_dir)
+
+    logger.info("Fetched", extra=extra)
+
+    for text in outputs(capsys, log_dir):
+        assert SECRET not in text
+        line = json_lines(text)[0]
+        for name, value in expected.items():
+            assert line[name] == value
+
+
+def test_mismatched_format_args_do_not_raise_and_are_redacted(
+    capsys: pytest.CaptureFixture[str], log_dir: Path
+) -> None:
+    root = logging.getLogger()
+    before = list(root.handlers)
+    configure(log_dir)
+    record = logger.makeRecord(
+        logger.name, logging.INFO, __file__, 1, "Fetching %s from %s", (f"token={SECRET}",), None
+    )
+
+    # pytest's own capture handler on root re-raises format errors, so only ours are driven.
+    for handler in root.handlers:
+        if handler not in before:
+            handler.handle(record)
+
+    for text in outputs(capsys, log_dir):
+        assert SECRET not in text
+        message = json_lines(text)[0]["message"]
+        assert isinstance(message, str)
+        assert message.startswith("Fetching %s from %s")
+
+
 def test_credential_in_a_traceback_is_redacted(
     capsys: pytest.CaptureFixture[str], log_dir: Path
 ) -> None:

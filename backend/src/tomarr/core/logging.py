@@ -2,10 +2,11 @@ import json
 import logging
 import re
 import sys
-from collections.abc import Iterable
+from collections.abc import Iterable, Mapping
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
+from typing import cast
 
 LOG_FILE_NAME = "tomarr.log"
 MAX_LOG_BYTES = 10 * 1024 * 1024
@@ -36,6 +37,11 @@ def _extra_fields(record: logging.LogRecord) -> dict[str, object]:
     return {name: value for name, value in vars(record).items() if name not in _RECORD_ATTRS}
 
 
+def _names_a_credential(name: str) -> bool:
+    lowered = name.lower()
+    return any(key in lowered for key in CREDENTIAL_KEYS)
+
+
 class RedactionFilter(logging.Filter):
     def __init__(self, secrets: Iterable[str]) -> None:
         super().__init__()
@@ -48,8 +54,28 @@ class RedactionFilter(logging.Filter):
         text = _QUOTED_PAIR.sub(rf"\g<head>{REDACTED}", text)
         return _PAIR.sub(rf"\g<head>{REDACTED}", text)
 
+    def redact_value(self, name: str, value: object) -> object:
+        if _names_a_credential(name):
+            return REDACTED
+        if isinstance(value, str):
+            return self.redact(value)
+        if value is None or isinstance(value, int | float):
+            return value
+        if isinstance(value, Mapping):
+            items = cast(Mapping[object, object], value).items()
+            return {str(key): self.redact_value(str(key), item) for key, item in items}
+        if isinstance(value, list | tuple | set | frozenset):
+            return [self.redact_value("", item) for item in cast(Iterable[object], value)]
+        return self.redact(str(value))
+
     def filter(self, record: logging.LogRecord) -> bool:
-        record.msg = self.redact(record.getMessage())
+        try:
+            message = record.getMessage()
+        except (TypeError, ValueError):
+            # A bad format call must not raise into the caller: stdlib logging only reports it
+            # from inside emit, and filters run before emit.
+            message = f"{record.msg} {record.args!r}"
+        record.msg = self.redact(message)
         record.args = ()
         # Formatter.format reuses a cached exc_text, so the traceback has to be built and
         # redacted here, before any handler formats it.
@@ -58,10 +84,7 @@ class RedactionFilter(logging.Filter):
         if record.exc_text:
             record.exc_text = self.redact(record.exc_text)
         for name, value in _extra_fields(record).items():
-            if name.lower() in CREDENTIAL_KEYS:
-                setattr(record, name, REDACTED)
-            elif isinstance(value, str):
-                setattr(record, name, self.redact(value))
+            setattr(record, name, self.redact_value(name, value))
         return True
 
 
