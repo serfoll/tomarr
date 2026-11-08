@@ -242,6 +242,45 @@ def test_literal_secret_is_redacted_anywhere(
         assert line["note"] == "key is [redacted]"
 
 
+LONG = 100_000
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "a1" * (LONG // 2),
+        "GET /" + "a" * LONG + " HTTP/1.1",
+        "a.-+" * (LONG // 4),
+        '"' * LONG,
+        "'" * LONG,
+        "a" + "?" * LONG,
+        "token=" * (LONG // 6),
+        'password="' + "x" * LONG,
+        "http://" + "h" * LONG,
+        "http://" + "u" * LONG + ":" + "p" * LONG,
+    ],
+    ids=[
+        "alnum-run",
+        "long-request-path",
+        "dot-dash-plus-run",
+        "double-quotes",
+        "single-quotes",
+        "question-marks",
+        "token-repeats",
+        "unterminated-quoted-value",
+        "long-host",
+        "userinfo-without-at",
+    ],
+)
+def test_redaction_stays_fast_on_long_input(text: str) -> None:
+    redaction = tomarr_logging.RedactionFilter([])
+
+    started = time.perf_counter()
+    redaction.redact(text)
+
+    assert time.perf_counter() - started < 0.5
+
+
 def test_ordinary_lines_are_json_and_unchanged(
     capsys: pytest.CaptureFixture[str], log_dir: Path
 ) -> None:

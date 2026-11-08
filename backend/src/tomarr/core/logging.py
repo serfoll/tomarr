@@ -29,7 +29,11 @@ REDACTED = "[redacted]"
 
 _KEY = "|".join(re.escape(key) for key in CREDENTIAL_KEYS)
 _QUERY_STRING = re.compile(r"""(?<=[\w/.~%-])\?[^\s"'<>#]+""")
-_USERINFO_PASSWORD = re.compile(r"(?P<head>[A-Za-z][A-Za-z0-9+.-]*://[^\s/:@]+:)[^\s/@]+(?=@)")
+# The lookbehind lets a match start only where a scheme run starts, so a long run of scheme
+# characters is scanned once instead of once per offset.
+_USERINFO_PASSWORD = re.compile(
+    r"(?P<head>(?<![A-Za-z0-9+.-])[A-Za-z][A-Za-z0-9+.-]*://[^\s/:@]+:)[^\s/@]+(?=@)"
+)
 _QUOTED_PAIR = re.compile(
     rf"""(?P<head>(?P<q>['"])(?:[^'"\s]*[^A-Za-z0-9'"\s])?(?:{_KEY})(?P=q)\s*:\s*(?P<vq>['"]))"""
     r"""(?:\\.|(?!(?P=vq)).)*""",
