@@ -593,7 +593,7 @@
         "type:feature",
         "area:backend"
       ],
-      "body": "## Goal\nRecover from a broken upgrade or disk.\n\n## Scope\n- Scheduled backup of DB and config to `/config/backups`\n- Manual backup and restore\n\n## Acceptance criteria\n- [ ] Restore of a backup produces the same series and settings (tested)\n- [ ] Retention count is a setting\n\n## Refs\n- CONTEXT/PRODUCT.md (MVP scope)"
+      "body": "## Goal\nRecover from a broken upgrade or disk.\n\n## Scope\n- Scheduled backup of DB (SQLite backup API, not a file copy) and config to `/config/backups`, in the `disk` lane and inside the maintenance window when one is set\n- Manual backup and restore\n\n## Acceptance criteria\n- [ ] Restore of a backup produces the same series and settings (tested)\n- [ ] Retention count is a setting\n\n## Refs\n- CONTEXT/PRODUCT.md (MVP scope)"
     }
   ]
 }
