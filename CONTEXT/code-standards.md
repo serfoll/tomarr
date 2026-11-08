@@ -7,7 +7,7 @@ Code shape rules for this repo, scoped to what the linters don't already enforce
 - Type hints on every function signature. pyright runs in strict mode on `src/tomarr`. No `Any`; use `object` or a `Protocol` and narrow it.
 - Pydantic models for API schemas and settings. SQLAlchemy models for the database. Don't use one as the other.
 - All network and file I/O is async. Blocking work (archive extraction, image conversion) runs through `asyncio.to_thread`.
-- Outbound HTTP goes through the client factory in `core/http.py`. Never create an `httpx.AsyncClient` anywhere else.
+- Outbound HTTP goes through the client factory in `core/http.py`. Never create an `httpx2.AsyncClient` anywhere else.
 - No `print`. Use the module logger from `core/logging.py`.
 - Exceptions: raise the domain errors in `core/errors.py` (`ProviderError`, `RateLimited`, `ParseError`, ...). Catch broad exceptions only at a Command or request boundary, and log them there.
 - Settings and secrets are read through the settings service, never from `os.environ` directly outside `core/config.py`.
