@@ -76,7 +76,8 @@ A sign-off is a line "Signed-off-by: Your Name <you@example.com>" in the commit 
 The email must match the commit author email. To fix:
 
   Last commit only:   git commit --amend -s
-  Several commits:    git rebase --signoff origin/main
+  Several commits:    git rebase --signoff HEAD~N
+                      (N is the number of commits in the pull request; its page shows the count)
 
 Then force-push the branch (git push --force-with-lease).
 MSG

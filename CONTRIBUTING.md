@@ -55,4 +55,4 @@ You keep the copyright on your contribution, and it is licensed under AGPL-3.0, 
 
 A workflow named `dco` runs on every pull request. It looks at each commit, skips merge commits, and fails if a commit has no `Signed-off-by` line with the same email as the commit's author. For each failing commit it prints the short SHA, the subject and the fix. Pull requests opened by the repository owner are exempt.
 
-To fix the last commit, run `git commit --amend -s` and force-push your branch. To fix every commit on your branch, run `git rebase --signoff origin/main` and force-push it. Only force-push a branch of your own.
+To fix the last commit, run `git commit --amend -s` and force-push your branch. To fix every commit on your branch, run `git rebase --signoff HEAD~N`, where N is the number of commits in your pull request (its page shows the count), and force-push it. Only force-push a branch of your own.
