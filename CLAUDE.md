@@ -18,13 +18,80 @@ Project Board: https://github.com/users/serfoll/projects/16
 
 ## Stack notes
 
-- Backend: Python 3.13, FastAPI, Pydantic v2, SQLAlchemy 2.0 (typed) with Alembic, SQLite in WAL mode, httpx (async). Package manager: uv. Lint and format: ruff. Types: pyright. Tests: pytest with recorded HTTP fixtures.
+- Backend: Python 3.13, FastAPI, Pydantic v2, SQLAlchemy 2.1 (typed) with Alembic, SQLite in WAL mode, httpx2 (async). Package manager: uv. Lint and format: ruff. Types: pyright. Tests: pytest with recorded HTTP fixtures.
 - Frontend: React and TypeScript in a Vite SPA, TanStack Router, Query and Table. API client generated from the backend's OpenAPI schema. Package manager: pnpm. Lint and format: Biome. Tests: Vitest.
 - LLM: Google Gemini through the official `google-genai` SDK, bring your own key, behind a provider interface.
 - Shipping: one Docker image (multi-arch amd64 and arm64) published to GHCR. Config and database live in `/config`.
 - License: AGPL-3.0.
 
 Design (colors, type, components) is not decided yet. Don't invent a design system; use unstyled headless primitives until `CONTEXT/design/` exists.
+
+## Approved dependencies
+
+Signed off 2026-11-08. Versions are the current stable releases on that date. The lockfile (`uv.lock`, `pnpm-lock.yaml`) is what is installed. "Dev" rows are dev dependencies. "Added by audit" rows were not in the original proposal and can be struck.
+
+### Backend
+
+| Package | Version | Reason |
+|---|---|---|
+| `fastapi` | 0.162.2 | API, OpenAPI schema and built-in SSE (ADR 0001, #11). Plain, not `[standard]` |
+| `uvicorn[standard]` | 0.54.0 | ASGI server. `standard` adds uvloop, httptools and watchfiles for `--reload` (#5) |
+| `pydantic` | 2.14.3 | API schemas, settings, Gemini response schemas (ADR 0001, ADR 0005) |
+| `pydantic-settings` | 2.16.2 | Reads `config.toml` and `TOMARR__SECTION__KEY` overrides (#6) |
+| `sqlalchemy[asyncio]` | 2.1.8 | ORM (ADR 0001, #7). Alembic 1.20.1 supports 2.1. The `asyncio` extra is needed because 2.1 no longer installs greenlet by default |
+| `alembic` | 1.20.1 | Migrations (#7) |
+| `httpx2` | 2.16.0 | Outbound HTTP through `core/http.py` (#10). Replaces `httpx` (last release 2024-12-06); `google-genai` 3.0.0 already requires it. Records and replays with vcrpy 9.4.2 and pytest-recording 0.14.1 (checked 2026-11-08) |
+| `rapidfuzz` | 3.14.6 | Title matching (ADR 0001, #20) |
+| `lxml` | 6.1.3 | Torznab, Newznab, WEBTOON RSS and `ComicInfo.xml`, with schema validation (#29, #36, #45) |
+| `google-genai` | 3.0.0 | Gemini adapter (ADR 0005, #32) |
+| `python-multipart` | 0.0.33 | FastAPI `Form` needs it for the login form (#8). Added by audit |
+| `pwdlib[argon2]` | 0.3.1 | Password hash for the first-run login (#8). FastAPI's docs recommend it with Argon2. Added by audit |
+| `tomli-w` | 1.2.0 | Writes the default `config.toml` on first run, since `tomllib` only reads (#6). Added by audit |
+| `ruff` | 0.17.4 | Dev. Lint and format (#5) |
+| `pyright` | 1.1.414 | Dev. Strict types on `src/tomarr` (#5) |
+| `pytest` | 9.2.0 | Dev. Test runner (#5) |
+| `pytest-asyncio` | 1.4.1.post1 | Dev. Async tests (#5) |
+| `pytest-recording` | 0.14.1 | Dev. Cassettes and `--block-network` (#5) |
+| `pyyaml` | 6.0.3 | Dev. Loads the golden corpus in `tests/fixtures/releases/*.yaml` (#19). Added by audit |
+| `types-lxml` | 2026.2.16 | Dev. lxml ships no types and pyright runs strict. Added by audit |
+
+### Frontend
+
+| Package | Version | Reason |
+|---|---|---|
+| `react`, `react-dom` | 19.3.1 | UI (ADR 0001, #12) |
+| `vite` | 8.3.6 | Build and dev server (#12) |
+| `typescript` | 5.9.3 | Held at 5.x. `openapi-typescript` 7.13.0 peers `^5.x` and newest 5.x is 5.9.3. Revisit when `openapi-typescript` widens its range |
+| `@tanstack/react-router` | 1.170.46 | File routes (#12) |
+| `@tanstack/react-query` | 5.107.1 | Server state (#12) |
+| `@tanstack/react-table` | 9.3.1 | Data tables (Stack notes, #54) |
+| `@tanstack/react-virtual` | 3.14.26 | Virtualized Library list (#54) |
+| `openapi-typescript` | 7.13.0 | Generates API types from the OpenAPI schema (#13) |
+| `openapi-fetch` | 0.17.0 | Typed client over the generated types (#13) |
+| `@tanstack/router-plugin` | 1.169.0 | Vite plugin for file routes (#12). Added by audit |
+| `@vitejs/plugin-react` | 6.2.1 | Vite React plugin (#12). Added by audit |
+| `@types/react`, `@types/react-dom` | 19.3.0 | React types. Added by audit |
+| `@types/node` | 26.6.6 | Node types for `vite.config.ts`. Match the build stage's Node major. Added by audit |
+| `@biomejs/biome` | 2.6.6 | Dev. Lint and format (#12) |
+| `vitest` | 5.1.0 | Dev. Test runner (#12) |
+| `jsdom` | 31.0.0 | Dev. DOM for component tests. Added by audit |
+| `@testing-library/react` | 16.3.3 | Dev. Component tests. Added by audit |
+| `@testing-library/dom` | 10.4.2 | Dev. Peer of `@testing-library/react`. Added by audit |
+
+Vitest 5.1 and jsdom 31 need Node 22.22.2 or later, so the Dockerfile's Node stage must be at least that.
+
+### System
+
+| Package | Version | Reason |
+|---|---|---|
+| `7zip` | 25.01+dfsg-1~deb13u2 | Extracts zip and RAR for Import (#14, #45). Debian main |
+| `7zip-rar` | 25.00+ds-1+deb13u1 | Lets `7z` read CBR and RAR5. Debian drops the RAR code from `7zip`, so this package is in the `non-free` component and the image must enable it |
+
+Base image: `python:3.13-slim` (3.13.18, Debian 13 trixie).
+
+Deferred: `pillow` (the importer issue asks for sign-off once it knows what the images need), `itsdangerous` and `aiosqlite` (#8 and #7 ask for sign-off once the session and database design is chosen).
+
+Scaffold issues install only packages listed here. Any later addition is asked first, then added to this list in the same PR.
 
 ## Commands
 

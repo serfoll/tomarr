@@ -64,7 +64,7 @@ Run commit messages, PR descriptions and any other user-facing text through `/hu
 
 ## Dependencies need sign-off
 
-Don't add a package to `pyproject.toml` or `package.json` without asking first.
+Don't add a package to `pyproject.toml` or `package.json` without asking first. The "Approved dependencies" section of `CLAUDE.md` is the list of record.
 
 ## Ask, don't assume
 
