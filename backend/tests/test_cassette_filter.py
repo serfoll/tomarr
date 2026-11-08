@@ -1,5 +1,4 @@
 from pathlib import Path
-from typing import Any
 
 import pytest
 from vcr import VCR
@@ -11,7 +10,7 @@ HEADER_NAMES = ["authorization", "x-api-key", "x-goog-api-key"]
 PARAM_NAMES = ["apikey", "api_key", "key", "token"]
 
 
-def filtered(vcr_config: dict[str, Any], tmp_path: Path, request: Request) -> Request:
+def filtered(vcr_config: dict[str, list[str]], tmp_path: Path, request: Request) -> Request:
     vcr = VCR(cassette_library_dir=str(tmp_path))
     with vcr.use_cassette("filter", **vcr_config) as cassette:
         result = cassette.filter_request(request)
@@ -20,7 +19,9 @@ def filtered(vcr_config: dict[str, Any], tmp_path: Path, request: Request) -> Re
 
 
 @pytest.mark.parametrize("name", HEADER_NAMES)
-def test_header_value_is_filtered(vcr_config: dict[str, Any], tmp_path: Path, name: str) -> None:
+def test_header_value_is_filtered(
+    vcr_config: dict[str, list[str]], tmp_path: Path, name: str
+) -> None:
     request = Request("GET", "https://example.test/path", None, {name: SECRET})
 
     result = filtered(vcr_config, tmp_path, request)
@@ -29,7 +30,9 @@ def test_header_value_is_filtered(vcr_config: dict[str, Any], tmp_path: Path, na
 
 
 @pytest.mark.parametrize("name", PARAM_NAMES)
-def test_query_value_is_filtered(vcr_config: dict[str, Any], tmp_path: Path, name: str) -> None:
+def test_query_value_is_filtered(
+    vcr_config: dict[str, list[str]], tmp_path: Path, name: str
+) -> None:
     request = Request("GET", f"https://example.test/path?{name}={SECRET}", None, {})
 
     result = filtered(vcr_config, tmp_path, request)
@@ -38,7 +41,9 @@ def test_query_value_is_filtered(vcr_config: dict[str, Any], tmp_path: Path, nam
 
 
 @pytest.mark.parametrize("name", PARAM_NAMES)
-def test_post_value_is_filtered(vcr_config: dict[str, Any], tmp_path: Path, name: str) -> None:
+def test_post_value_is_filtered(
+    vcr_config: dict[str, list[str]], tmp_path: Path, name: str
+) -> None:
     body = f"{name}={SECRET}".encode()
     request = Request("POST", "https://example.test/path", body, {})
 
