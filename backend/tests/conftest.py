@@ -14,6 +14,13 @@ TESTS_DIR = Path(__file__).parent
 UVICORN_LOGGERS = ("uvicorn", "uvicorn.error", "uvicorn.access")
 
 
+class HiddenStr(str):
+    """A string whose repr hides the value, so a failing test cannot print it."""
+
+    def __repr__(self) -> str:
+        return "<hidden>"
+
+
 @pytest.fixture(autouse=True)
 def isolated_environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     for name in [name for name in os.environ if name.startswith("TOMARR__")]:
@@ -40,7 +47,7 @@ def isolated_environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Ite
 def api_key(tmp_path: Path) -> str:
     # Reads config.toml, writing the first-run file if the app has not started yet, so the
     # lifespan that follows loads the same key.
-    return load_settings(tmp_path).auth.apikey
+    return HiddenStr(load_settings(tmp_path).auth.apikey)
 
 
 @pytest.fixture

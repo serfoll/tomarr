@@ -41,7 +41,9 @@ def test_lifespan_redacts_the_generated_api_key(tmp_path: Path) -> None:
         )
         logging.getLogger("tomarr.test").info("calling with %s", apikey)
 
-    assert apikey not in (tmp_path / "logs" / "tomarr.log").read_text(encoding="utf-8")
+    log = (tmp_path / "logs" / "tomarr.log").read_text(encoding="utf-8")
+    leaked = apikey in log
+    assert not leaked
 
 
 def test_lifespan_migrates_the_database_to_head(tmp_path: Path) -> None:

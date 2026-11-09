@@ -50,6 +50,13 @@ def session_cookie(response: httpx2.Response) -> Morsel[str]:
     return cookies["tomarr_session"]
 
 
+def sets_session_cookie(response: httpx2.Response) -> bool:
+    # A bare `in` on the header would print the cookie value in a failure report.
+    return any(
+        header.startswith("tomarr_session=") for header in response.headers.get_list("set-cookie")
+    )
+
+
 def enable_local_bypass(directory: Path) -> None:
     path = directory / "tomarr.db"
     upgrade_to_head(path)
@@ -85,7 +92,9 @@ def test_guarded_route_with_a_wrong_key_is_401(client: TestClient) -> None:
 
 
 def test_guarded_route_with_the_right_key_is_200(client: TestClient, api_key: str) -> None:
-    assert client.get(GUARDED, headers={"X-Api-Key": api_key}).status_code == 200
+    response = client.get(GUARDED, headers={"X-Api-Key": api_key})
+
+    assert response.status_code == 200
 
 
 def test_the_key_in_the_query_string_is_not_accepted(
@@ -94,7 +103,9 @@ def test_the_key_in_the_query_string_is_not_accepted(
     # The client logs the full URL, and the key must not reach a failure report.
     caplog.set_level(logging.WARNING, logger="httpx2")
 
-    assert client.get(GUARDED, params={"apikey": api_key}).status_code == 401
+    response = client.get(GUARDED, params={"apikey": api_key})
+
+    assert response.status_code == 401
 
 
 def test_a_matching_key_passes_without_reading_the_database(
@@ -106,7 +117,9 @@ def test_a_matching_key_passes_without_reading_the_database(
     monkeypatch.setattr(AuthService, "verify_session", unexpected_read)
     monkeypatch.setattr(AuthService, "local_bypass_enabled", unexpected_read)
 
-    assert client.get(GUARDED, headers={"X-Api-Key": api_key}).status_code == 200
+    response = client.get(GUARDED, headers={"X-Api-Key": api_key})
+
+    assert response.status_code == 200
 
 
 def test_health_needs_no_credentials(client: TestClient) -> None:
@@ -190,7 +203,7 @@ def test_setup_sets_the_session_cookie_and_the_next_guarded_call_passes(
 
     assert response.status_code == 204
     assert response.content == b""
-    assert "tomarr_session" in response.headers["set-cookie"]
+    assert sets_session_cookie(response)
     assert client.get(GUARDED).status_code == 200
 
 
@@ -233,7 +246,7 @@ def test_login_with_the_right_pair_sets_the_cookie_and_the_guarded_call_passes(
     response = log_in(client)
 
     assert response.status_code == 204
-    assert "tomarr_session" in response.headers["set-cookie"]
+    assert sets_session_cookie(response)
     assert client.get(GUARDED).status_code == 200
 
 
