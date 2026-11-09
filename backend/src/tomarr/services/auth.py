@@ -8,7 +8,7 @@ from tomarr.core.auth import (
     DUMMY_HASH,
     SessionSigner,
     hash_password,
-    password_fingerprint,
+    session_fingerprint,
     verify_password,
 )
 from tomarr.services.settings import SettingsService, registry
@@ -72,12 +72,8 @@ class AuthService:
         credentials = await self._settings.get(CREDENTIALS)
         if credentials is None:
             return False
-        payload = SessionSigner(credentials.session_secret).read(token, SESSION_MAX_AGE_SECONDS)
-        if payload is None:
-            return False
-        return _same(payload.username, credentials.username) and _same(
-            payload.fingerprint, password_fingerprint(credentials.password_hash)
-        )
+        presented = SessionSigner(credentials.session_secret).read(token, SESSION_MAX_AGE_SECONDS)
+        return presented is not None and _same(presented, _fingerprint(credentials))
 
     async def local_bypass_enabled(self) -> bool:
         return await self._settings.get(LOCAL_BYPASS)
@@ -91,7 +87,11 @@ def _same(left: str, right: str) -> bool:
     return secrets.compare_digest(left.encode(), right.encode())
 
 
-def _issue_session(credentials: Credentials) -> str:
-    return SessionSigner(credentials.session_secret).issue(
-        credentials.username, password_fingerprint(credentials.password_hash)
+def _fingerprint(credentials: Credentials) -> str:
+    return session_fingerprint(
+        credentials.session_secret, credentials.username, credentials.password_hash
     )
+
+
+def _issue_session(credentials: Credentials) -> str:
+    return SessionSigner(credentials.session_secret).issue(_fingerprint(credentials))

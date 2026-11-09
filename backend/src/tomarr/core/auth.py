@@ -1,5 +1,5 @@
 import hashlib
-from dataclasses import dataclass
+import hmac
 from ipaddress import IPv4Network, IPv6Network, ip_address
 
 from itsdangerous import BadData, URLSafeTimedSerializer
@@ -14,12 +14,6 @@ _LOCAL_V4 = tuple(
 _LOCAL_V6 = tuple(IPv6Network(cidr) for cidr in ("::1/128", "fe80::/10", "fc00::/7"))
 
 _password_hash = PasswordHash.recommended()
-
-
-@dataclass(frozen=True)
-class SessionPayload:
-    username: str
-    fingerprint: str
 
 
 def is_local_address(host: str | None) -> bool:
@@ -48,24 +42,21 @@ def verify_password(password: str, password_hash: str) -> bool:
 DUMMY_HASH = hash_password("tomarr-dummy-password")
 
 
-def password_fingerprint(password_hash: str) -> str:
-    return hashlib.sha256(password_hash.encode()).hexdigest()[:16]
+def session_fingerprint(secret: str, username: str, password_hash: str) -> str:
+    message = username.encode() + b"\0" + password_hash.encode()
+    return hmac.new(secret.encode(), message, hashlib.sha256).hexdigest()
 
 
 class SessionSigner:
     def __init__(self, secret: str) -> None:
         self._serializer = URLSafeTimedSerializer(secret, salt=_SESSION_SALT)
 
-    def issue(self, username: str, fingerprint: str) -> str:
-        return self._serializer.dumps([username, fingerprint])
+    def issue(self, fingerprint: str) -> str:
+        return self._serializer.dumps(fingerprint)
 
-    def read(self, token: str, max_age: int) -> SessionPayload | None:
+    def read(self, token: str, max_age: int) -> str | None:
         try:
             data: object = self._serializer.loads(token, max_age=max_age)
         except BadData:
             return None
-        match data:
-            case [str() as username, str() as fingerprint]:
-                return SessionPayload(username, fingerprint)
-            case _:
-                return None
+        return data if isinstance(data, str) else None

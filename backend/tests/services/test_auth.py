@@ -1,14 +1,14 @@
 import asyncio
 import threading
 import time
-from collections.abc import AsyncIterator, Callable
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
 from pydantic import ValidationError
 from sqlalchemy import text
 
-from tomarr.core.auth import SessionSigner, hash_password, password_fingerprint, verify_password
+from tomarr.core.auth import SessionSigner, hash_password, session_fingerprint, verify_password
 from tomarr.core.database import Database, create_database
 from tomarr.core.migrations import upgrade_to_head
 from tomarr.services import auth as auth_module
@@ -30,20 +30,6 @@ DUMMY_SOURCE_PASSWORD = "tomarr-dummy-password"
 @pytest.fixture(scope="module")
 def stored_hash() -> str:
     return hash_password(PASSWORD)
-
-
-@pytest.fixture
-def db_path(tmp_path: Path) -> Path:
-    path = tmp_path / "tomarr.db"
-    upgrade_to_head(path)
-    return path
-
-
-@pytest.fixture
-async def database(db_path: Path) -> AsyncIterator[Database]:
-    db = create_database(db_path)
-    yield db
-    await db.dispose()
 
 
 @pytest.fixture
@@ -134,10 +120,14 @@ async def test_setup_stores_a_hash_and_a_secret_and_returns_a_valid_session(
     credentials = await settings.get(CREDENTIALS)
     assert credentials is not None
     assert credentials.username == USERNAME
-    assert credentials.password_hash.startswith("$argon2")
-    assert len(credentials.session_secret) >= 43
-    assert PASSWORD not in await stored_credentials_json(database)
-    assert await auth.verify_session(token) is True
+    is_argon2 = credentials.password_hash.startswith("$argon2")
+    long_secret = len(credentials.session_secret) >= 43
+    assert is_argon2
+    assert long_secret
+    leaked = PASSWORD in await stored_credentials_json(database)
+    assert not leaked
+    accepted = await auth.verify_session(token)
+    assert accepted
 
 
 async def test_each_setup_generates_its_own_session_secret(
@@ -158,7 +148,8 @@ async def test_each_setup_generates_its_own_session_secret(
 
     assert first is not None
     assert second is not None
-    assert first.session_secret != second.session_secret
+    differ = first.session_secret != second.session_secret
+    assert differ
 
 
 async def test_second_setup_raises_and_keeps_the_first_credentials(
@@ -170,7 +161,8 @@ async def test_second_setup_raises_and_keeps_the_first_credentials(
     with pytest.raises(SetupAlreadyDone):
         await auth.setup("intruder", "another password")
 
-    assert await settings.get(CREDENTIALS) == first
+    unchanged = await settings.get(CREDENTIALS) == first
+    assert unchanged
 
 
 async def test_concurrent_setups_leave_one_winner(
@@ -191,7 +183,8 @@ async def test_concurrent_setups_leave_one_winner(
     credentials = await settings.get(CREDENTIALS)
     assert credentials is not None
     assert credentials.username in {"first", "second"}
-    assert await auth.verify_session(winners[0]) is True
+    accepted = await auth.verify_session(winners[0])
+    assert accepted
 
 
 @pytest.mark.parametrize("set_up_first", [True, False], ids=["after-setup", "before-setup"])
@@ -223,7 +216,8 @@ async def test_login_returns_a_valid_session_for_the_right_pair(
     token = await auth.login(USERNAME, PASSWORD)
 
     assert token is not None
-    assert await auth.verify_session(token) is True
+    accepted = await auth.verify_session(token)
+    assert accepted
 
 
 async def test_login_with_a_wrong_password_returns_none_and_still_hashes(
@@ -276,27 +270,50 @@ async def test_verify_session_rejects_a_token_after_the_password_hash_changes(
         CREDENTIALS, seeded.model_copy(update={"password_hash": hash_password("new password")})
     )
 
-    assert await auth.verify_session(token) is False
+    rejected = await auth.verify_session(token) is False
+    assert rejected
+
+
+async def test_verify_session_rejects_a_token_after_the_username_changes(
+    auth: AuthService, settings: SettingsService, seeded: Credentials
+) -> None:
+    token = await auth.login(USERNAME, PASSWORD)
+    assert token is not None
+
+    await settings.set(CREDENTIALS, seeded.model_copy(update={"username": "someone-else"}))
+
+    rejected = await auth.verify_session(token) is False
+    assert rejected
 
 
 async def test_verify_session_rejects_a_token_signed_with_another_secret(
     auth: AuthService, seeded: Credentials
 ) -> None:
-    forged = SessionSigner("another-secret").issue(
-        USERNAME, password_fingerprint(seeded.password_hash)
-    )
+    fingerprint = session_fingerprint("another-secret", USERNAME, seeded.password_hash)
+    forged = SessionSigner("another-secret").issue(fingerprint)
 
-    assert await auth.verify_session(forged) is False
+    rejected = await auth.verify_session(forged) is False
+    assert rejected
 
 
-async def test_verify_session_rejects_a_token_for_another_username(
+async def test_verify_session_rejects_a_fingerprint_for_another_username(
     auth: AuthService, seeded: Credentials
 ) -> None:
-    other = SessionSigner(seeded.session_secret).issue(
-        "someone-else", password_fingerprint(seeded.password_hash)
-    )
+    fingerprint = session_fingerprint(seeded.session_secret, "someone-else", seeded.password_hash)
+    other = SessionSigner(seeded.session_secret).issue(fingerprint)
 
-    assert await auth.verify_session(other) is False
+    rejected = await auth.verify_session(other) is False
+    assert rejected
+
+
+async def test_verify_session_accepts_the_fingerprint_of_the_stored_credentials(
+    auth: AuthService, seeded: Credentials
+) -> None:
+    fingerprint = session_fingerprint(seeded.session_secret, USERNAME, seeded.password_hash)
+    token = SessionSigner(seeded.session_secret).issue(fingerprint)
+
+    accepted = await auth.verify_session(token)
+    assert accepted
 
 
 async def test_verify_session_rejects_a_token_past_its_max_age(
@@ -307,17 +324,20 @@ async def test_verify_session_rejects_a_token_past_its_max_age(
 
     monkeypatch.setattr(auth_module, "SESSION_MAX_AGE_SECONDS", -1)
 
-    assert await auth.verify_session(token) is False
+    rejected = await auth.verify_session(token) is False
+    assert rejected
 
 
 async def test_verify_session_rejects_when_no_credentials_exist(auth: AuthService) -> None:
-    token = SessionSigner("any-secret").issue(USERNAME, "any-fingerprint")
+    token = SessionSigner("any-secret").issue("any-fingerprint")
 
-    assert await auth.verify_session(token) is False
+    rejected = await auth.verify_session(token) is False
+    assert rejected
 
 
 async def test_verify_session_rejects_garbage(auth: AuthService, seeded: Credentials) -> None:
-    assert await auth.verify_session("not-a-token") is False
+    rejected = await auth.verify_session("not-a-token") is False
+    assert rejected
 
 
 async def test_local_bypass_is_off_by_default(auth: AuthService) -> None:

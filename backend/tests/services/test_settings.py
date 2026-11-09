@@ -1,5 +1,4 @@
 import asyncio
-from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import cast
 
@@ -8,7 +7,6 @@ from pydantic import BaseModel, TypeAdapter, ValidationError
 from sqlalchemy import text
 
 from tomarr.core.database import Database, create_database
-from tomarr.core.migrations import upgrade_to_head
 from tomarr.services.settings import SettingKey, SettingsRegistry, SettingsService
 
 
@@ -16,20 +14,6 @@ class ProwlarrSection(BaseModel):
     url: str
     api_key: str
     categories: list[int]
-
-
-@pytest.fixture
-def db_path(tmp_path: Path) -> Path:
-    path = tmp_path / "tomarr.db"
-    upgrade_to_head(path)
-    return path
-
-
-@pytest.fixture
-async def database(db_path: Path) -> AsyncIterator[Database]:
-    db = create_database(db_path)
-    yield db
-    await db.dispose()
 
 
 @pytest.fixture
