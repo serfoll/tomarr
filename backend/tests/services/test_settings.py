@@ -3,7 +3,7 @@ from pathlib import Path
 from typing import cast
 
 import pytest
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, TypeAdapter, ValidationError
 from sqlalchemy import text
 
 from tomarr.core.database import Database, create_database
@@ -47,22 +47,24 @@ async def assert_round_trip[T](service: SettingsService, key: SettingKey[T], val
 
 
 async def test_int_round_trip(service: SettingsService, registry: SettingsRegistry) -> None:
-    await assert_round_trip(service, registry.declare("port", int, 8080), 9090)
+    await assert_round_trip(service, registry.declare("port", TypeAdapter(int), 8080), 9090)
 
 
 async def test_bool_round_trip(service: SettingsService, registry: SettingsRegistry) -> None:
-    key = registry.declare("enabled", bool, True)
+    key = registry.declare("enabled", TypeAdapter(bool), True)
     await assert_round_trip(service, key, False)
 
 
 async def test_str_round_trip(service: SettingsService, registry: SettingsRegistry) -> None:
-    await assert_round_trip(service, registry.declare("host", str, "localhost"), "tomarr.lan")
+    await assert_round_trip(
+        service, registry.declare("host", TypeAdapter(str), "localhost"), "tomarr.lan"
+    )
 
 
 async def test_optional_str_set_to_none_is_stored_not_defaulted(
     service: SettingsService, registry: SettingsRegistry
 ) -> None:
-    key = registry.declare("proxy", str | None, "http://proxy")
+    key = registry.declare("proxy", TypeAdapter(str | None), "http://proxy")
 
     await service.set(key, None)
 
@@ -70,7 +72,7 @@ async def test_optional_str_set_to_none_is_stored_not_defaulted(
 
 
 async def test_list_round_trip(service: SettingsService, registry: SettingsRegistry) -> None:
-    key = registry.declare("tags", list[str], [])
+    key = registry.declare("tags", TypeAdapter(list[str]), [])
     await assert_round_trip(service, key, ["manga", "webtoon"])
 
 
@@ -78,7 +80,7 @@ async def test_pydantic_model_round_trip(
     service: SettingsService, registry: SettingsRegistry
 ) -> None:
     default = ProwlarrSection(url="", api_key="", categories=[])
-    key = registry.declare("prowlarr", ProwlarrSection, default)
+    key = registry.declare("prowlarr", TypeAdapter(ProwlarrSection), default)
     value = ProwlarrSection(url="http://prowlarr:9696", api_key="abc", categories=[7030, 7020])
 
     await service.set(key, value)
@@ -91,7 +93,7 @@ async def test_pydantic_model_round_trip(
 async def test_get_returns_default_when_never_written(
     service: SettingsService, registry: SettingsRegistry
 ) -> None:
-    key = registry.declare("port", int, 8080)
+    key = registry.declare("port", TypeAdapter(int), 8080)
 
     assert await service.get(key) == 8080
 
@@ -99,7 +101,7 @@ async def test_get_returns_default_when_never_written(
 async def test_second_set_overwrites_the_first(
     database: Database, service: SettingsService, registry: SettingsRegistry
 ) -> None:
-    key = registry.declare("port", int, 8080)
+    key = registry.declare("port", TypeAdapter(int), 8080)
 
     await service.set(key, 1)
     await service.set(key, 2)
@@ -113,7 +115,7 @@ async def test_second_set_overwrites_the_first(
 async def test_stored_value_that_no_longer_fits_raises_on_get(
     database: Database, service: SettingsService, registry: SettingsRegistry
 ) -> None:
-    key = registry.declare("port", int, 8080)
+    key = registry.declare("port", TypeAdapter(int), 8080)
     async with database.session_factory.begin() as session:
         await session.execute(
             text("INSERT INTO setting (key, value) VALUES ('port', :value)"),
@@ -127,7 +129,7 @@ async def test_stored_value_that_no_longer_fits_raises_on_get(
 async def test_set_with_wrong_type_raises_and_keeps_the_stored_value(
     service: SettingsService, registry: SettingsRegistry
 ) -> None:
-    key = registry.declare("port", int, 8080)
+    key = registry.declare("port", TypeAdapter(int), 8080)
     await service.set(key, 9090)
 
     with pytest.raises(ValidationError):
@@ -139,7 +141,7 @@ async def test_set_with_wrong_type_raises_and_keeps_the_stored_value(
 async def test_value_survives_a_new_database_on_the_same_file(
     db_path: Path, service: SettingsService, registry: SettingsRegistry
 ) -> None:
-    key = registry.declare("port", int, 8080)
+    key = registry.declare("port", TypeAdapter(int), 8080)
     await service.set(key, 9090)
 
     reopened = create_database(db_path)
@@ -150,21 +152,21 @@ async def test_value_survives_a_new_database_on_the_same_file(
 
 
 def test_registry_refuses_a_duplicate_name(registry: SettingsRegistry) -> None:
-    registry.declare("port", int, 8080)
+    registry.declare("port", TypeAdapter(int), 8080)
 
     with pytest.raises(ValueError, match="port"):
-        registry.declare("port", str, "x")
+        registry.declare("port", TypeAdapter(str), "x")
 
 
 def test_registry_lists_declared_keys(registry: SettingsRegistry) -> None:
-    port = registry.declare("port", int, 8080)
-    host = registry.declare("host", str, "localhost")
+    port = registry.declare("port", TypeAdapter(int), 8080)
+    host = registry.declare("host", TypeAdapter(str), "localhost")
 
     assert registry.keys() == [port, host]
 
 
 def test_registries_do_not_share_keys() -> None:
     first = SettingsRegistry()
-    first.declare("port", int, 8080)
+    first.declare("port", TypeAdapter(int), 8080)
 
     assert SettingsRegistry().keys() == []
