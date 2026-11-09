@@ -1,5 +1,6 @@
 import logging
 import os
+import sqlite3
 from collections.abc import Iterator
 from pathlib import Path
 
@@ -106,18 +107,50 @@ def test_lifespan_opens_the_database_and_disposes_it_on_shutdown() -> None:
     assert database.engine.pool is not pool
 
 
-def test_lifespan_fails_startup_and_releases_logging_when_migration_fails(
-    monkeypatch: pytest.MonkeyPatch,
+def test_lifespan_turns_on_wal_before_the_first_request(tmp_path: Path) -> None:
+    with TestClient(create_app()):
+        connection = sqlite3.connect(tmp_path / "tomarr.db")
+        try:
+            journal_mode = connection.execute("PRAGMA journal_mode").fetchone()[0]
+        finally:
+            connection.close()
+
+    assert journal_mode == "wal"
+
+
+def test_lifespan_logs_a_failed_migration_fails_startup_and_releases_logging(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     def broken_migration(_path: Path) -> None:
-        raise RuntimeError("migration failed")
+        raise RuntimeError("boom")
 
     monkeypatch.setattr("tomarr.app.upgrade_to_head", broken_migration)
     root = logging.getLogger()
     handlers_before = list(root.handlers)
 
-    with pytest.raises(RuntimeError, match="migration failed"), TestClient(create_app()):
+    with pytest.raises(RuntimeError, match="boom"), TestClient(create_app()):
         pytest.fail("startup should not complete")
+
+    assert root.handlers == handlers_before
+    log = (tmp_path / "logs" / "tomarr.log").read_text(encoding="utf-8")
+    assert "Database startup failed" in log
+    assert "boom" in log
+
+
+async def test_lifespan_releases_logging_when_dispose_raises(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def broken_dispose(_self: Database) -> None:
+        raise RuntimeError("dispose failed")
+
+    monkeypatch.setattr(Database, "dispose", broken_dispose)
+    app = create_app()
+    root = logging.getLogger()
+    handlers_before = list(root.handlers)
+
+    with pytest.raises(RuntimeError, match="dispose failed"):
+        async with lifespan(app):
+            pass
 
     assert root.handlers == handlers_before
 
