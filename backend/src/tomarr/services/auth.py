@@ -1,5 +1,6 @@
 import asyncio
 import secrets
+from collections.abc import Callable
 
 from pydantic import BaseModel, ConfigDict, TypeAdapter
 
@@ -15,6 +16,8 @@ from tomarr.services.settings import SettingsService, registry
 SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
 MIN_PASSWORD_LENGTH = 8
 MAX_CREDENTIAL_LENGTH = 256
+# Each Argon2 call holds about 64 MiB and a worker thread, and login and setup are open routes.
+MAX_CONCURRENT_HASHES = 2
 
 
 class Credentials(BaseModel):
@@ -38,6 +41,7 @@ class AuthService:
         self._settings = settings
         # The container runs one uvicorn process, so a process-local lock is enough.
         self._setup_lock = asyncio.Lock()
+        self._hashing = asyncio.Semaphore(MAX_CONCURRENT_HASHES)
 
     async def setup_required(self) -> bool:
         return await self._settings.get(CREDENTIALS) is None
@@ -48,7 +52,7 @@ class AuthService:
                 raise SetupAlreadyDone
             credentials = Credentials(
                 username=username,
-                password_hash=await asyncio.to_thread(hash_password, password),
+                password_hash=await self._argon2(hash_password, password),
                 session_secret=secrets.token_urlsafe(32),
             )
             await self._settings.set(CREDENTIALS, credentials)
@@ -57,9 +61,9 @@ class AuthService:
     async def login(self, username: str, password: str) -> str | None:
         credentials = await self._settings.get(CREDENTIALS)
         if credentials is None:
-            await asyncio.to_thread(verify_password, password, DUMMY_HASH)
+            await self._argon2(verify_password, password, DUMMY_HASH)
             return None
-        password_ok = await asyncio.to_thread(verify_password, password, credentials.password_hash)
+        password_ok = await self._argon2(verify_password, password, credentials.password_hash)
         if not (_same(username, credentials.username) and password_ok):
             return None
         return _issue_session(credentials)
@@ -77,6 +81,10 @@ class AuthService:
 
     async def local_bypass_enabled(self) -> bool:
         return await self._settings.get(LOCAL_BYPASS)
+
+    async def _argon2[*Args, R](self, work: Callable[[*Args], R], *args: *Args) -> R:
+        async with self._hashing:
+            return await asyncio.to_thread(work, *args)
 
 
 def _same(left: str, right: str) -> bool:

@@ -1,5 +1,7 @@
 import asyncio
-from collections.abc import AsyncIterator
+import threading
+import time
+from collections.abc import AsyncIterator, Callable
 from pathlib import Path
 
 import pytest
@@ -73,6 +75,30 @@ def verify_calls(monkeypatch: pytest.MonkeyPatch) -> list[str]:
 
     monkeypatch.setattr(auth_module, "verify_password", counting_verify)
     return calls
+
+
+@pytest.fixture
+def peak_argon2_calls(monkeypatch: pytest.MonkeyPatch) -> Callable[[], int]:
+    lock = threading.Lock()
+    running = 0
+    peak = 0
+
+    def tracked[**P, R](work: Callable[P, R]) -> Callable[P, R]:
+        def slow(*args: P.args, **kwargs: P.kwargs) -> R:
+            nonlocal running, peak
+            with lock:
+                running += 1
+                peak = max(peak, running)
+            time.sleep(0.05)
+            with lock:
+                running -= 1
+            return work(*args, **kwargs)
+
+        return slow
+
+    monkeypatch.setattr(auth_module, "hash_password", tracked(hash_password))
+    monkeypatch.setattr(auth_module, "verify_password", tracked(verify_password))
+    return lambda: peak
 
 
 async def stored_credentials_json(database: Database) -> str:
@@ -164,6 +190,29 @@ async def test_concurrent_setups_leave_one_winner(
     assert credentials is not None
     assert credentials.username in {"first", "second"}
     assert await auth.verify_session(winners[0]) is True
+
+
+@pytest.mark.parametrize("set_up_first", [True, False], ids=["after-setup", "before-setup"])
+async def test_concurrent_logins_hash_at_most_two_at_a_time(
+    auth: AuthService, peak_argon2_calls: Callable[[], int], set_up_first: bool
+) -> None:
+    if set_up_first:
+        await auth.setup(USERNAME, PASSWORD)
+
+    await asyncio.gather(*(auth.login(USERNAME, "not the password") for _ in range(6)))
+
+    assert peak_argon2_calls() == 2
+
+
+async def test_setup_shares_the_hashing_cap_with_logins(
+    auth: AuthService, peak_argon2_calls: Callable[[], int]
+) -> None:
+    await asyncio.gather(
+        auth.setup(USERNAME, PASSWORD),
+        *(auth.login(USERNAME, "not the password") for _ in range(4)),
+    )
+
+    assert peak_argon2_calls() == 2
 
 
 async def test_login_returns_a_valid_session_for_the_right_pair(
