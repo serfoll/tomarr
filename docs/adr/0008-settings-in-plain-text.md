@@ -13,6 +13,6 @@ Settings are stored as plain text values in the database. The settings service i
 ## Consequences
 
 - Anyone with read access to `/config` can read all secrets.
-- As a consequence of storing secrets in plain text, structured logging must redact sensitive values before they reach the log file or stdout.
+- The redaction filter has to keep secrets out of the logs.
 - The API must never return full secret values in responses. Later work that adds the settings page and API endpoints must enforce this.
-- Encrypting the database is a future option if backups or databases start being shared, if the settings page returns stored values, or if a second user is added. Encrypting means a new dependency and a key that backups must carry.
+- Encrypting the values is a future option if backups or databases start being shared, if the settings page returns stored values, or if a second user is added. Encrypting means a new dependency and a key that backups must carry.
