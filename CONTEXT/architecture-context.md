@@ -113,7 +113,7 @@ See `docs/adr/0005`.
 
 ## Auth
 
-Every API request needs either the `X-Api-Key` header or a session cookie from the form login. An option allows unauthenticated access from local addresses, off by default.
+Every API request needs either the `X-Api-Key` header or a session cookie from the form login. An option allows unauthenticated access from local addresses, off by default. The API key is accepted in the header only. First-run credentials are set through `POST /api/v1/auth/setup`. Settings `auth.credentials` and `auth.local_bypass` control credentials and local bypass. `GET /api/v1/system/health` is the one open system route.
 
 ## Error handling and logging
 
