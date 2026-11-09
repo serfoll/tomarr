@@ -5,8 +5,7 @@ from pathlib import Path
 
 import httpx2
 import pytest
-from fastapi import FastAPI
-from fastapi.params import Depends
+from fastapi import Depends, FastAPI, params
 from fastapi.routing import iter_route_contexts
 from fastapi.testclient import TestClient
 
@@ -71,7 +70,7 @@ def unguarded_paths(app: FastAPI) -> list[str]:
         if route.path is None or not route.path.startswith(API) or route.path in PUBLIC_PATHS:
             continue
         # A route kind without dependencies (a mount, a plain Starlette route) has no guard.
-        dependencies: list[Depends] = getattr(route, "dependencies", [])
+        dependencies: list[params.Depends] = getattr(route, "dependencies", [])
         if not any(dependency.dependency is require_auth for dependency in dependencies):
             paths.append(route.path)
     return paths
@@ -131,6 +130,20 @@ def test_openapi_marks_guarded_routes_with_the_api_key_header_scheme() -> None:
     assert schema["paths"][GUARDED]["get"]["security"] == [{"APIKeyHeader": []}]
     scheme = schema["components"]["securitySchemes"]["APIKeyHeader"]
     assert scheme == {"type": "apiKey", "in": "header", "name": "X-Api-Key"}
+
+
+def test_openapi_declares_the_form_field_limits() -> None:
+    # FastAPI answers an empty form value as a missing field, so the minimum of 1 only shows here.
+    schemas = create_app().openapi()["components"]["schemas"]
+
+    def limits(schema: str, field: str) -> tuple[int, int]:
+        properties = schemas[schema]["properties"][field]
+        return properties["minLength"], properties["maxLength"]
+
+    assert limits("Body_login_api_v1_auth_login_post", "username") == (1, 256)
+    assert limits("Body_login_api_v1_auth_login_post", "password") == (1, 256)
+    assert limits("Body_setup_api_v1_auth_setup_post", "username") == (1, 256)
+    assert limits("Body_setup_api_v1_auth_setup_post", "password") == (8, 256)
 
 
 def test_auth_status_before_setup_without_credentials(client: TestClient) -> None:
@@ -359,4 +372,11 @@ def test_the_walk_flags_an_unguarded_route() -> None:
     def leak() -> None:
         return None
 
-    assert unguarded_paths(app) == [f"{API}/leak"]
+    def other_dependency() -> None:
+        return None
+
+    @app.get(f"{API}/other", dependencies=[Depends(other_dependency)])
+    def other() -> None:
+        return None
+
+    assert unguarded_paths(app) == [f"{API}/leak", f"{API}/other"]

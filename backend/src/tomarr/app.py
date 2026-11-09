@@ -36,8 +36,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
             raise
         app.state.database = database
         app.state.settings = settings
-        app.state.auth = AuthService(SettingsService(database.session_factory))
-        if await app.state.auth.setup_required():
+        auth_service = AuthService(SettingsService(database.session_factory))
+        app.state.auth = auth_service
+        if await auth_service.setup_required():
             logger.warning(
                 "No credentials are set. Open Tomarr in a browser to create the first login."
             )
