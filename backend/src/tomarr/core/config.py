@@ -15,6 +15,7 @@ from pydantic_settings import (
 )
 
 CONFIG_FILE_NAME = "config.toml"
+API_KEY_ENV = "TOMARR__AUTH__APIKEY"
 
 LogLevel = Literal["debug", "info", "warning", "error", "critical"]
 
@@ -42,7 +43,7 @@ class Server(BaseModel):
 class Auth(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    apikey: str
+    apikey: str = Field(min_length=1)
 
 
 class Log(BaseModel):
@@ -63,7 +64,8 @@ class Settings(BaseSettings):
     )
 
     server: Server = Server()
-    auth: Auth
+    # Validating the empty default makes a missing key fail as auth.apikey, not as auth.
+    auth: Auth = Field(default_factory=dict, validate_default=True)
     log: Log = Log()
 
     @classmethod
@@ -87,7 +89,9 @@ def config_dir() -> Path:
 def load_settings(config_dir: Path) -> Settings:
     path = config_dir / CONFIG_FILE_NAME
     if not path.exists():
-        _write_first_run_file(path)
+        # A key given through the environment is not copied to disk.
+        key_from_env = any(name.upper() == API_KEY_ENV for name in os.environ)
+        _write_first_run_file(path, with_api_key=not key_from_env)
 
     class _FileSettings(Settings):
         model_config = SettingsConfigDict(toml_file=path)
@@ -100,13 +104,12 @@ def load_settings(config_dir: Path) -> Settings:
         raise ValueError(f"{path} is not valid TOML: {error}") from None
 
 
-def _write_first_run_file(path: Path) -> None:
+def _write_first_run_file(path: Path, *, with_api_key: bool) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    defaults = {
-        "server": Server().model_dump(),
-        "auth": {"apikey": secrets.token_urlsafe(32)},
-        "log": Log().model_dump(),
-    }
+    defaults: dict[str, dict[str, object]] = {"server": Server().model_dump()}
+    if with_api_key:
+        defaults["auth"] = {"apikey": secrets.token_urlsafe(32)}
+    defaults["log"] = Log().model_dump()
     descriptor = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(descriptor, "wb") as file:
         tomli_w.dump(defaults, file)

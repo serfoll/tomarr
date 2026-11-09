@@ -60,7 +60,7 @@ def test_env_overrides_one_field_and_leaves_the_rest_from_the_file(
     assert settings.log.level == "debug"
 
 
-def test_env_api_key_on_first_run_wins_but_the_file_keeps_the_generated_key(
+def test_env_api_key_on_first_run_is_used_and_not_written_to_the_file(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setenv("TOMARR__AUTH__APIKEY", "from-env")
@@ -69,7 +69,35 @@ def test_env_api_key_on_first_run_wins_but_the_file_keeps_the_generated_key(
 
     written = tomllib.loads((tmp_path / "config.toml").read_text())
     assert settings.auth.apikey == "from-env"
-    assert re.fullmatch(r"[A-Za-z0-9_-]{43}", written["auth"]["apikey"])
+    assert written == {
+        "server": {"bindaddress": "0.0.0.0", "port": 6464, "urlbase": ""},
+        "log": {"level": "info"},
+    }
+    assert "from-env" not in (tmp_path / "config.toml").read_text()
+
+
+def test_dropping_the_env_api_key_later_fails_startup_naming_the_field(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("TOMARR__AUTH__APIKEY", "from-env")
+    load_settings(tmp_path)
+    monkeypatch.delenv("TOMARR__AUTH__APIKEY")
+
+    with pytest.raises(ValidationError, match=re.escape("auth.apikey")):
+        load_settings(tmp_path)
+
+
+@pytest.mark.parametrize("source", ["env", "file"])
+def test_an_empty_api_key_is_rejected(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, source: str
+) -> None:
+    if source == "env":
+        monkeypatch.setenv("TOMARR__AUTH__APIKEY", "")
+    else:
+        (tmp_path / "config.toml").write_text('[auth]\napikey = ""\n')
+
+    with pytest.raises(ValidationError, match=re.escape("auth.apikey")):
+        load_settings(tmp_path)
 
 
 def test_config_dir_comes_from_the_environment(
