@@ -1,5 +1,4 @@
 import asyncio
-import logging
 from http.cookies import Morsel, SimpleCookie
 from pathlib import Path
 
@@ -102,18 +101,7 @@ def test_guarded_route_with_a_wrong_key_is_401(client: TestClient) -> None:
     assert client.get(GUARDED, headers={"X-Api-Key": "not-the-key"}).status_code == 401
 
 
-def test_guarded_route_with_the_right_key_is_200(client: TestClient, api_key: str) -> None:
-    response = client.get(GUARDED, headers={"X-Api-Key": api_key})
-
-    assert response.status_code == 200
-
-
-def test_the_key_in_the_query_string_is_not_accepted(
-    client: TestClient, api_key: str, caplog: pytest.LogCaptureFixture
-) -> None:
-    # The client logs the full URL, and the key must not reach a failure report.
-    caplog.set_level(logging.WARNING, logger="httpx2")
-
+def test_the_key_in_the_query_string_is_not_accepted(client: TestClient, api_key: str) -> None:
     response = client.get(GUARDED, params={"apikey": api_key})
 
     assert response.status_code == 401

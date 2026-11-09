@@ -183,9 +183,11 @@ async def test_concurrent_setups_leave_one_winner(
     )
 
     winners = [r for r in results if isinstance(r, str)]
-    losers = [r for r in results if isinstance(r, SetupAlreadyDone)]
-    assert len(winners) == 1
-    assert len(losers) == 1
+    loser_count = sum(isinstance(r, SetupAlreadyDone) for r in results)
+    # Counted apart from the list, so a failure cannot print the session tokens.
+    winner_count = len(winners)
+    assert winner_count == 1
+    assert loser_count == 1
     credentials = await settings.get(CREDENTIALS)
     assert credentials is not None
     assert credentials.username in {"first", "second"}
@@ -227,35 +229,41 @@ async def test_login_returns_a_valid_session_for_the_right_pair(
 async def test_login_with_a_wrong_password_returns_none_and_still_hashes(
     auth: AuthService, seeded: Credentials, verify_calls: list[str]
 ) -> None:
-    assert await auth.login(USERNAME, "not the password") is None
+    rejected = await auth.login(USERNAME, "not the password") is None
+    assert rejected
     assert len(verify_calls) == 1
 
 
 async def test_login_with_a_wrong_username_returns_none_and_still_hashes(
     auth: AuthService, seeded: Credentials, verify_calls: list[str]
 ) -> None:
-    assert await auth.login("someone-else", PASSWORD) is None
+    rejected = await auth.login("someone-else", PASSWORD) is None
+    assert rejected
     assert len(verify_calls) == 1
 
 
 async def test_login_with_a_non_ascii_username_returns_none(
     auth: AuthService, seeded: Credentials
 ) -> None:
-    assert await auth.login("lecteuré", PASSWORD) is None
+    rejected = await auth.login("lecteuré", PASSWORD) is None
+    assert rejected
 
 
 async def test_login_before_setup_returns_none_and_still_hashes(
     auth: AuthService, verify_calls: list[str]
 ) -> None:
-    assert await auth.login(USERNAME, PASSWORD) is None
+    rejected = await auth.login(USERNAME, PASSWORD) is None
+    assert rejected
     assert len(verify_calls) == 1
 
 
 async def test_login_before_setup_stays_none_for_the_dummy_source_password(
     auth: AuthService,
 ) -> None:
-    assert await auth.login(USERNAME, DUMMY_SOURCE_PASSWORD) is None
-    assert await auth.login("", DUMMY_SOURCE_PASSWORD) is None
+    rejected = await auth.login(USERNAME, DUMMY_SOURCE_PASSWORD) is None
+    assert rejected
+    rejected = await auth.login("", DUMMY_SOURCE_PASSWORD) is None
+    assert rejected
 
 
 async def test_verify_session_rejects_a_token_after_the_password_hash_changes(
