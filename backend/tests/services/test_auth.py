@@ -329,3 +329,12 @@ def test_credentials_are_frozen() -> None:
 
     with pytest.raises(ValidationError):
         credentials.username = "other"
+
+
+def test_credentials_repr_hides_the_hash_and_the_secret() -> None:
+    shown = repr(
+        Credentials(username="u", password_hash="hash-value", session_secret="secret-value")
+    )
+
+    assert "hash-value" not in shown
+    assert "secret-value" not in shown

@@ -2,7 +2,7 @@ import asyncio
 import secrets
 from collections.abc import Callable
 
-from pydantic import BaseModel, ConfigDict, TypeAdapter
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
 
 from tomarr.core.auth import (
     DUMMY_HASH,
@@ -24,8 +24,8 @@ class Credentials(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     username: str
-    password_hash: str
-    session_secret: str
+    password_hash: str = Field(repr=False)
+    session_secret: str = Field(repr=False)
 
 
 CREDENTIALS = registry.declare("auth.credentials", TypeAdapter(Credentials | None), None)
