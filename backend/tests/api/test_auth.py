@@ -18,12 +18,13 @@ from tomarr.services.settings import SettingsService
 
 API = "/api/v1"
 GUARDED = f"{API}/system/status"
-PUBLIC_PATHS = {
-    f"{API}/auth/login",
-    f"{API}/auth/logout",
-    f"{API}/auth/setup",
-    f"{API}/auth/status",
-    f"{API}/system/health",
+PUBLIC_ROUTES = {
+    ("POST", f"{API}/auth/login"),
+    ("POST", f"{API}/auth/logout"),
+    ("POST", f"{API}/auth/setup"),
+    ("GET", f"{API}/auth/status"),
+    ("GET", f"{API}/system/health"),
+    ("HEAD", f"{API}/system/health"),
 }
 USERNAME = "reader"
 PASSWORD = "correct horse battery"
@@ -84,7 +85,10 @@ def enable_local_bypass(directory: Path) -> None:
 def unguarded_paths(app: FastAPI) -> list[str]:
     paths: list[str] = []
     for route in iter_route_contexts(app.routes):
-        if route.path is None or not route.path.startswith(API) or route.path in PUBLIC_PATHS:
+        if route.path is None or not route.path.startswith(API):
+            continue
+        methods: set[str] = getattr(route, "methods", None) or set()
+        if methods and all((method, route.path) in PUBLIC_ROUTES for method in methods):
             continue
         # A route kind without dependencies (a mount, a plain Starlette route) has no guard.
         dependencies: list[params.Depends] = getattr(route, "dependencies", [])
@@ -142,6 +146,54 @@ def test_openapi_marks_guarded_routes_with_the_api_key_header_scheme() -> None:
     assert schema["paths"][GUARDED]["get"]["security"] == [{"APIKeyHeader": []}]
     scheme = schema["components"]["securitySchemes"]["APIKeyHeader"]
     assert scheme == {"type": "apiKey", "in": "header", "name": "X-Api-Key"}
+
+
+def test_openapi_auth_status_is_public_and_guarded_routes_keep_the_security_entry() -> None:
+    paths = create_app().openapi()["paths"]
+
+    assert "security" not in paths[f"{API}/auth/status"]["get"]
+    assert paths[GUARDED]["get"]["security"] == [{"APIKeyHeader": []}]
+
+
+ERROR_DETAIL_REF = {"$ref": "#/components/schemas/ErrorDetail"}
+
+
+def test_openapi_declares_401_on_guarded_operations() -> None:
+    responses = create_app().openapi()["paths"][GUARDED]["get"]["responses"]
+
+    assert responses["401"]["description"]
+    assert responses["401"]["content"]["application/json"]["schema"] == ERROR_DETAIL_REF
+
+
+def test_openapi_declares_401_on_login_and_409_on_setup() -> None:
+    paths = create_app().openapi()["paths"]
+    login = paths[f"{API}/auth/login"]["post"]["responses"]
+    setup = paths[f"{API}/auth/setup"]["post"]["responses"]
+
+    assert login["401"]["description"]
+    assert login["401"]["content"]["application/json"]["schema"] == ERROR_DETAIL_REF
+    assert setup["409"]["description"]
+    assert setup["409"]["content"]["application/json"]["schema"] == ERROR_DETAIL_REF
+
+
+@pytest.mark.parametrize("path", [f"{API}/system/health", f"{API}/auth/status"])
+def test_openapi_does_not_declare_401_on_public_reads(path: str) -> None:
+    assert "401" not in create_app().openapi()["paths"][path]["get"]["responses"]
+
+
+def test_openapi_describes_the_error_detail_shape() -> None:
+    schema = create_app().openapi()["components"]["schemas"]["ErrorDetail"]
+
+    assert schema["properties"] == {"detail": {"type": "string", "title": "Detail"}}
+    assert schema["required"] == ["detail"]
+
+
+def test_openapi_keeps_the_success_codes_of_login_setup_and_status() -> None:
+    paths = create_app().openapi()["paths"]
+
+    assert "204" in paths[f"{API}/auth/login"]["post"]["responses"]
+    assert "204" in paths[f"{API}/auth/setup"]["post"]["responses"]
+    assert "200" in paths[f"{API}/auth/status"]["get"]["responses"]
 
 
 def test_openapi_declares_the_form_field_limits() -> None:
@@ -287,8 +339,8 @@ def test_login_miss_is_401_with_one_body_for_wrong_username_and_wrong_password(
     assert wrong_password.status_code == 401
     assert wrong_username.status_code == 401
     assert wrong_password.content == wrong_username.content
-    assert "set-cookie" not in wrong_password.headers
-    assert "set-cookie" not in wrong_username.headers
+    assert not sets_session_cookie(wrong_password)
+    assert not sets_session_cookie(wrong_username)
     assert client.get(GUARDED).status_code == 401
 
 
@@ -329,8 +381,9 @@ def test_logout_clears_the_cookie_and_the_guarded_call_fails(client: TestClient)
 
     assert response.status_code == 204
     cleared = session_cookie(response)
-    assert cleared.value == ""
-    assert cleared["max-age"] == "0"
+    emptied = cleared.value == ""
+    assert emptied
+    assert dict(cleared)["max-age"] == "0"
     assert client.get(GUARDED).status_code == 401
 
 
@@ -347,13 +400,14 @@ def test_a_garbage_session_cookie_is_401(client: TestClient) -> None:
 
 
 def test_session_cookie_attributes_over_http(client: TestClient) -> None:
-    cookie = session_cookie(set_up(client))
+    # The attributes alone, so a failure report cannot print the cookie value.
+    attributes = dict(session_cookie(set_up(client)))
 
-    assert cookie["httponly"] is True
-    assert cookie["samesite"] == "lax"
-    assert cookie["max-age"] == "2592000"
-    assert cookie["path"] == "/"
-    assert not cookie["secure"]
+    assert attributes["httponly"] is True
+    assert attributes["samesite"] == "lax"
+    assert attributes["max-age"] == "2592000"
+    assert attributes["path"] == "/"
+    assert not attributes["secure"]
 
 
 def test_session_cookie_is_secure_over_https() -> None:
@@ -361,8 +415,8 @@ def test_session_cookie_is_secure_over_https() -> None:
         set_up_response = set_up(secure_client)
         logout_response = secure_client.post(f"{API}/auth/logout")
 
-    assert session_cookie(set_up_response)["secure"] is True
-    assert session_cookie(logout_response)["secure"] is True
+    assert dict(session_cookie(set_up_response))["secure"] is True
+    assert dict(session_cookie(logout_response))["secure"] is True
 
 
 def test_bypass_is_off_by_default() -> None:
@@ -432,3 +486,13 @@ def test_the_walk_flags_an_unguarded_route() -> None:
         return None
 
     assert unguarded_paths(app) == [f"{API}/leak", f"{API}/other"]
+
+
+def test_the_walk_flags_an_unguarded_method_on_a_public_path() -> None:
+    app = create_app()
+
+    @app.delete(f"{API}/system/health")
+    def remove() -> None:
+        return None
+
+    assert unguarded_paths(app) == [f"{API}/system/health"]

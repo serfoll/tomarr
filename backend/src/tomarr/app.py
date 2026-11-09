@@ -3,7 +3,7 @@ import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import APIRouter, Depends, FastAPI
+from fastapi import APIRouter, Depends, FastAPI, status
 
 from tomarr.api import auth, system
 from tomarr.core.config import config_dir, load_settings
@@ -53,7 +53,15 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
 def create_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
-    protected = APIRouter(dependencies=[Depends(auth.require_auth)])
+    protected = APIRouter(
+        dependencies=[Depends(auth.require_auth)],
+        responses={
+            status.HTTP_401_UNAUTHORIZED: {
+                "model": auth.ErrorDetail,
+                "description": "Missing or wrong API key, or no valid session.",
+            }
+        },
+    )
     protected.include_router(system.router)
     app.include_router(protected, prefix="/api/v1")
     app.include_router(auth.router, prefix="/api/v1")

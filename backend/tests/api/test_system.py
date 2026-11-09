@@ -29,3 +29,23 @@ def test_status_is_in_openapi_with_system_status_schema() -> None:
 
     schema = operation["responses"]["200"]["content"]["application/json"]["schema"]
     assert schema == {"$ref": "#/components/schemas/SystemStatus"}
+
+
+def test_health_answers_head_without_credentials_and_with_an_empty_body(
+    client: TestClient,
+) -> None:
+    response = client.head("/api/v1/system/health")
+
+    assert response.status_code == 200
+    assert response.content == b""
+
+
+def test_health_still_answers_get_with_ok(client: TestClient) -> None:
+    response = client.get("/api/v1/system/health")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "ok"}
+
+
+def test_openapi_shows_only_get_for_health() -> None:
+    assert set(create_app().openapi()["paths"]["/api/v1/system/health"]) == {"get"}

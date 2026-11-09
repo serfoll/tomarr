@@ -32,6 +32,10 @@ class AuthStatus(BaseModel):
     authenticated: bool
 
 
+class ErrorDetail(BaseModel):
+    detail: str
+
+
 def get_auth_service(request: Request) -> AuthService:
     auth: AuthService = request.app.state.auth
     return auth
@@ -73,14 +77,22 @@ def _from_local_peer(request: Request) -> bool:
 
 
 @router.get("/status", response_model=AuthStatus)
-async def get_status(request: Request, api_key: ApiKey, auth: AuthServiceDep) -> AuthStatus:
+async def get_status(request: Request, auth: AuthServiceDep) -> AuthStatus:
+    # Read by hand instead of through ApiKey, so OpenAPI does not mark this public route as guarded.
+    api_key = request.headers.get("x-api-key")
     return AuthStatus(
         setup_required=await auth.setup_required(),
         authenticated=await is_authenticated(request, api_key, auth),
     )
 
 
-@router.post("/setup", status_code=status.HTTP_204_NO_CONTENT)
+@router.post(
+    "/setup",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        status.HTTP_409_CONFLICT: {"model": ErrorDetail, "description": "Setup is already done."}
+    },
+)
 async def setup(
     request: Request,
     response: Response,
@@ -97,7 +109,16 @@ async def setup(
     _set_session_cookie(request, response, token)
 
 
-@router.post("/login", status_code=status.HTTP_204_NO_CONTENT)
+@router.post(
+    "/login",
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses={
+        status.HTTP_401_UNAUTHORIZED: {
+            "model": ErrorDetail,
+            "description": "Wrong username or password.",
+        }
+    },
+)
 async def login(
     request: Request,
     response: Response,
