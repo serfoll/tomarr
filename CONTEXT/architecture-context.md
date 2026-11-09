@@ -109,7 +109,7 @@ See `docs/adr/0005`.
 
 ## Configuration and storage
 
-`/config` holds `tomarr.db`, `config.toml`, `logs/` and `backups/`. `config.toml` holds only what's needed before the database opens: bind address, port, URL base, API key, log level. It has three sections: `[server]` with `bindaddress`, `port` and `urlbase`, `[auth]` with `apikey`, and `[log]` with `level`. Everything else is a setting in the database, edited in the UI. Environment variables override `config.toml` (`TOMARR__SERVER__PORT` style), written `TOMARR__SECTION__KEY`, so the log level is `TOMARR__LOG__LEVEL`. The log file is `/config/logs/tomarr.log`. The container runs as PUID/PGID from the environment.
+`/config` holds `tomarr.db`, `config.toml`, `logs/` and `backups/`. The database is SQLite with WAL (write-ahead logging) and foreign keys enabled for every connection. Migrations are applied on startup from `src/tomarr/migrations/` before the app accepts requests. `config.toml` holds only what's needed before the database opens: bind address, port, URL base, API key, log level. It has three sections: `[server]` with `bindaddress`, `port` and `urlbase`, `[auth]` with `apikey`, and `[log]` with `level`. Everything else is a setting in the database, edited in the UI. Settings are read and written through `SettingsService`, and all setting keys are declared through its registry. Secrets are stored as plain text values. See `docs/adr/0008`. Environment variables override `config.toml` (`TOMARR__SERVER__PORT` style), written `TOMARR__SECTION__KEY`, so the log level is `TOMARR__LOG__LEVEL`. The log file is `/config/logs/tomarr.log`. The container runs as PUID/PGID from the environment.
 
 ## Auth
 
