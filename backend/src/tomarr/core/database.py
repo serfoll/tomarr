@@ -2,13 +2,14 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from sqlalchemy import URL, event
+from sqlalchemy.engine.interfaces import DBAPIConnection
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy.pool import ConnectionPoolEntry, PoolProxiedConnection
+from sqlalchemy.pool import ConnectionPoolEntry
 
 
 @dataclass(frozen=True)
@@ -27,7 +28,7 @@ def create_database(path: Path) -> Database:
     return Database(engine=engine, session_factory=session_factory)
 
 
-def _set_pragmas(dbapi_connection: PoolProxiedConnection, _record: ConnectionPoolEntry) -> None:
+def _set_pragmas(dbapi_connection: DBAPIConnection, _record: ConnectionPoolEntry) -> None:
     # Foreign keys is per connection, and journal_mode cannot change inside a transaction. The
     # sqlite3 driver opens no transaction before a PRAGMA in its default (legacy) mode, so both
     # run cleanly here. The autocommit=False connect arg would break that, so it is not set.
