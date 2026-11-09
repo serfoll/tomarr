@@ -16,7 +16,11 @@ from tomarr.services.auth import (
 )
 
 SESSION_COOKIE = "tomarr_session"
-FORWARDING_HEADERS = ("x-forwarded-for", "forwarded", "x-real-ip")
+# Any of these means a proxy is in front, so the peer address says nothing about the client.
+PROXY_HEADER_PREFIXES = ("x-forwarded-", "forwarded")
+PROXY_HEADERS = frozenset({"x-real-ip", "cf-connecting-ip", "true-client-ip", "x-client-ip", "via"})
+# A search, not a match: the value needs one non-whitespace character anywhere.
+NOT_BLANK = r"\S"
 
 router = APIRouter(prefix="/auth")
 
@@ -35,10 +39,11 @@ def get_auth_service(request: Request) -> AuthService:
 
 ApiKey = Annotated[str | None, Depends(api_key_header)]
 AuthServiceDep = Annotated[AuthService, Depends(get_auth_service)]
-Username = Annotated[str, Form(min_length=1, max_length=MAX_CREDENTIAL_LENGTH)]
+Username = Annotated[str, Form(min_length=1, max_length=MAX_CREDENTIAL_LENGTH, pattern=NOT_BLANK)]
 LoginPassword = Annotated[str, Form(min_length=1, max_length=MAX_CREDENTIAL_LENGTH)]
 SetupPassword = Annotated[
-    str, Form(min_length=MIN_PASSWORD_LENGTH, max_length=MAX_CREDENTIAL_LENGTH)
+    str,
+    Form(min_length=MIN_PASSWORD_LENGTH, max_length=MAX_CREDENTIAL_LENGTH, pattern=NOT_BLANK),
 ]
 
 
@@ -60,7 +65,9 @@ async def require_auth(request: Request, api_key: ApiKey, auth: AuthServiceDep) 
 
 
 def _from_local_peer(request: Request) -> bool:
-    if any(header in request.headers for header in FORWARDING_HEADERS):
+    if any(
+        name.startswith(PROXY_HEADER_PREFIXES) or name in PROXY_HEADERS for name in request.headers
+    ):
         return False
     return request.client is not None and is_local_address(request.client.host)
 

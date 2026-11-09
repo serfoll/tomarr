@@ -29,7 +29,18 @@ PUBLIC_PATHS = {
 USERNAME = "reader"
 PASSWORD = "correct horse battery"
 LOCAL_PEER = ("192.168.1.5", 50000)
-FORWARDING_HEADERS = ("X-Forwarded-For", "Forwarded", "X-Real-IP")
+PROXY_HEADERS = (
+    "X-Forwarded-For",
+    "X-Forwarded-Host",
+    "X-Forwarded-Proto",
+    "Forwarded",
+    "Forwarded-Host",
+    "X-Real-IP",
+    "CF-Connecting-IP",
+    "True-Client-IP",
+    "X-Client-IP",
+    "Via",
+)
 
 
 def set_up(
@@ -226,14 +237,40 @@ def test_setup_accepts_the_boundary_lengths(
 
 @pytest.mark.parametrize(
     ("username", "password"),
-    [("", PASSWORD), (USERNAME, "1234567"), ("u" * 257, PASSWORD), (USERNAME, "p" * 257)],
-    ids=["empty-username", "short-password", "long-username", "long-password"],
+    [
+        ("", PASSWORD),
+        (USERNAME, "1234567"),
+        ("u" * 257, PASSWORD),
+        (USERNAME, "p" * 257),
+        ("   ", PASSWORD),
+        (USERNAME, " " * 8),
+        (USERNAME, "\t \n" * 3),
+    ],
+    ids=[
+        "empty-username",
+        "short-password",
+        "long-username",
+        "long-password",
+        "blank-username",
+        "blank-password",
+        "whitespace-password",
+    ],
 )
 def test_setup_rejects_out_of_range_fields_and_stays_open(
     client: TestClient, username: str, password: str
 ) -> None:
     assert set_up(client, username, password).status_code == 422
     assert client.get(f"{API}/auth/status").json()["setup_required"] is True
+
+
+def test_setup_stores_a_password_with_spaces_as_given(client: TestClient) -> None:
+    spaced = "  a b c d  "
+
+    assert set_up(client, USERNAME, spaced).status_code == 204
+
+    client.cookies.clear()
+    assert log_in(client, USERNAME, spaced).status_code == 204
+    assert log_in(client, USERNAME, spaced.strip()).status_code == 401
 
 
 def test_login_with_the_right_pair_sets_the_cookie_and_the_guarded_call_passes(
@@ -267,16 +304,30 @@ def test_login_miss_is_401_with_one_body_for_wrong_username_and_wrong_password(
     assert client.get(GUARDED).status_code == 401
 
 
+def test_login_with_a_blank_or_short_wrong_password_is_401(client: TestClient) -> None:
+    set_up(client)
+    client.cookies.clear()
+
+    assert log_in(client, USERNAME, " ").status_code == 401
+    assert log_in(client, USERNAME, "x").status_code == 401
+
+
 def test_login_before_setup_is_401(client: TestClient) -> None:
     assert log_in(client).status_code == 401
 
 
 @pytest.mark.parametrize(
     ("username", "password"),
-    [("", PASSWORD), (USERNAME, ""), ("u" * 257, PASSWORD), (USERNAME, "p" * 257)],
-    ids=["empty-username", "empty-password", "long-username", "long-password"],
+    [
+        ("", PASSWORD),
+        (USERNAME, ""),
+        ("u" * 257, PASSWORD),
+        (USERNAME, "p" * 257),
+        ("   ", PASSWORD),
+    ],
+    ids=["empty-username", "empty-password", "long-username", "long-password", "blank-username"],
 )
-def test_login_rejects_empty_and_over_long_fields(
+def test_login_rejects_empty_blank_and_over_long_fields(
     client: TestClient, username: str, password: str
 ) -> None:
     assert log_in(client, username, password).status_code == 422
@@ -346,8 +397,8 @@ def test_bypass_does_not_let_a_public_client_in(tmp_path: Path) -> None:
         assert remote.get(GUARDED).status_code == 401
 
 
-@pytest.mark.parametrize("header", FORWARDING_HEADERS)
-def test_bypass_is_refused_when_a_forwarding_header_is_present(tmp_path: Path, header: str) -> None:
+@pytest.mark.parametrize("header", PROXY_HEADERS)
+def test_bypass_is_refused_when_a_proxy_header_is_present(tmp_path: Path, header: str) -> None:
     enable_local_bypass(tmp_path)
 
     with TestClient(create_app(), client=LOCAL_PEER) as local:
