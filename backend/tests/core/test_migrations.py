@@ -1,4 +1,5 @@
 import logging
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -10,6 +11,7 @@ from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, inspect, text
 
+from tomarr.core.database import create_database
 from tomarr.core.migrations import SCRIPT_LOCATION, upgrade_to_head
 from tomarr.domain.base import Base
 from tomarr.domain.setting import Setting
@@ -128,3 +130,34 @@ def test_autogenerate_runs_in_batch_mode(tmp_path: Path) -> None:
     command.revision(_config(path), autogenerate=True, process_revision_directives=capture)
 
     assert options["render_as_batch"] is True
+
+
+@pytest.mark.parametrize("name", ["a?b", "a%b", "a#b", "a b", "設定ä"])
+async def test_odd_characters_in_the_config_path(tmp_path: Path, name: str) -> None:
+    folder = tmp_path / name
+    folder.mkdir()
+    path = folder / "tomarr.db"
+
+    upgrade_to_head(path)
+    database = create_database(path)
+    try:
+        async with database.engine.connect() as connection:
+            await connection.execute(text("SELECT count(*) FROM setting"))
+    finally:
+        await database.dispose()
+
+    assert _entries(tmp_path) == [name]
+    assert "setting" in _tables(path)
+
+
+def _entries(folder: Path) -> list[str]:
+    return sorted(entry.name for entry in folder.iterdir())
+
+
+def _tables(path: Path) -> list[str]:
+    # The standard library driver takes the path as is, with no URL parsing in between.
+    connection = sqlite3.connect(path)
+    try:
+        return [row[0] for row in connection.execute("SELECT name FROM sqlite_master")]
+    finally:
+        connection.close()

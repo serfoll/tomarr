@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from pathlib import Path
 
-from sqlalchemy import event
+from sqlalchemy import URL, event
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -21,7 +21,7 @@ class Database:
 
 
 def create_database(path: Path) -> Database:
-    engine = create_async_engine(f"sqlite+aiosqlite:///{path}")
+    engine = create_async_engine(URL.create("sqlite+aiosqlite", database=str(path)))
     event.listen(engine.sync_engine, "connect", _set_pragmas)
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
     return Database(engine=engine, session_factory=session_factory)

@@ -1,5 +1,5 @@
 from alembic import context
-from sqlalchemy import create_engine
+from sqlalchemy import URL, create_engine
 from sqlalchemy.pool import NullPool
 
 # Imported for its side effect: the model registers itself on Base.metadata.
@@ -10,8 +10,10 @@ from tomarr.domain.base import Base
 config = context.config
 
 
-def _database_url() -> str:
-    url = config.get_main_option("sqlalchemy.url")
+def _database_url() -> URL | str:
+    url: URL | str | None = config.attributes.get("url")
+    if url is None:
+        url = config.get_main_option("sqlalchemy.url")
     if url is None:
         url = context.get_x_argument(as_dictionary=True).get("url")
     if url is None:
