@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import cast
@@ -96,6 +97,32 @@ async def test_get_returns_default_when_never_written(
     key = registry.declare("port", TypeAdapter(int), 8080)
 
     assert await service.get(key) == 8080
+
+
+async def test_mutable_default_is_not_shared_between_callers(
+    service: SettingsService, registry: SettingsRegistry
+) -> None:
+    key = registry.declare("tags", TypeAdapter(list[str]), [])
+
+    (await service.get(key)).append("changed")
+
+    assert await service.get(key) == []
+    assert key.default == []
+
+
+async def test_concurrent_sets_all_land(
+    service: SettingsService, registry: SettingsRegistry
+) -> None:
+    keys = [registry.declare(f"key{i}", TypeAdapter(int), -1) for i in range(60)]
+    shared = registry.declare("shared", TypeAdapter(int), -1)
+
+    await asyncio.gather(
+        *(service.set(key, i) for i, key in enumerate(keys)),
+        *(service.set(shared, i) for i in range(60)),
+    )
+
+    assert [await service.get(key) for key in keys] == list(range(60))
+    assert await service.get(shared) in range(60)
 
 
 async def test_second_set_overwrites_the_first(

@@ -1,3 +1,4 @@
+import copy
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
@@ -45,7 +46,8 @@ class SettingsService:
         async with self._session_factory() as session:
             row = await session.get(Setting, key.name)
         if row is None:
-            return key.default
+            # A copy, so a caller changing a list or model default does not change it for the next.
+            return copy.deepcopy(key.default)
         return key.adapter.validate_python(row.value)
 
     async def set[T](self, key: SettingKey[T], value: T) -> None:
