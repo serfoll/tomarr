@@ -1,0 +1,282 @@
+import asyncio
+from collections.abc import AsyncIterator
+from pathlib import Path
+
+import pytest
+from pydantic import ValidationError
+from sqlalchemy import text
+
+from tomarr.core.auth import SessionSigner, hash_password, password_fingerprint, verify_password
+from tomarr.core.database import Database, create_database
+from tomarr.core.migrations import upgrade_to_head
+from tomarr.services import auth as auth_module
+from tomarr.services.auth import (
+    CREDENTIALS,
+    LOCAL_BYPASS,
+    AuthService,
+    Credentials,
+    SetupAlreadyDone,
+)
+from tomarr.services.settings import SettingsService, registry
+
+USERNAME = "reader"
+PASSWORD = "correct horse battery"
+# The source string of core.auth.DUMMY_HASH. Logging in with it must never succeed.
+DUMMY_SOURCE_PASSWORD = "tomarr-dummy-password"
+
+
+@pytest.fixture(scope="module")
+def stored_hash() -> str:
+    return hash_password(PASSWORD)
+
+
+@pytest.fixture
+def db_path(tmp_path: Path) -> Path:
+    path = tmp_path / "tomarr.db"
+    upgrade_to_head(path)
+    return path
+
+
+@pytest.fixture
+async def database(db_path: Path) -> AsyncIterator[Database]:
+    db = create_database(db_path)
+    yield db
+    await db.dispose()
+
+
+@pytest.fixture
+def settings(database: Database) -> SettingsService:
+    return SettingsService(database.session_factory)
+
+
+@pytest.fixture
+def auth(settings: SettingsService) -> AuthService:
+    return AuthService(settings)
+
+
+@pytest.fixture
+async def seeded(settings: SettingsService, stored_hash: str) -> Credentials:
+    credentials = Credentials(
+        username=USERNAME, password_hash=stored_hash, session_secret="seeded-secret"
+    )
+    await settings.set(CREDENTIALS, credentials)
+    return credentials
+
+
+@pytest.fixture
+def verify_calls(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    calls: list[str] = []
+
+    def counting_verify(password: str, password_hash: str) -> bool:
+        calls.append(password_hash)
+        return verify_password(password, password_hash)
+
+    monkeypatch.setattr(auth_module, "verify_password", counting_verify)
+    return calls
+
+
+async def stored_credentials_json(database: Database) -> str:
+    async with database.session_factory() as session:
+        result = await session.execute(
+            text("SELECT value FROM setting WHERE key = 'auth.credentials'")
+        )
+        return str(result.scalar_one())
+
+
+def test_keys_are_declared_on_the_registry() -> None:
+    # SettingsRegistry.keys() is not a dict method, the registry is not iterable.
+    names = {key.name for key in registry.keys()}  # noqa: SIM118
+
+    assert {"auth.credentials", "auth.local_bypass"} <= names
+
+
+async def test_setup_required_is_true_on_a_fresh_database(auth: AuthService) -> None:
+    assert await auth.setup_required() is True
+
+
+async def test_setup_required_is_false_after_setup(auth: AuthService) -> None:
+    await auth.setup(USERNAME, PASSWORD)
+
+    assert await auth.setup_required() is False
+
+
+async def test_setup_stores_a_hash_and_a_secret_and_returns_a_valid_session(
+    auth: AuthService, settings: SettingsService, database: Database
+) -> None:
+    token = await auth.setup(USERNAME, PASSWORD)
+
+    credentials = await settings.get(CREDENTIALS)
+    assert credentials is not None
+    assert credentials.username == USERNAME
+    assert credentials.password_hash.startswith("$argon2")
+    assert len(credentials.session_secret) >= 43
+    assert PASSWORD not in await stored_credentials_json(database)
+    assert await auth.verify_session(token) is True
+
+
+async def test_each_setup_generates_its_own_session_secret(
+    auth: AuthService, settings: SettingsService, tmp_path: Path
+) -> None:
+    other_path = tmp_path / "other.db"
+    upgrade_to_head(other_path)
+    other_db = create_database(other_path)
+    try:
+        other_settings = SettingsService(other_db.session_factory)
+        await auth.setup(USERNAME, PASSWORD)
+        await AuthService(other_settings).setup(USERNAME, PASSWORD)
+
+        first = await settings.get(CREDENTIALS)
+        second = await other_settings.get(CREDENTIALS)
+    finally:
+        await other_db.dispose()
+
+    assert first is not None
+    assert second is not None
+    assert first.session_secret != second.session_secret
+
+
+async def test_second_setup_raises_and_keeps_the_first_credentials(
+    auth: AuthService, settings: SettingsService
+) -> None:
+    await auth.setup(USERNAME, PASSWORD)
+    first = await settings.get(CREDENTIALS)
+
+    with pytest.raises(SetupAlreadyDone):
+        await auth.setup("intruder", "another password")
+
+    assert await settings.get(CREDENTIALS) == first
+
+
+async def test_concurrent_setups_leave_one_winner(
+    auth: AuthService, settings: SettingsService
+) -> None:
+    results = await asyncio.gather(
+        auth.setup("first", "first password"),
+        auth.setup("second", "second password"),
+        return_exceptions=True,
+    )
+
+    winners = [r for r in results if isinstance(r, str)]
+    losers = [r for r in results if isinstance(r, SetupAlreadyDone)]
+    assert len(winners) == 1
+    assert len(losers) == 1
+    credentials = await settings.get(CREDENTIALS)
+    assert credentials is not None
+    assert credentials.username in {"first", "second"}
+    assert await auth.verify_session(winners[0]) is True
+
+
+async def test_login_returns_a_valid_session_for_the_right_pair(
+    auth: AuthService, seeded: Credentials
+) -> None:
+    token = await auth.login(USERNAME, PASSWORD)
+
+    assert token is not None
+    assert await auth.verify_session(token) is True
+
+
+async def test_login_with_a_wrong_password_returns_none_and_still_hashes(
+    auth: AuthService, seeded: Credentials, verify_calls: list[str]
+) -> None:
+    assert await auth.login(USERNAME, "not the password") is None
+    assert len(verify_calls) == 1
+
+
+async def test_login_with_a_wrong_username_returns_none_and_still_hashes(
+    auth: AuthService, seeded: Credentials, verify_calls: list[str]
+) -> None:
+    assert await auth.login("someone-else", PASSWORD) is None
+    assert len(verify_calls) == 1
+
+
+async def test_login_with_a_non_ascii_username_returns_none(
+    auth: AuthService, seeded: Credentials
+) -> None:
+    assert await auth.login("lecteuré", PASSWORD) is None
+
+
+async def test_login_before_setup_returns_none_and_still_hashes(
+    auth: AuthService, verify_calls: list[str]
+) -> None:
+    assert await auth.login(USERNAME, PASSWORD) is None
+    assert len(verify_calls) == 1
+
+
+async def test_login_before_setup_stays_none_for_the_dummy_source_password(
+    auth: AuthService,
+) -> None:
+    assert await auth.login(USERNAME, DUMMY_SOURCE_PASSWORD) is None
+    assert await auth.login("", DUMMY_SOURCE_PASSWORD) is None
+
+
+async def test_verify_session_rejects_a_token_after_the_password_hash_changes(
+    auth: AuthService, settings: SettingsService, seeded: Credentials
+) -> None:
+    token = await auth.login(USERNAME, PASSWORD)
+    assert token is not None
+
+    await settings.set(
+        CREDENTIALS, seeded.model_copy(update={"password_hash": hash_password("new password")})
+    )
+
+    assert await auth.verify_session(token) is False
+
+
+async def test_verify_session_rejects_a_token_signed_with_another_secret(
+    auth: AuthService, seeded: Credentials
+) -> None:
+    forged = SessionSigner("another-secret").issue(
+        USERNAME, password_fingerprint(seeded.password_hash)
+    )
+
+    assert await auth.verify_session(forged) is False
+
+
+async def test_verify_session_rejects_a_token_for_another_username(
+    auth: AuthService, seeded: Credentials
+) -> None:
+    other = SessionSigner(seeded.session_secret).issue(
+        "someone-else", password_fingerprint(seeded.password_hash)
+    )
+
+    assert await auth.verify_session(other) is False
+
+
+async def test_verify_session_rejects_a_token_past_its_max_age(
+    auth: AuthService, seeded: Credentials, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    token = await auth.login(USERNAME, PASSWORD)
+    assert token is not None
+
+    monkeypatch.setattr(auth_module, "SESSION_MAX_AGE_SECONDS", -1)
+
+    assert await auth.verify_session(token) is False
+
+
+async def test_verify_session_rejects_when_no_credentials_exist(auth: AuthService) -> None:
+    token = SessionSigner("any-secret").issue(USERNAME, "any-fingerprint")
+
+    assert await auth.verify_session(token) is False
+
+
+async def test_verify_session_rejects_garbage(auth: AuthService, seeded: Credentials) -> None:
+    assert await auth.verify_session("not-a-token") is False
+
+
+async def test_local_bypass_is_off_by_default(auth: AuthService) -> None:
+    assert await auth.local_bypass_enabled() is False
+
+
+async def test_local_bypass_is_on_after_the_setting_is_written(
+    auth: AuthService, settings: SettingsService
+) -> None:
+    await settings.set(LOCAL_BYPASS, True)
+
+    assert await auth.local_bypass_enabled() is True
+
+
+def test_credentials_are_frozen() -> None:
+    credentials = Credentials(username="u", password_hash="h", session_secret="s")
+
+    with pytest.raises(ValidationError):
+        credentials.username = "other"
