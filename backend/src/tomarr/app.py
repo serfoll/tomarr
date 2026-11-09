@@ -3,13 +3,15 @@ import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import APIRouter, Depends, FastAPI
 
-from tomarr.api import system
+from tomarr.api import auth, system
 from tomarr.core.config import config_dir, load_settings
 from tomarr.core.database import Database, create_database
 from tomarr.core.logging import close_logging, configure_logging
 from tomarr.core.migrations import upgrade_to_head
+from tomarr.services.auth import AuthService
+from tomarr.services.settings import SettingsService
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +35,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
             logger.exception("Database startup failed")
             raise
         app.state.database = database
+        app.state.settings = settings
+        auth_service = AuthService(SettingsService(database.session_factory))
+        app.state.auth = auth_service
+        if await auth_service.setup_required():
+            logger.warning(
+                "No credentials are set. Open Tomarr in a browser to create the first login."
+            )
         yield
     finally:
         try:
@@ -44,5 +53,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
 def create_app() -> FastAPI:
     app = FastAPI(lifespan=lifespan)
-    app.include_router(system.router, prefix="/api/v1")
+    protected = APIRouter(dependencies=[Depends(auth.require_auth)])
+    protected.include_router(system.router)
+    app.include_router(protected, prefix="/api/v1")
+    app.include_router(auth.router, prefix="/api/v1")
+    app.include_router(system.public_router, prefix="/api/v1")
     return app
