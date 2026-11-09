@@ -275,6 +275,7 @@ def test_logout_needs_no_session(client: TestClient) -> None:
 
 def test_a_garbage_session_cookie_is_401(client: TestClient) -> None:
     set_up(client)
+    client.cookies.clear()
     client.cookies.set("tomarr_session", "garbage")
 
     assert client.get(GUARDED).status_code == 401
