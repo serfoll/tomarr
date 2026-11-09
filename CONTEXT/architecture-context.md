@@ -113,7 +113,7 @@ See `docs/adr/0005`.
 
 ## Auth
 
-Every API request needs either the `X-Api-Key` header or a session cookie from the form login. An option allows unauthenticated access from local addresses, off by default. The API key is accepted in the header only. First-run credentials are set through `POST /api/v1/auth/setup`. Settings `auth.credentials` and `auth.local_bypass` control credentials and local bypass. `GET /api/v1/system/health` is the one open system route.
+Every API request needs either the `X-Api-Key` header or a session cookie from the form login. An option allows unauthenticated access from local addresses, off by default. The API key is accepted in the header only. First-run credentials are set through `POST /api/v1/auth/setup`. Settings `auth.credentials` and `auth.local_bypass` control credentials and local bypass. `GET /api/v1/system/health` is the one open system route. The local bypass judges only the connecting address, so behind a reverse proxy that adds no forwarding headers every request looks local, and the option should stay off. The session cookie is marked `Secure` only when the request reaches Tomarr over HTTPS, so behind a proxy that terminates TLS the server must trust the proxy headers for the flag to apply (#14 sets this up).
 
 ## Error handling and logging
 
