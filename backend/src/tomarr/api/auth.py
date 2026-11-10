@@ -1,18 +1,19 @@
 import secrets
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Form, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, Form, Request, Response, status
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel
 
+from tomarr.api.errors import ErrorResponse
 from tomarr.core.auth import is_local_address
 from tomarr.core.config import Settings
+from tomarr.core.errors import InvalidCredentials, NotAuthenticated
 from tomarr.services.auth import (
     MAX_CREDENTIAL_LENGTH,
     MIN_PASSWORD_LENGTH,
     SESSION_MAX_AGE_SECONDS,
     AuthService,
-    SetupAlreadyDone,
 )
 
 SESSION_COOKIE = "tomarr_session"
@@ -30,10 +31,6 @@ api_key_header = APIKeyHeader(name="X-Api-Key", auto_error=False)
 class AuthStatus(BaseModel):
     setup_required: bool
     authenticated: bool
-
-
-class ErrorDetail(BaseModel):
-    detail: str
 
 
 def get_auth_service(request: Request) -> AuthService:
@@ -65,7 +62,7 @@ async def is_authenticated(request: Request, api_key: str | None, auth: AuthServ
 
 async def require_auth(request: Request, api_key: ApiKey, auth: AuthServiceDep) -> None:
     if not await is_authenticated(request, api_key, auth):
-        raise api_key_header.make_not_authenticated_error()
+        raise NotAuthenticated
 
 
 def _from_local_peer(request: Request) -> bool:
@@ -90,7 +87,7 @@ async def get_status(request: Request, auth: AuthServiceDep) -> AuthStatus:
     "/setup",
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
-        status.HTTP_409_CONFLICT: {"model": ErrorDetail, "description": "Setup is already done."}
+        status.HTTP_409_CONFLICT: {"model": ErrorResponse, "description": "Setup is already done."}
     },
 )
 async def setup(
@@ -100,12 +97,7 @@ async def setup(
     username: Username,
     password: SetupPassword,
 ) -> None:
-    try:
-        token = await auth.setup(username, password)
-    except SetupAlreadyDone:
-        raise HTTPException(
-            status.HTTP_409_CONFLICT, "Setup is already done. Log in with the existing username."
-        ) from None
+    token = await auth.setup(username, password)
     _set_session_cookie(request, response, token)
 
 
@@ -114,7 +106,7 @@ async def setup(
     status_code=status.HTTP_204_NO_CONTENT,
     responses={
         status.HTTP_401_UNAUTHORIZED: {
-            "model": ErrorDetail,
+            "model": ErrorResponse,
             "description": "Wrong username or password.",
         }
     },
@@ -128,9 +120,7 @@ async def login(
 ) -> None:
     token = await auth.login(username, password)
     if token is None:
-        raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED, "Wrong username or password. Check both and try again."
-        )
+        raise InvalidCredentials
     _set_session_cookie(request, response, token)
 
 

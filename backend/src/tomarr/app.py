@@ -6,6 +6,8 @@ from contextlib import asynccontextmanager
 from fastapi import APIRouter, Depends, FastAPI, status
 
 from tomarr.api import auth, system
+from tomarr.api.errors import ErrorResponse, document_error_responses, install_error_handlers
+from tomarr.api.request_id import RequestIdMiddleware
 from tomarr.core.config import config_dir, load_settings
 from tomarr.core.database import Database, create_database
 from tomarr.core.logging import close_logging, configure_logging
@@ -52,12 +54,23 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(lifespan=lifespan)
+    app = FastAPI(
+        lifespan=lifespan,
+        responses={
+            status.HTTP_500_INTERNAL_SERVER_ERROR: {
+                "model": ErrorResponse,
+                "description": "Unexpected error. The log has the details under the request ID.",
+            }
+        },
+    )
+    app.add_middleware(RequestIdMiddleware)
+    install_error_handlers(app)
+    document_error_responses(app)
     protected = APIRouter(
         dependencies=[Depends(auth.require_auth)],
         responses={
             status.HTTP_401_UNAUTHORIZED: {
-                "model": auth.ErrorDetail,
+                "model": ErrorResponse,
                 "description": "Missing or wrong API key, or no valid session.",
             }
         },

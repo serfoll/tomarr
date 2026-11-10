@@ -68,6 +68,12 @@ def sets_session_cookie(response: httpx2.Response) -> bool:
     )
 
 
+def error_code(response: httpx2.Response) -> str:
+    body = response.json()
+    assert set(body) == {"code", "message", "request_id"}
+    return body["code"]
+
+
 def enable_local_bypass(directory: Path) -> None:
     path = directory / "tomarr.db"
     upgrade_to_head(path)
@@ -97,8 +103,12 @@ def unguarded_paths(app: FastAPI) -> list[str]:
     return paths
 
 
-def test_guarded_route_without_credentials_is_401(client: TestClient) -> None:
-    assert client.get(GUARDED).status_code == 401
+def test_guarded_route_without_credentials_is_401_not_authenticated(client: TestClient) -> None:
+    response = client.get(GUARDED)
+
+    assert response.status_code == 401
+    assert error_code(response) == "not_authenticated"
+    assert response.headers["www-authenticate"] == "APIKey"
 
 
 def test_guarded_route_with_a_wrong_key_is_401(client: TestClient) -> None:
@@ -155,14 +165,14 @@ def test_openapi_auth_status_is_public_and_guarded_routes_keep_the_security_entr
     assert paths[GUARDED]["get"]["security"] == [{"APIKeyHeader": []}]
 
 
-ERROR_DETAIL_REF = {"$ref": "#/components/schemas/ErrorDetail"}
+ERROR_RESPONSE_REF = {"$ref": "#/components/schemas/ErrorResponse"}
 
 
 def test_openapi_declares_401_on_guarded_operations() -> None:
     responses = create_app().openapi()["paths"][GUARDED]["get"]["responses"]
 
     assert responses["401"]["description"]
-    assert responses["401"]["content"]["application/json"]["schema"] == ERROR_DETAIL_REF
+    assert responses["401"]["content"]["application/json"]["schema"] == ERROR_RESPONSE_REF
 
 
 def test_openapi_declares_401_on_login_and_409_on_setup() -> None:
@@ -171,9 +181,9 @@ def test_openapi_declares_401_on_login_and_409_on_setup() -> None:
     setup = paths[f"{API}/auth/setup"]["post"]["responses"]
 
     assert login["401"]["description"]
-    assert login["401"]["content"]["application/json"]["schema"] == ERROR_DETAIL_REF
+    assert login["401"]["content"]["application/json"]["schema"] == ERROR_RESPONSE_REF
     assert setup["409"]["description"]
-    assert setup["409"]["content"]["application/json"]["schema"] == ERROR_DETAIL_REF
+    assert setup["409"]["content"]["application/json"]["schema"] == ERROR_RESPONSE_REF
 
 
 @pytest.mark.parametrize("path", [f"{API}/system/health", f"{API}/auth/status"])
@@ -181,11 +191,16 @@ def test_openapi_does_not_declare_401_on_public_reads(path: str) -> None:
     assert "401" not in create_app().openapi()["paths"][path]["get"]["responses"]
 
 
-def test_openapi_describes_the_error_detail_shape() -> None:
-    schema = create_app().openapi()["components"]["schemas"]["ErrorDetail"]
+def test_openapi_describes_the_error_response_shape() -> None:
+    schemas = create_app().openapi()["components"]["schemas"]
 
-    assert schema["properties"] == {"detail": {"type": "string", "title": "Detail"}}
-    assert schema["required"] == ["detail"]
+    assert schemas["ErrorResponse"]["properties"] == {
+        "code": {"$ref": "#/components/schemas/ErrorCode"},
+        "message": {"type": "string", "title": "Message"},
+        "request_id": {"type": "string", "title": "Request Id"},
+    }
+    assert schemas["ErrorResponse"]["required"] == ["code", "message", "request_id"]
+    assert "ErrorDetail" not in schemas
 
 
 def test_openapi_keeps_the_success_codes_of_login_setup_and_status() -> None:
@@ -258,10 +273,13 @@ def test_setup_sets_the_session_cookie_and_the_next_guarded_call_passes(
     assert client.get(GUARDED).status_code == 200
 
 
-def test_a_second_setup_is_409(client: TestClient) -> None:
+def test_a_second_setup_is_409_setup_already_done(client: TestClient) -> None:
     set_up(client)
 
-    assert set_up(client, "another", "another password").status_code == 409
+    response = set_up(client, "another", "another password")
+
+    assert response.status_code == 409
+    assert error_code(response) == "setup_already_done"
 
 
 @pytest.mark.parametrize(
@@ -299,7 +317,10 @@ def test_setup_accepts_the_boundary_lengths(
 def test_setup_rejects_out_of_range_fields_and_stays_open(
     client: TestClient, username: str, password: str
 ) -> None:
-    assert set_up(client, username, password).status_code == 422
+    response = set_up(client, username, password)
+
+    assert response.status_code == 400
+    assert error_code(response) == "validation_failed"
     assert client.get(f"{API}/auth/status").json()["setup_required"] is True
 
 
@@ -338,7 +359,9 @@ def test_login_miss_is_401_with_one_body_for_wrong_username_and_wrong_password(
 
     assert wrong_password.status_code == 401
     assert wrong_username.status_code == 401
-    assert wrong_password.content == wrong_username.content
+    assert error_code(wrong_password) == "invalid_credentials"
+    assert error_code(wrong_password) == error_code(wrong_username)
+    assert wrong_password.json()["message"] == wrong_username.json()["message"]
     assert not sets_session_cookie(wrong_password)
     assert not sets_session_cookie(wrong_username)
     assert client.get(GUARDED).status_code == 401
@@ -370,7 +393,10 @@ def test_login_before_setup_is_401(client: TestClient) -> None:
 def test_login_rejects_empty_blank_and_over_long_fields(
     client: TestClient, username: str, password: str
 ) -> None:
-    assert log_in(client, username, password).status_code == 422
+    response = log_in(client, username, password)
+
+    assert response.status_code == 400
+    assert error_code(response) == "validation_failed"
 
 
 def test_logout_clears_the_cookie_and_the_guarded_call_fails(client: TestClient) -> None:
