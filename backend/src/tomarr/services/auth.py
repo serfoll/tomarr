@@ -11,6 +11,7 @@ from tomarr.core.auth import (
     session_fingerprint,
     verify_password,
 )
+from tomarr.core.errors import SetupAlreadyDone
 from tomarr.services.settings import SettingsService, registry
 
 SESSION_MAX_AGE_SECONDS = 30 * 24 * 60 * 60
@@ -30,10 +31,6 @@ class Credentials(BaseModel):
 
 CREDENTIALS = registry.declare("auth.credentials", TypeAdapter(Credentials | None), None)
 LOCAL_BYPASS = registry.declare("auth.local_bypass", TypeAdapter(bool), False)
-
-
-class SetupAlreadyDone(Exception):
-    pass
 
 
 class AuthService:

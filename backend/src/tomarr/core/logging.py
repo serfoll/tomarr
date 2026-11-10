@@ -3,6 +3,7 @@ import logging
 import re
 import sys
 from collections.abc import Iterable, Mapping
+from contextvars import ContextVar
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
@@ -50,6 +51,8 @@ _RECORD_ATTRS = frozenset(vars(logging.makeLogRecord({}))) | {"message", "asctim
 
 _installed: list[logging.Handler] = []
 
+request_id_var: ContextVar[str] = ContextVar("request_id")
+
 
 def _extra_fields(record: logging.LogRecord) -> dict[str, object]:
     return {name: value for name, value in vars(record).items() if name not in _RECORD_ATTRS}
@@ -59,6 +62,14 @@ def _names_a_credential(name: str) -> bool:
     # Whole words only, so usage counts such as "input_tokens" stay readable.
     words = f"_{name.lower().replace('-', '_')}_"
     return any(key in words for key in _CREDENTIAL_NAMES)
+
+
+class RequestIdFilter(logging.Filter):
+    def filter(self, record: logging.LogRecord) -> bool:
+        request_id = request_id_var.get(None)
+        if request_id is not None:
+            record.request_id = request_id
+        return True
 
 
 class RedactionFilter(logging.Filter):
@@ -129,6 +140,7 @@ class _JsonLinesFormatter(logging.Formatter):
 def configure_logging(level: str, log_dir: Path, secrets: Iterable[str]) -> None:
     close_logging()
     log_dir.mkdir(parents=True, exist_ok=True)
+    request_id = RequestIdFilter()
     redaction = RedactionFilter(secrets)
     formatter = _JsonLinesFormatter()
     handlers: list[logging.Handler] = [
@@ -142,6 +154,7 @@ def configure_logging(level: str, log_dir: Path, secrets: Iterable[str]) -> None
     ]
     root = logging.getLogger()
     for handler in handlers:
+        handler.addFilter(request_id)
         handler.addFilter(redaction)
         handler.setFormatter(formatter)
         root.addHandler(handler)
