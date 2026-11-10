@@ -10,6 +10,7 @@ from sqlalchemy import text
 
 from tomarr.core.auth import SessionSigner, hash_password, session_fingerprint, verify_password
 from tomarr.core.database import Database, create_database
+from tomarr.core.errors import SetupAlreadyDone
 from tomarr.core.migrations import upgrade_to_head
 from tomarr.services import auth as auth_module
 from tomarr.services.auth import (
@@ -17,7 +18,6 @@ from tomarr.services.auth import (
     LOCAL_BYPASS,
     AuthService,
     Credentials,
-    SetupAlreadyDone,
 )
 from tomarr.services.settings import SettingsService, registry
 
