@@ -47,6 +47,7 @@ Signed off 2026-11-08. Versions are the current stable releases on that date. Th
 | `google-genai` | 3.0.0 | Gemini adapter (ADR 0005, #32) |
 | `python-multipart` | 0.0.33 | FastAPI `Form` needs it for the login form (#8). Added by audit |
 | `pwdlib[argon2]` | 0.3.1 | Password hash for the first-run login (#8). FastAPI's docs recommend it with Argon2. Added by audit |
+| `itsdangerous` | 2.2.0 | Signs the session cookie (#8). Signed off 2026-11-09 |
 | `tomli-w` | 1.2.0 | Writes the default `config.toml` on first run, since `tomllib` only reads (#6). Added by audit |
 | `ruff` | 0.17.4 | Dev. Lint and format (#5) |
 | `pyright` | 1.1.414 | Dev. Strict types on `src/tomarr` (#5) |
@@ -92,7 +93,7 @@ Vitest 5.1 and jsdom 31 set the Node floor for the Dockerfile's Node stage: 22.2
 
 Base image: `python:3.13-slim` (3.13.18, Debian 13 trixie).
 
-Deferred by the user until the work needs them: `pillow` (image conversion), `itsdangerous` (session cookie, #8). Each is asked for sign-off when that work starts.
+Deferred by the user until the work needs them: `pillow` (image conversion). It is asked for sign-off when that work starts.
 
 Scaffold issues install only packages listed here. Any later addition is asked first, then added to this list in the same PR.
 

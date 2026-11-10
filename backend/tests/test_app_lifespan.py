@@ -1,7 +1,5 @@
 import logging
-import os
 import sqlite3
-from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -11,31 +9,6 @@ from sqlalchemy.pool import QueuePool
 
 from tomarr.app import create_app, lifespan
 from tomarr.core.database import Database
-from tomarr.core.logging import close_logging
-
-UVICORN_LOGGERS = ("uvicorn", "uvicorn.error", "uvicorn.access")
-
-
-@pytest.fixture(autouse=True)
-def isolated_environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
-    for name in [name for name in os.environ if name.startswith("TOMARR__")]:
-        monkeypatch.delenv(name)
-    monkeypatch.setenv("TOMARR_CONFIG_DIR", str(tmp_path))
-    root = logging.getLogger()
-    root_level = root.level
-    saved = {
-        name: (lg.level, lg.propagate, list(lg.handlers))
-        for name in UVICORN_LOGGERS
-        for lg in [logging.getLogger(name)]
-    }
-    yield
-    close_logging()
-    root.setLevel(root_level)
-    for name, (level, propagate, handlers) in saved.items():
-        lg = logging.getLogger(name)
-        lg.setLevel(level)
-        lg.propagate = propagate
-        lg.handlers[:] = handlers
 
 
 def test_lifespan_creates_config_and_log_file_and_releases_handlers(tmp_path: Path) -> None:
@@ -46,7 +19,7 @@ def test_lifespan_creates_config_and_log_file_and_releases_handlers(tmp_path: Pa
         assert (tmp_path / "config.toml").is_file()
         assert (tmp_path / "logs" / "tomarr.log").is_file()
         assert len(root.handlers) == len(handlers_before) + 2
-        assert client.get("/api/v1/system/status").status_code == 200
+        assert client.get("/api/v1/system/health").status_code == 200
 
     assert root.handlers == handlers_before
 
@@ -68,7 +41,9 @@ def test_lifespan_redacts_the_generated_api_key(tmp_path: Path) -> None:
         )
         logging.getLogger("tomarr.test").info("calling with %s", apikey)
 
-    assert apikey not in (tmp_path / "logs" / "tomarr.log").read_text(encoding="utf-8")
+    log = (tmp_path / "logs" / "tomarr.log").read_text(encoding="utf-8")
+    leaked = apikey in log
+    assert not leaked
 
 
 def test_lifespan_migrates_the_database_to_head(tmp_path: Path) -> None:
@@ -170,3 +145,30 @@ async def test_lifespan_disposes_database_and_releases_logging_when_the_body_rai
     [(database, pool)] = started
     assert database.engine.pool is not pool
     assert root.handlers == handlers_before
+
+
+NO_CREDENTIALS_WARNING = "No credentials are set"
+
+
+def test_lifespan_warns_while_no_credentials_are_set(tmp_path: Path) -> None:
+    with TestClient(create_app()):
+        pass
+
+    log = (tmp_path / "logs" / "tomarr.log").read_text(encoding="utf-8")
+    assert NO_CREDENTIALS_WARNING in log
+    assert '"level": "WARNING"' in log
+
+
+def test_lifespan_does_not_warn_once_credentials_are_set(tmp_path: Path) -> None:
+    with TestClient(create_app()) as client:
+        response = client.post(
+            "/api/v1/auth/setup", data={"username": "reader", "password": "correct horse"}
+        )
+        assert response.status_code == 204
+    log_file = tmp_path / "logs" / "tomarr.log"
+    log_file.unlink()
+
+    with TestClient(create_app()):
+        pass
+
+    assert NO_CREDENTIALS_WARNING not in log_file.read_text(encoding="utf-8")
