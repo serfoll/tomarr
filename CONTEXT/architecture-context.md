@@ -117,4 +117,8 @@ Every API request needs either the `X-Api-Key` header or a session cookie from t
 
 ## Error handling and logging
 
-Structured logs to stdout and a rotating file in `/config/logs`. A shared redaction filter strips API keys and query strings before anything is written. API errors return a generic message plus an error code; details go to the log with the request ID. No external error reporting in MVP.
+Structured logs to stdout and a rotating file in `/config/logs`. A shared redaction filter strips API keys and query strings before anything is written. Log lines written while a request is handled carry its `request_id`. No external error reporting in MVP.
+
+Every API error has the JSON body `{"code": ..., "message": ..., "request_id": ...}`. `code` is an `ErrorCode` value from `tomarr.core.errors`, such as `validation_failed` or `internal_error`. `message` is fixed text per code and never includes request details. `request_id` is the ID on that request's log lines, so the details of an error are in the log under it.
+
+Every response, errors included, has an `X-Request-ID` header. An inbound `X-Request-ID` is reused only when it matches `[A-Za-z0-9._-]{1,64}`. Any other value is replaced with a generated ID, not cleaned up.
