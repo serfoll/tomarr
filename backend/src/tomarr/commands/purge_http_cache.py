@@ -4,6 +4,7 @@ from tomarr.commands.registry import Handler
 from tomarr.core.response_cache import ResponseCache
 from tomarr.services.settings import registry
 
+PURGE_HTTP_CACHE = "PurgeHttpCache"
 PURGE_HTTP_CACHE_INTERVAL = registry.declare(
     "schedule.purge_http_cache", TypeAdapter(NonNegativeFloat), 86_400.0
 )

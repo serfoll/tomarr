@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
@@ -7,6 +8,7 @@ from pydantic import NonNegativeFloat, TypeAdapter
 from sqlalchemy import select, update
 
 from tests.helpers.clock import FakeClock
+from tomarr.commands.purge_http_cache import PURGE_HTTP_CACHE
 from tomarr.commands.scheduler import CommandScheduler, Schedule
 from tomarr.core.database import Database
 from tomarr.domain.command import Command, CommandStatus
@@ -29,12 +31,14 @@ class Ticks:
         self._release.clear()
 
     async def first(self) -> None:
-        await self._asleep.wait()
+        async with asyncio.timeout(1):
+            await self._asleep.wait()
 
     async def next(self) -> None:
         self._asleep.clear()
         self._release.set()
-        await self._asleep.wait()
+        async with asyncio.timeout(1):
+            await self._asleep.wait()
 
 
 @pytest.fixture
@@ -72,7 +76,9 @@ def scheduler(
     ticks: Ticks,
     interval: SettingKey[float],
 ) -> CommandScheduler:
-    return CommandScheduler(service, settings, [Schedule("Test", interval)], clock, ticks.sleep)
+    return CommandScheduler(
+        service, settings, [Schedule(PURGE_HTTP_CACHE, interval)], clock, ticks.sleep
+    )
 
 
 @asynccontextmanager
@@ -102,7 +108,7 @@ async def test_the_first_tick_queues_one_command(
         [command] = await commands(database)
 
     assert (command.type, command.status, command.queued_at) == (
-        "Test",
+        PURGE_HTTP_CACHE,
         CommandStatus.QUEUED,
         1_000.0,
     )
@@ -175,7 +181,7 @@ async def test_a_new_scheduler_after_a_restart_does_not_queue_early(
 ) -> None:
     async def run_a_fresh_scheduler() -> None:
         ticks = Ticks()
-        schedules = [Schedule("Test", interval)]
+        schedules = [Schedule(PURGE_HTTP_CACHE, interval)]
         fresh = CommandScheduler(service, settings, schedules, clock, ticks.sleep)
         async with running(fresh, ticks):
             pass
@@ -189,3 +195,33 @@ async def test_a_new_scheduler_after_a_restart_does_not_queue_early(
     clock.now += 1
     await run_a_fresh_scheduler()
     assert len(await commands(database)) == 2
+
+
+async def test_a_failing_tick_is_logged_and_the_next_tick_still_queues(
+    scheduler: CommandScheduler,
+    ticks: Ticks,
+    settings: SettingsService,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    database: Database,
+) -> None:
+    real_get = settings.get
+    calls = 0
+
+    async def flaky_get[T](key: SettingKey[T]) -> T:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            raise RuntimeError("database is locked")
+        return await real_get(key)
+
+    monkeypatch.setattr(settings, "get", flaky_get)
+
+    async with running(scheduler, ticks):
+        assert await commands(database) == []
+        await ticks.next()
+
+        assert len(await commands(database)) == 1
+    [record] = [r for r in caplog.records if r.levelno >= logging.ERROR]
+    assert record.__dict__["schedule_type"] == PURGE_HTTP_CACHE
+    assert record.exc_info is not None

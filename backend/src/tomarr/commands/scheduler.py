@@ -1,9 +1,12 @@
 import asyncio
+import logging
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 
 from tomarr.services.commands import CommandService
 from tomarr.services.settings import SettingKey, SettingsService
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -45,6 +48,10 @@ class CommandScheduler:
     async def _run(self) -> None:
         while True:
             for schedule in self._schedules:
-                interval = await self._settings.get(schedule.setting_key)
-                await self._service.enqueue_if_due(schedule.type, interval)
+                try:
+                    interval = await self._settings.get(schedule.setting_key)
+                    await self._service.enqueue_if_due(schedule.type, interval)
+                except Exception:
+                    # The loop is the boundary: one bad tick must not end every schedule.
+                    logger.exception("Scheduling failed", extra={"schedule_type": schedule.type})
             await self._sleep(self._tick)
