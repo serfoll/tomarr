@@ -1,4 +1,5 @@
 import asyncio
+import datetime
 import logging
 from collections.abc import AsyncIterator
 
@@ -6,7 +7,7 @@ import pytest
 
 from tests.helpers.clock import FakeClock
 from tomarr.commands.registry import CommandRegistry, Handler
-from tomarr.commands.runner import MAX_WAIT, CommandRunner, wait_for_wake
+from tomarr.commands.runner import ERROR_BACKOFF, MAX_WAIT, CommandRunner, wait_for_wake
 from tomarr.core.database import Database
 from tomarr.core.errors import DomainError, ErrorCode, RateLimited
 from tomarr.domain.command import Command, CommandStatus
@@ -333,3 +334,97 @@ async def test_wait_for_wake_returns_on_the_signal_or_the_timeout() -> None:
         await wait_for_wake(event, 0.0)
         event.set()
         await wait_for_wake(event, MAX_WAIT)
+
+
+class FlakyService(CommandService):
+    """Fails its first claim, the way a locked database would."""
+
+    claims = 0
+
+    async def claim_next(self) -> Command | None:
+        self.claims += 1
+        if self.claims == 1:
+            raise RuntimeError("database is locked")
+        return await super().claim_next()
+
+
+async def test_a_failing_service_call_is_logged_and_the_worker_keeps_going(
+    database: Database,
+    registry: CommandRegistry,
+    clock: FakeClock,
+    wait: FakeWait,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    async def handler(payload: dict[str, object]) -> dict[str, object] | None:
+        return None
+
+    register(registry, handler)
+    service = FlakyService(database.session_factory, on_change=lambda command: None, now=clock)
+    command = await service.enqueue("Test")
+    runner = CommandRunner(service, registry, workers=1, clock=clock, wait=wait)
+
+    runner.start()
+    try:
+        await wait.idle()
+        assert wait.timeouts == [ERROR_BACKOFF]
+        assert [r.getMessage() for r in caplog.records] == ["Command worker failed"]
+
+        runner.wake()
+        await wait.idle()
+    finally:
+        async with asyncio.timeout(GUARD):
+            await runner.stop()
+
+    assert (await stored(database, command.id)).status is CommandStatus.COMPLETED
+
+
+async def test_a_result_that_cannot_be_stored_fails_and_the_pool_keeps_working(
+    runner: CommandRunner,
+    service: CommandService,
+    registry: CommandRegistry,
+    database: Database,
+    wait: FakeWait,
+) -> None:
+    async def handler(payload: dict[str, object]) -> dict[str, object] | None:
+        if payload.get("bad"):
+            return {"when": datetime.datetime.now(datetime.UTC)}
+        return {"ok": True}
+
+    register(registry, handler)
+    bad = await service.enqueue("Test", {"bad": True})
+
+    runner.start()
+    await wait.idle()
+
+    row = await stored(database, bad.id)
+    assert row.status is CommandStatus.FAILED
+    assert row.result == {"error": "internal_error"}
+
+    good = await service.enqueue("Test")
+    runner.wake()
+    await wait.idle()
+
+    assert (await stored(database, good.id)).status is CommandStatus.COMPLETED
+
+
+async def test_stop_logs_a_worker_that_died_with_an_error(
+    service: CommandService,
+    registry: CommandRegistry,
+    clock: FakeClock,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    reached = asyncio.Event()
+
+    async def broken_wait(event: asyncio.Event, delay: float) -> None:
+        reached.set()
+        raise RuntimeError("wait broke")
+
+    runner = CommandRunner(service, registry, workers=1, clock=clock, wait=broken_wait)
+    runner.start()
+    async with asyncio.timeout(GUARD):
+        await reached.wait()
+        await runner.stop()
+
+    [record] = [r for r in caplog.records if r.levelno >= logging.ERROR]
+    assert record.getMessage() == "Command worker stopped with an error"
+    assert record.exc_info is not None

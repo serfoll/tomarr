@@ -13,6 +13,7 @@ logger = logging.getLogger(__name__)
 # A worker that misses a wake signal still looks for work this often, so a lost signal costs
 # seconds instead of leaving a due Command waiting forever.
 MAX_WAIT = 30.0
+ERROR_BACKOFF = 5.0
 
 type Wait = Callable[[asyncio.Event, float], Awaitable[None]]
 
@@ -53,20 +54,33 @@ class CommandRunner:
     async def stop(self) -> None:
         for task in self._tasks:
             task.cancel()
-        await asyncio.gather(*self._tasks, return_exceptions=True)
+        for outcome in await asyncio.gather(*self._tasks, return_exceptions=True):
+            if isinstance(outcome, Exception):
+                logger.error("Command worker stopped with an error", exc_info=outcome)
         self._tasks = []
 
     async def _work(self, event: asyncio.Event) -> None:
         while True:
             # Cleared before the claim, so a wake that lands while claiming is not lost.
             event.clear()
-            command = await self._service.claim_next()
-            if command is None:
-                await self._wait(event, await self._timeout())
-            else:
-                await self._run(command)
+            command: Command | None = None
+            try:
+                command = await self._service.claim_next()
+                if command is not None:
+                    await self._run(command)
+                    continue
+                delay = await self._timeout()
+            except Exception:
+                # A failed claim or record, such as a locked database, must not cost the pool a
+                # worker. The backoff keeps a database that stays broken from being hammered.
+                command_id = None if command is None else command.id
+                logger.exception("Command worker failed", extra={"command_id": command_id})
+                delay = ERROR_BACKOFF
+            await self._wait(event, delay)
 
     async def _timeout(self) -> float:
+        # The service reads its clock again here, so a Command that became due just after the
+        # claim is skipped and waits for the next wake or MAX_WAIT at most.
         earliest = await self._service.earliest_not_before()
         if earliest is None:
             return MAX_WAIT
@@ -78,6 +92,9 @@ class CommandRunner:
         try:
             handler = self._registry.get(command.type)
             result = await handler(command.payload)
+            # Inside the try so a result that cannot be stored fails the Command instead of
+            # leaving it running.
+            await self._service.complete(command.id, result)
         except RateLimited as error:
             logger.info(
                 "Command rate limited",
@@ -89,5 +106,3 @@ class CommandRunner:
             logger.exception("Command failed", extra={"command_id": command.id})
             code = error.code if isinstance(error, DomainError) else ErrorCode.INTERNAL_ERROR
             await self._service.fail(command.id, code)
-        else:
-            await self._service.complete(command.id, result)
