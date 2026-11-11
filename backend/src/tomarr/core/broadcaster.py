@@ -57,10 +57,9 @@ class Broadcaster[T]:
 
 
 def _end[T](queue: asyncio.Queue[T | _End]) -> None:
-    # A full queue has no room for the sentinel, so its backlog is discarded to make room.
-    while True:
-        try:
-            queue.put_nowait(_END)
-            return
-        except asyncio.QueueFull:
+    # A full queue has no room for the sentinel. Its subscriber is cut off, so the whole backlog
+    # goes and the stream ends empty rather than with a gap.
+    if queue.full():
+        while not queue.empty():
             queue.get_nowait()
+    queue.put_nowait(_END)

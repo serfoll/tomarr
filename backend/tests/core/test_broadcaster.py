@@ -46,7 +46,7 @@ async def test_lagging_subscriber_is_dropped_and_its_stream_ends() -> None:
 
         assert broadcaster.subscriber_count == 1
         assert await take(fast, 1) == [3]
-        assert 3 not in await drain(slow)
+        assert await drain(slow) == []
 
 
 async def test_publish_with_no_subscribers_does_nothing() -> None:
@@ -67,6 +67,16 @@ async def test_close_ends_every_stream() -> None:
         assert await drain(second) == [1]
 
 
+async def test_close_cuts_off_a_subscriber_with_a_full_queue() -> None:
+    broadcaster = Broadcaster[int](max_queue=2)
+    async with broadcaster.subscribe() as stream:
+        broadcaster.publish(1)
+        broadcaster.publish(2)
+        broadcaster.close()
+
+        assert await drain(stream) == []
+
+
 async def test_subscribe_after_close_ends_at_once() -> None:
     broadcaster = Broadcaster[int]()
     broadcaster.close()
@@ -75,3 +85,4 @@ async def test_subscribe_after_close_ends_at_once() -> None:
         assert await drain(stream) == []
 
     broadcaster.publish(1)
+    assert broadcaster.subscriber_count == 0
