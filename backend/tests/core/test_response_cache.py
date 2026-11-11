@@ -1,12 +1,9 @@
 import re
-from collections.abc import AsyncIterator
-from pathlib import Path
 
 import pytest
 from sqlalchemy import select
 
-from tomarr.core.database import Database, create_database
-from tomarr.core.migrations import upgrade_to_head
+from tomarr.core.database import Database
 from tomarr.core.response_cache import CachedResponse, ResponseCache
 from tomarr.domain.http_cache import HttpCacheEntry
 
@@ -19,15 +16,6 @@ class Clock:
 
     def __call__(self) -> float:
         return self.time
-
-
-@pytest.fixture
-async def database(tmp_path: Path) -> AsyncIterator[Database]:
-    path = tmp_path / "tomarr.db"
-    upgrade_to_head(path)
-    db = create_database(path)
-    yield db
-    await db.dispose()
 
 
 @pytest.fixture
