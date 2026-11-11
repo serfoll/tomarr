@@ -124,8 +124,10 @@ class _PolicyTransport(httpx2.AsyncBaseTransport):
         # The stream is read directly, not through aread(), so the body is stored still
         # content-encoded and the client decodes it once, on the response returned here.
         assert isinstance(response.stream, httpx2.AsyncByteStream)
-        body = b"".join([chunk async for chunk in response.stream])
-        await response.aclose()
+        try:
+            body = b"".join([chunk async for chunk in response.stream])
+        finally:
+            await response.aclose()
         stored = CachedResponse(response.status_code, response.headers.multi_items(), body)
         await self._cache.put(name, request.method, url, stored, self._policy.cache_ttl)
         return _replay(stored)

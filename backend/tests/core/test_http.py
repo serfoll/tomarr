@@ -1,6 +1,7 @@
 import asyncio
 import gzip
 import logging
+from collections.abc import AsyncIterator
 from datetime import UTC, datetime
 from email.utils import format_datetime
 
@@ -214,6 +215,34 @@ async def test_gzip_body_is_stored_raw_and_decoded_once_on_replay(
     assert len(server.requests) == 1
     [row] = await cache_rows(database)
     assert row.body == compressed
+
+
+class BrokenStream(httpx2.AsyncByteStream):
+    """A body that drops partway through, like a connection lost mid-read."""
+
+    def __init__(self) -> None:
+        self.closed = False
+
+    async def __aiter__(self) -> AsyncIterator[bytes]:
+        yield b'{"items": '
+        raise httpx2.ReadError("connection dropped")
+
+    async def aclose(self) -> None:
+        self.closed = True
+
+
+async def test_body_read_error_closes_the_response_and_propagates(
+    factory: HttpClientFactory, server: Server, database: Database
+) -> None:
+    stream = BrokenStream()
+    server.respond = lambda _request: httpx2.Response(200, stream=stream)
+
+    async with factory.client(CACHED, base_url=BASE_URL) as client:
+        with pytest.raises(httpx2.ReadError):
+            await client.get("/v1/items")
+
+    assert stream.closed
+    assert await cache_rows(database) == []
 
 
 async def test_gathered_calls_reach_the_network_one_interval_apart(
