@@ -14,4 +14,4 @@ class HttpCacheEntry(Base):
     headers: Mapped[list[list[str]]] = mapped_column(JSON)
     body: Mapped[bytes] = mapped_column(LargeBinary)
     # Epoch seconds. SQLite drops the timezone from DateTime(timezone=True).
-    expires_at: Mapped[float]
+    expires_at: Mapped[float] = mapped_column(index=True)
