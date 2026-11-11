@@ -10,6 +10,7 @@ class ErrorCode(StrEnum):
     METHOD_NOT_ALLOWED = "method_not_allowed"
     HTTP_ERROR = "http_error"
     INTERNAL_ERROR = "internal_error"
+    RATE_LIMITED = "rate_limited"
 
 
 class DomainError(Exception):
@@ -26,3 +27,12 @@ class NotAuthenticated(DomainError):
 
 class InvalidCredentials(DomainError):
     code = ErrorCode.INVALID_CREDENTIALS
+
+
+class RateLimited(DomainError):
+    code = ErrorCode.RATE_LIMITED
+
+    def __init__(self, service: str, retry_after: float | None) -> None:
+        super().__init__(service, retry_after)
+        self.service = service
+        self.retry_after = retry_after

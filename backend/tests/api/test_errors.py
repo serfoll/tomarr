@@ -1,12 +1,13 @@
 import json
 from pathlib import Path
 
+import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
 from tomarr.api.errors import ERRORS
 from tomarr.app import create_app
-from tomarr.core.errors import ErrorCode
+from tomarr.core.errors import DomainError, ErrorCode, RateLimited
 
 API = "/api/v1"
 SETUP = f"{API}/auth/setup"
@@ -26,6 +27,16 @@ def failing_app() -> FastAPI:
     @app.get(f"{API}/boom")
     def boom() -> None:
         raise RuntimeError(FAILURE_DETAIL)
+
+    return app
+
+
+def rate_limited_app() -> FastAPI:
+    app = create_app()
+
+    @app.get(f"{API}/limited/{{service}}")
+    def limited(service: str) -> None:
+        raise RateLimited(service, retry_after=30)
 
     return app
 
@@ -52,6 +63,53 @@ def test_an_unexpected_exception_is_500_with_the_generic_body_and_no_detail() ->
         text for text in ("Traceback", "RuntimeError", FAILURE_DETAIL) if text in response.text
     ]
     assert leaks == []
+
+
+def test_rate_limited_is_503_and_names_the_service() -> None:
+    with TestClient(rate_limited_app()) as client:
+        prowlarr = client.get(f"{API}/limited/Prowlarr")
+        mangadex = client.get(f"{API}/limited/MangaDex")
+
+    assert prowlarr.status_code == 503
+    assert prowlarr.json() == {
+        "code": "rate_limited",
+        "message": "Prowlarr is rate limiting Tomarr. Try again later.",
+        "request_id": prowlarr.headers["x-request-id"],
+    }
+    assert mangadex.status_code == 503
+    assert mangadex.json()["message"] == "MangaDex is rate limiting Tomarr. Try again later."
+
+
+def test_rate_limited_body_has_no_delay_and_no_retry_after_header() -> None:
+    with TestClient(rate_limited_app()) as client:
+        response = client.get(f"{API}/limited/Prowlarr")
+
+    assert set(response.json()) == {"code", "message", "request_id"}
+    assert "retry-after" not in response.headers
+
+
+def domain_error_app(error: type[DomainError]) -> FastAPI:
+    app = create_app()
+
+    @app.get(f"{API}/domain-error")
+    def fail() -> None:
+        raise error()
+
+    return app
+
+
+# The 404, 405, other HTTP, validation and 500 messages are checked in their own tests here.
+@pytest.mark.parametrize(
+    "error", [error for error in DomainError.__subclasses__() if error is not RateLimited]
+)
+def test_the_other_domain_errors_send_their_table_message_unchanged(
+    error: type[DomainError],
+) -> None:
+    with TestClient(domain_error_app(error)) as client:
+        response = client.get(f"{API}/domain-error")
+
+    assert response.json()["code"] == error.code
+    assert response.json()["message"] == ERRORS[error.code].message
 
 
 def test_the_500_log_line_has_the_stack_and_the_same_request_id(tmp_path: Path) -> None:
