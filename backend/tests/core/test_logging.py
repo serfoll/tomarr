@@ -12,7 +12,12 @@ import pytest
 from uvicorn.config import LOGGING_CONFIG
 
 from tomarr.core import logging as tomarr_logging
-from tomarr.core.logging import close_logging, configure_logging
+from tomarr.core.logging import (
+    RequestIdFilter,
+    close_logging,
+    configure_logging,
+    request_id_var,
+)
 
 SECRET = "abc123"
 LITERAL_SECRET = "Zq9vLx2Pw"
@@ -47,6 +52,14 @@ def log_dir(tmp_path: Path) -> Path:
 
 def configure(log_dir: Path) -> None:
     configure_logging("info", log_dir, [LITERAL_SECRET])
+
+
+@pytest.fixture
+def request_id() -> Iterator[str]:
+    value = "req-7f3a.9"
+    token = request_id_var.set(value)
+    yield value
+    request_id_var.reset(token)
 
 
 def outputs(capsys: pytest.CaptureFixture[str], log_dir: Path) -> list[str]:
@@ -381,3 +394,58 @@ def test_configuring_twice_leaves_two_handlers(log_dir: Path) -> None:
     added = [handler for handler in root.handlers if handler not in before]
     assert len(added) == 2
     assert sum(isinstance(h, logging.handlers.RotatingFileHandler) for h in added) == 1
+
+
+def test_request_id_filter_sets_the_field_while_the_variable_is_set(request_id: str) -> None:
+    record = logger.makeRecord(logger.name, logging.INFO, __file__, 1, "Tick", (), None)
+
+    assert RequestIdFilter().filter(record) is True
+
+    assert vars(record)["request_id"] == request_id
+
+
+def test_request_id_filter_adds_nothing_without_a_request() -> None:
+    record = logger.makeRecord(logger.name, logging.INFO, __file__, 1, "Tick", (), None)
+
+    assert RequestIdFilter().filter(record) is True
+
+    assert not hasattr(record, "request_id")
+
+
+@pytest.mark.usefixtures("request_id")
+def test_request_id_reaches_the_json_line(
+    capsys: pytest.CaptureFixture[str], log_dir: Path
+) -> None:
+    configure(log_dir)
+
+    logger.info("Searching")
+
+    for text in outputs(capsys, log_dir):
+        assert json_lines(text)[0]["request_id"] == "req-7f3a.9"
+
+
+def test_json_line_has_no_request_id_outside_a_request(
+    capsys: pytest.CaptureFixture[str], log_dir: Path
+) -> None:
+    configure(log_dir)
+
+    logger.info("Starting up")
+
+    for text in outputs(capsys, log_dir):
+        assert "request_id" not in json_lines(text)[0]
+
+
+def test_request_id_is_set_before_redaction_runs(
+    capsys: pytest.CaptureFixture[str], log_dir: Path
+) -> None:
+    configure(log_dir)
+    token = request_id_var.set(f"req-{LITERAL_SECRET}")
+
+    try:
+        logger.info("Searching")
+    finally:
+        request_id_var.reset(token)
+
+    for text in outputs(capsys, log_dir):
+        assert LITERAL_SECRET not in text
+        assert json_lines(text)[0]["request_id"] == "req-[redacted]"
