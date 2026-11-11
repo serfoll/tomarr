@@ -56,5 +56,7 @@ class ResponseCache:
 
 
 def _key(adapter: str, method: str, url: str) -> str:
-    # A NUL cannot appear in an adapter name, method or URL, so the parts cannot run together.
+    # httpx2 rejects a NUL anywhere in a URL and the transport caches only GET, so neither of
+    # those parts can hold the separator. Nothing checks the adapter name: one with a NUL in it
+    # could share a key with another adapter.
     return hashlib.sha256(f"{adapter}\0{method}\0{url}".encode()).hexdigest()
