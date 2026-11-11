@@ -1,0 +1,20 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      host:
+      - api.example.test
+    method: GET
+    uri: https://api.example.test/v1/items
+  response:
+    body:
+      string: '{"items": [{"id": 1, "title": "Dandadan"}]}'
+    headers:
+      content-type:
+      - application/json
+    status:
+      code: 200
+      message: OK
+version: 1
