@@ -1,4 +1,5 @@
 import logging
+import math
 from collections.abc import Callable, Sequence
 
 from sqlalchemy import Update, func, or_, select, update
@@ -72,6 +73,9 @@ class CommandService:
     async def reschedule(self, id: int, retry_after: float | None, service: str) -> Command:
         delay = DEFAULT_RETRY_DELAY if retry_after is None else retry_after
         delay = min(max(delay, MIN_RETRY_DELAY), MAX_RETRY_DELAY)
+        # NaN passes through min and max, and SQLite stores it as NULL, which is due at once.
+        if math.isnan(delay):
+            delay = DEFAULT_RETRY_DELAY
         [command] = await self._update(
             update(Command)
             .where(Command.id == id)
@@ -108,7 +112,8 @@ class CommandService:
             )
 
     async def enqueue_if_due(self, type: str, interval: float) -> Command | None:
-        if interval <= 0:
+        # Written so NaN is off too, since every comparison with it is false.
+        if not interval > 0:
             return None
         async with self._session_factory.begin() as session:
             busy = await session.scalar(

@@ -180,7 +180,17 @@ async def test_fail_stores_only_the_error_code(
 
 @pytest.mark.parametrize(
     ("retry_after", "delay"),
-    [(30.0, 30.0), (None, 60.0), (0.0, 5.0), (-3.0, 5.0), (1e9, 3600.0), (math.inf, 3600.0)],
+    [
+        (30.0, 30.0),
+        (None, 60.0),
+        (math.nan, 60.0),
+        (0.0, 5.0),
+        (-3.0, 5.0),
+        (1e9, 3600.0),
+        (math.inf, 3600.0),
+        (-math.inf, 5.0),
+        (10**400, 3600.0),
+    ],
 )
 async def test_reschedule_queues_the_command_again_after_the_clamped_delay(
     service: CommandService,
@@ -328,8 +338,11 @@ async def test_enqueue_if_due_waits_for_the_interval_since_the_last_one(
     assert due.queued_at == 4600.0
 
 
-async def test_enqueue_if_due_with_a_zero_interval_is_off(service: CommandService) -> None:
-    assert await service.enqueue_if_due("Purge", 0) is None
+@pytest.mark.parametrize("interval", [0, -1.0, math.nan])
+async def test_enqueue_if_due_with_an_interval_that_is_not_positive_is_off(
+    service: CommandService, interval: float
+) -> None:
+    assert await service.enqueue_if_due("Purge", interval) is None
     assert await service.active() == []
 
 
