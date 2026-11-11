@@ -101,3 +101,17 @@ async def test_the_key_is_a_sha256_digest_and_no_column_holds_the_url(
     stored = [row.key, row.adapter, row.status_code, row.headers, row.body, row.expires_at]
     assert "hunter2" not in repr(stored)
     assert "api.example.test" not in repr(stored)
+
+
+async def test_purge_expired_deletes_only_the_rows_get_treats_as_expired(
+    cache: ResponseCache, database: Database
+) -> None:
+    await cache.put("mangabaka", "GET", URL + "&n=past", _response(), ttl=-1)
+    await cache.put("mangabaka", "GET", URL + "&n=at", _response(), ttl=0)
+    await cache.put("mangabaka", "GET", URL + "&n=fresh", _response(), ttl=1)
+
+    assert await cache.purge_expired() == 2
+
+    [row] = await _rows(database)
+    assert row.expires_at == 1_001.0
+    assert await cache.purge_expired() == 0
