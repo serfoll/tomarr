@@ -105,7 +105,7 @@ The backend is scaffolded; the frontend and Docker parts are not yet. Backend co
 |---|---|
 | Backend tests (from `backend/`) | `uv run pytest` |
 | Backend lint and types (from `backend/`) | `uv run ruff check . && uv run ruff format --check . && uv run pyright` |
-| Backend dev server (from `backend/`) | `uv run uvicorn tomarr.app:create_app --factory --reload` |
+| Backend dev server (from `backend/`). The timeout stops an open event stream from blocking Ctrl-C | `uv run uvicorn tomarr.app:create_app --factory --reload --timeout-graceful-shutdown 5` |
 | Frontend lint | `pnpm lint` |
 | Frontend tests | `pnpm test` |
 | Regenerate API types | `pnpm gen:api` |

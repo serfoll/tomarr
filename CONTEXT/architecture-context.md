@@ -86,7 +86,17 @@ Downloads are imported from Suwayomi's download folder, mounted into Tomarr's co
 
 ## Command queue
 
-Commands are rows in a `command` table with a type, JSON payload, status, timestamps and result. A small asyncio worker pool takes queued commands in priority order. A scheduler inserts recurring commands (RSS sync, download checks, metadata refresh) on intervals stored in settings. Commands interrupted by a restart go back to queued on startup. Status changes are pushed to the browser over SSE. Why this and not Celery: `docs/adr/0004`.
+Commands are rows in the `command` table: type, JSON payload, status (`queued`, `running`, `completed`, `failed`), priority, `queued_at`, `started_at`, `ended_at`, `not_before`, result and `waiting_on`. Times are epoch seconds. `CommandService` (`services/commands.py`) makes every change to a row, each in its own short transaction, and calls an `on_change` listener after the commit, never inside it.
+
+The lifespan builds the service, an in-process `Broadcaster` (`core/broadcaster.py`), a `CommandRegistry` that maps each type to its handler, the `CommandRunner` and the `CommandScheduler`, and keeps them on `app.state`. `on_change` publishes the Command to the broadcaster and wakes the runner.
+
+- **Runner** (`commands/runner.py`). Two asyncio workers. Each claims the next due Command (highest priority, then oldest) with one `UPDATE ... RETURNING`, so two workers never take the same row. When nothing is due a worker waits until it is woken, until the earliest `not_before`, or 30 seconds at most. No transaction stays open while a handler runs.
+- **Failure.** The runner is the one place that catches broad exceptions. The scheduler loop is the other boundary: it logs a failed tick and keeps going. A failed Command stores only `{"error": "<ErrorCode>"}`, the code of a `DomainError` or `internal_error`. A Command that hits `RateLimited` goes back to `queued` with `not_before` set from `Retry-After` (60 seconds without one, kept between 5 seconds and an hour) and `waiting_on` set to the service name.
+- **Restarts.** At startup, before the workers start, every `running` row goes back to `queued`. Shutdown cancels a handler mid-run and leaves its row `running`, so the next start runs it again. Handlers must be repeatable.
+- **Scheduler** (`commands/scheduler.py`). Every 10 seconds it queues each scheduled type whose interval has passed since it was last queued and that has no queued or running row. Intervals are settings in seconds, and `0` turns one off. The only scheduled type so far is `PurgeHttpCache`, which deletes expired `http_cache` rows. It runs daily by default (`schedule.purge_http_cache`), and the first start queues it right away.
+- **Events.** `GET /api/v1/commands/events` needs auth and is a Server-Sent Events stream. It sends a `snapshot` of every queued and running Command, then a `command` event for each change. An event is a `CommandStatusEvent`: the Command's state without its payload or result. A client that falls 100 events behind is dropped. Shutdown closes the broadcaster first, which ends every open stream, then stops the scheduler and the runner.
+
+Nothing deletes finished rows yet, so recurring Commands add rows for good. A retention rule is a follow-up. Why this and not Celery: `docs/adr/0004`.
 
 ## Rate limits and caching
 
@@ -96,11 +106,11 @@ An adapter declares an `HttpPolicy`: the service name a person sees ("Prowlarr")
 
 Each request goes through the same steps: userinfo check, cache lookup, rate limiter, network, 429 check, cache write. A cache hit returns before the limiter, so it uses none of the quota.
 
-The cache (`core/response_cache.py`, table `http_cache`) stores only `GET` responses with status 200, and only when the policy sets a TTL above 0. `Cache-Control` is ignored. POST requests, other status codes and policies without a TTL are never cached. The key is a SHA-256 of the policy name, the method and the full URL, query included. The URL itself is never stored, because some services put an API key in the query string. The stored body is the raw one, still content-encoded, and the headers keep their raw bytes, so a replayed response decodes the same way a live one does. Expired rows are never deleted; the next 200 for the same key overwrites the row.
+The cache (`core/response_cache.py`, table `http_cache`) stores only `GET` responses with status 200, and only when the policy sets a TTL above 0. `Cache-Control` is ignored. POST requests, other status codes and policies without a TTL are never cached. The key is a SHA-256 of the policy name, the method and the full URL, query included. The URL itself is never stored, because some services put an API key in the query string. The stored body is the raw one, still content-encoded, and the headers keep their raw bytes, so a replayed response decodes the same way a live one does. The next 200 for the same key overwrites the row, and the daily `PurgeHttpCache` Command deletes expired rows.
 
 Credentials go through `auth=` or headers. The factory refuses a `base_url` with a username or password in it, and the transport refuses any request URL that still carries one, before the cache or the network sees it. The factory logs the policy name only, never a URL, and keeps the `httpx2` and `httpcore2` loggers at WARNING because below that they write URLs, hosts and response headers. `safe_url()` drops the username and password from a URL; adapters call it whenever they put a URL in a log line or an error.
 
-When a service answers 429, the transport raises `RateLimited` with the policy name and the `Retry-After` delay in seconds (`None` when the header is missing or unreadable), logs one warning with the name and the delay, and caches nothing. Through the API it surfaces as 503 `rate_limited` ("Prowlarr is rate limiting Tomarr. Try again later."). Backing off and retrying is the command queue's job (#11). A command must never spin on a 429.
+When a service answers 429, the transport raises `RateLimited` with the policy name and the `Retry-After` delay in seconds (`None` when the header is missing or unreadable), logs one warning with the name and the delay, and caches nothing. Through the API it surfaces as 503 `rate_limited` ("Prowlarr is rate limiting Tomarr. Try again later."). When a Command's handler raises it, the runner puts the Command back in the queue until the delay has passed (see Command queue). A Command must never spin on a 429.
 
 ## LLM
 
