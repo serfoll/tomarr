@@ -90,7 +90,17 @@ Commands are rows in a `command` table with a type, JSON payload, status, timest
 
 ## Rate limits and caching
 
-Every outbound HTTP client comes from `core/http.py`, which attaches a per-Provider rate limiter and a response cache table keyed by request. Limits and cache lifetimes are set per Provider in its adapter, not in callers. When a Provider returns 429, the command backs off and retries later; it never spins.
+Every outbound HTTP client comes from `HttpClientFactory` in `core/http.py`. The app builds one factory at startup and keeps it on `app.state.http`. A ruff rule (`TID251`) fails any other module that creates an `httpx2.AsyncClient`, tests included.
+
+An adapter declares an `HttpPolicy`: the service name a person sees ("Prowlarr"), how many requests may start in an interval, and a cache TTL in seconds. It then calls `factory.client(policy, base_url=..., auth=..., headers=...)`. Limits and cache lifetimes belong to the adapter, never to callers. Clients with the same policy name share one rate limiter (`core/rate_limit.py`, a sliding window), so the limit holds across every client of that service.
+
+Each request goes through the same steps: cache lookup, rate limiter, network, 429 check, cache write. A cache hit returns before the limiter, so it uses none of the quota.
+
+The cache (`core/response_cache.py`, table `http_cache`) stores only `GET` responses with status 200, and only when the policy sets a TTL above 0. `Cache-Control` is ignored. POST requests, other status codes and policies without a TTL are never cached. The key is a SHA-256 of the policy name, the method and the full URL, query included. The URL itself is never stored, because some services put an API key in the query string. The stored body is the raw one, still content-encoded, so a replayed response decodes the same way a live one does. Expired rows stay until the same key is fetched again.
+
+Credentials go through `auth=` or headers. The factory refuses a `base_url` with a username or password in it. Any URL that goes into a log line or an error passes through `safe_url()` first, which drops them. Calls are logged by policy name only, never by URL.
+
+When a service answers 429, the transport raises `RateLimited` with the policy name and the `Retry-After` delay in seconds (`None` when the header is missing or unreadable), logs one warning with the name and the delay, and caches nothing. Through the API it surfaces as 503 `rate_limited` ("Prowlarr is rate limiting Tomarr. Try again later."). Backing off and retrying is the command queue's job (#11). A command must never spin on a 429.
 
 ## LLM
 

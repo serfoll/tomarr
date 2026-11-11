@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import time
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
@@ -10,6 +11,7 @@ from tomarr.api.errors import ErrorResponse, document_error_responses, install_e
 from tomarr.api.request_id import RequestIdMiddleware
 from tomarr.core.config import config_dir, load_settings
 from tomarr.core.database import Database, create_database
+from tomarr.core.http import HttpClientFactory
 from tomarr.core.logging import close_logging, configure_logging
 from tomarr.core.migrations import upgrade_to_head
 from tomarr.services.auth import AuthService
@@ -38,6 +40,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
             raise
         app.state.database = database
         app.state.settings = settings
+        app.state.http = HttpClientFactory(
+            database.session_factory, clock=time.monotonic, sleep=asyncio.sleep, now=time.time
+        )
         auth_service = AuthService(SettingsService(database.session_factory))
         app.state.auth = auth_service
         if await auth_service.setup_required():

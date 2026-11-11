@@ -1,9 +1,12 @@
+import asyncio
+import time
 from importlib.metadata import version
 
 import httpx2
 from fastapi.testclient import TestClient
 
 from tomarr.app import create_app, lifespan
+from tomarr.core.http import HttpClientFactory, HttpPolicy
 
 
 def test_status_returns_installed_version(client: TestClient, api_key: str) -> None:
@@ -16,8 +19,15 @@ def test_status_returns_installed_version(client: TestClient, api_key: str) -> N
 async def test_status_returns_installed_version_over_async_client(api_key: str) -> None:
     app = create_app()
     async with lifespan(app):
-        transport = httpx2.ASGITransport(app=app)
-        async with httpx2.AsyncClient(transport=transport, base_url="http://test") as client:
+        factory = HttpClientFactory(
+            app.state.database.session_factory,
+            transport=httpx2.ASGITransport(app=app),
+            clock=time.monotonic,
+            sleep=asyncio.sleep,
+            now=time.time,
+        )
+        policy = HttpPolicy("Tomarr", requests=10, interval=1)
+        async with factory.client(policy, base_url="http://test") as client:
             response = await client.get("/api/v1/system/status", headers={"X-Api-Key": api_key})
 
     assert response.status_code == 200

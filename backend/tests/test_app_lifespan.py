@@ -9,6 +9,7 @@ from sqlalchemy.pool import QueuePool
 
 from tomarr.app import create_app, lifespan
 from tomarr.core.database import Database
+from tomarr.core.http import HttpClientFactory
 
 
 def test_lifespan_creates_config_and_log_file_and_releases_handlers(tmp_path: Path) -> None:
@@ -59,6 +60,7 @@ def test_lifespan_migrates_the_database_to_head(tmp_path: Path) -> None:
 
     assert revision == "0002"
     assert "setting" in tables
+    assert "http_cache" in tables
 
 
 def test_lifespan_opens_the_database_and_disposes_it_on_shutdown() -> None:
@@ -80,6 +82,13 @@ def test_lifespan_opens_the_database_and_disposes_it_on_shutdown() -> None:
 
     assert pool.checkedin() == 0
     assert database.engine.pool is not pool
+
+
+def test_lifespan_puts_the_http_client_factory_on_app_state() -> None:
+    app = create_app()
+
+    with TestClient(app):
+        assert isinstance(app.state.http, HttpClientFactory)
 
 
 def test_lifespan_turns_on_wal_before_the_first_request(tmp_path: Path) -> None:
