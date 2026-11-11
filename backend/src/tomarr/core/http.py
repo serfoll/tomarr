@@ -15,8 +15,10 @@ from tomarr.core.response_cache import CachedResponse, ResponseCache
 logger = logging.getLogger(__name__)
 
 # httpx2 logs every request URL at INFO, query string included, and some services put an API key
-# there. Calls are logged here by adapter name instead.
+# there. httpcore2 logs the host and every response header, cookies included, at DEBUG. Calls are
+# logged here by adapter name instead.
 logging.getLogger("httpx2").setLevel(logging.WARNING)
+logging.getLogger("httpcore2").setLevel(logging.WARNING)
 
 
 @dataclass(frozen=True)
@@ -81,6 +83,11 @@ class HttpClientFactory:
         if limiter is None:
             limiter = RateLimiter(policy.requests, policy.interval, self._clock, self._sleep)
             self._limiters[policy.name] = limiter
+        elif (limiter.requests, limiter.interval) != (policy.requests, policy.interval):
+            raise ValueError(
+                f"The {policy.name} policy has different limits from an earlier one with the "
+                "same name."
+            )
         inner = self._transport or httpx2.AsyncHTTPTransport()
         transport = _PolicyTransport(inner, policy, limiter, self._cache, self._now)
         return httpx2.AsyncClient(
@@ -105,6 +112,10 @@ class _PolicyTransport(httpx2.AsyncBaseTransport):
 
     async def handle_async_request(self, request: httpx2.Request) -> httpx2.Response:
         name = self._policy.name
+        if request.url.userinfo:
+            raise ValueError(
+                f"A {name} request URL carries credentials. Pass them with auth= or headers=."
+            )
         url = str(request.url)
         cacheable = request.method == "GET" and self._policy.cache_ttl > 0
         if cacheable:
@@ -128,7 +139,12 @@ class _PolicyTransport(httpx2.AsyncBaseTransport):
             body = b"".join([chunk async for chunk in response.stream])
         finally:
             await response.aclose()
-        stored = CachedResponse(response.status_code, response.headers.multi_items(), body)
+        # Header bytes are stored as latin-1 text, which maps every byte to one character, so a
+        # replay sends back exactly the bytes the service sent, non-ASCII ones included.
+        headers = [
+            (key.decode("latin-1"), value.decode("latin-1")) for key, value in response.headers.raw
+        ]
+        stored = CachedResponse(response.status_code, headers, body)
         await self._cache.put(name, request.method, url, stored, self._policy.cache_ttl)
         return _replay(stored)
 
@@ -137,8 +153,9 @@ class _PolicyTransport(httpx2.AsyncBaseTransport):
 
 
 def _replay(stored: CachedResponse) -> httpx2.Response:
+    headers = [(key.encode("latin-1"), value.encode("latin-1")) for key, value in stored.headers]
     return httpx2.Response(
-        stored.status_code, headers=stored.headers, stream=httpx2.ByteStream(stored.body)
+        stored.status_code, headers=headers, stream=httpx2.ByteStream(stored.body)
     )
 
 
@@ -147,6 +164,8 @@ def _retry_after(value: str | None, now: float) -> float | None:
         return None
     try:
         seconds = float(int(value))
+    except OverflowError:
+        return None
     except ValueError:
         try:
             moment = parsedate_to_datetime(value)

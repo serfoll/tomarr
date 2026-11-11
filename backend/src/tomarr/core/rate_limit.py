@@ -1,4 +1,5 @@
 import asyncio
+import math
 from collections import deque
 from collections.abc import Awaitable, Callable
 
@@ -15,10 +16,12 @@ class RateLimiter:
     ) -> None:
         if requests < 1:
             raise ValueError("requests must be at least 1")
+        if not math.isfinite(interval):
+            raise ValueError("interval must be finite")
         if interval <= 0:
             raise ValueError("interval must be positive")
-        self._requests = requests
-        self._interval = interval
+        self.requests = requests
+        self.interval = interval
         self._clock = clock
         self._sleep = sleep
         self._starts: deque[float] = deque()
@@ -29,11 +32,11 @@ class RateLimiter:
         # once the wait is over, so a waiter cancelled mid-sleep takes none.
         async with self._lock:
             while self._full():
-                await self._sleep(self._starts[0] + self._interval - self._clock())
+                await self._sleep(self._starts[0] + self.interval - self._clock())
             self._starts.append(self._clock())
 
     def _full(self) -> bool:
-        cutoff = self._clock() - self._interval
+        cutoff = self._clock() - self.interval
         while self._starts and self._starts[0] <= cutoff:
             self._starts.popleft()
-        return len(self._starts) >= self._requests
+        return len(self._starts) >= self.requests

@@ -112,6 +112,21 @@ def test_client_rejects_a_base_url_with_userinfo(factory: HttpClientFactory, bas
     assert "hunter2" not in str(raised.value)
 
 
+@pytest.mark.parametrize(
+    "url", ["https://reader:hunter2@host/a?apikey=k", "https://:hunter2@host/a"]
+)
+async def test_request_with_userinfo_in_an_absolute_url_is_refused_before_the_network(
+    factory: HttpClientFactory, server: Server, url: str
+) -> None:
+    async with factory.client(CACHED) as client:
+        with pytest.raises(ValueError) as raised:
+            await client.get(url)
+
+    assert server.requests == []
+    assert "hunter2" not in str(raised.value)
+    assert "host" not in str(raised.value)
+
+
 async def test_basic_auth_travels_in_a_header_and_not_in_the_url(
     factory: HttpClientFactory, server: Server
 ) -> None:
@@ -217,6 +232,44 @@ async def test_gzip_body_is_stored_raw_and_decoded_once_on_replay(
     assert row.body == compressed
 
 
+@pytest.mark.parametrize(
+    "raw", [b'attachment; filename="caf\xc3\xa9.json"', b'attachment; filename="caf\xe9.json"']
+)
+async def test_non_ascii_header_bytes_replay_unchanged_from_the_cache(
+    factory: HttpClientFactory, server: Server, raw: bytes
+) -> None:
+    server.respond = lambda _request: httpx2.Response(
+        200, headers=[(b"content-disposition", raw)], json={"ok": True}
+    )
+
+    async with factory.client(CACHED, base_url=BASE_URL) as client:
+        responses = [await client.get("/v1/items") for _ in range(3)]
+
+    live = httpx2.Response(200, headers=[(b"content-disposition", raw)])
+    assert len(server.requests) == 1
+    assert [response.json() for response in responses] == [{"ok": True}] * 3
+    for response in responses:
+        assert response.headers.get_list("content-disposition") == [
+            live.headers["content-disposition"]
+        ]
+        assert (b"content-disposition", raw) in response.headers.raw
+
+
+async def test_repeated_headers_replay_as_separate_values(
+    factory: HttpClientFactory, server: Server
+) -> None:
+    server.respond = lambda _request: httpx2.Response(
+        200, headers=[("x-multi", "a"), ("x-multi", "b")], json={}
+    )
+
+    async with factory.client(CACHED, base_url=BASE_URL) as client:
+        await client.get("/v1/items")
+        replayed = await client.get("/v1/items")
+
+    assert len(server.requests) == 1
+    assert replayed.headers.get_list("x-multi") == ["a", "b"]
+
+
 class BrokenStream(httpx2.AsyncByteStream):
     """A body that drops partway through, like a connection lost mid-read."""
 
@@ -298,6 +351,36 @@ async def test_clients_with_different_names_do_not_share_a_limiter(
     assert server.arrivals == [("/a", 0), ("/b", 0)]
 
 
+async def test_same_name_and_same_limits_share_a_limiter_across_policy_objects(
+    factory: HttpClientFactory, server: Server
+) -> None:
+    async with (
+        factory.client(HttpPolicy("MangaBaka", requests=1, interval=10)) as one,
+        factory.client(HttpPolicy("MangaBaka", requests=1, interval=10, cache_ttl=60)) as two,
+    ):
+        await asyncio.gather(one.get(f"{BASE_URL}/a"), two.get(f"{BASE_URL}/b"))
+
+    assert server.arrivals == [("/a", 0), ("/b", 10)]
+
+
+@pytest.mark.parametrize(
+    "other",
+    [
+        HttpPolicy("MangaBaka", requests=2, interval=10),
+        HttpPolicy("MangaBaka", requests=1, interval=5),
+    ],
+)
+def test_same_name_with_different_limits_is_refused(
+    factory: HttpClientFactory, other: HttpPolicy
+) -> None:
+    factory.client(HttpPolicy("MangaBaka", requests=1, interval=10), base_url=BASE_URL)
+
+    with pytest.raises(ValueError, match="MangaBaka") as raised:
+        factory.client(other, base_url=BASE_URL)
+
+    assert BASE_URL not in str(raised.value)
+
+
 def http_date(timestamp: float) -> str:
     return format_datetime(datetime.fromtimestamp(timestamp, UTC), usegmt=True)
 
@@ -311,6 +394,8 @@ def http_date(timestamp: float) -> str:
         ({}, None),
         ({"Retry-After": "soon"}, None),
         ({"Retry-After": "-5"}, 0.0),
+        ({"Retry-After": "9" * 309}, None),
+        ({"Retry-After": "9" * 4300}, None),
     ],
 )
 async def test_429_raises_rate_limited_with_the_retry_after_delay(
@@ -344,6 +429,31 @@ async def test_429_logs_one_warning_with_the_adapter_and_the_delay(
     assert record.levelno == logging.WARNING
     assert "MangaBaka" in record.getMessage()
     assert "7 seconds" in record.getMessage()
+
+
+async def test_429_with_an_unreadable_delay_still_logs_the_warning(
+    factory: HttpClientFactory, server: Server, caplog: pytest.LogCaptureFixture
+) -> None:
+    server.respond = lambda _request: httpx2.Response(429, headers={"Retry-After": "9" * 400})
+
+    async with factory.client(CACHED, base_url=BASE_URL) as client:
+        with pytest.raises(RateLimited):
+            await client.get("/v1/items")
+
+    [record] = [r for r in caplog.records if r.levelno >= logging.WARNING]
+    assert record.levelno == logging.WARNING
+    assert "an unknown time" in record.getMessage()
+
+
+@pytest.mark.parametrize("name", ["httpx2", "httpcore2.http11", "httpcore2.connection"])
+def test_http_library_loggers_drop_records_below_warning(
+    caplog: pytest.LogCaptureFixture, name: str
+) -> None:
+    # Below WARNING these loggers write request URLs, hosts and response headers, cookies included.
+    caplog.set_level(logging.DEBUG)
+
+    assert not logging.getLogger(name).isEnabledFor(logging.INFO)
+    assert logging.getLogger(name).isEnabledFor(logging.WARNING)
 
 
 async def test_log_lines_from_a_call_carry_the_adapter_name_and_no_url_or_credential(

@@ -1,4 +1,5 @@
 import asyncio
+import math
 
 import pytest
 
@@ -109,7 +110,19 @@ async def test_cancelled_waiter_does_not_use_a_slot() -> None:
     assert (third_start, clock.now) == (10, 20)
 
 
-@pytest.mark.parametrize(("requests", "interval"), [(0, 10), (-1, 10), (1, 0), (1, -5)])
-def test_rejects_a_policy_that_cannot_admit_a_call(requests: int, interval: float) -> None:
-    with pytest.raises(ValueError):
+@pytest.mark.parametrize(
+    ("requests", "interval", "message"),
+    [
+        (0, 10, "requests must be at least 1"),
+        (-1, 10, "requests must be at least 1"),
+        (1, 0, "interval must be positive"),
+        (1, -5, "interval must be positive"),
+        (1, math.nan, "interval must be finite"),
+        (1, math.inf, "interval must be finite"),
+    ],
+)
+def test_rejects_a_policy_that_cannot_admit_a_call(
+    requests: int, interval: float, message: str
+) -> None:
+    with pytest.raises(ValueError, match=message):
         RateLimiter(requests, interval, clock=FakeClock(), sleep=FakeClock().sleep)
