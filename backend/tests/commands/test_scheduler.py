@@ -9,6 +9,7 @@ from sqlalchemy import select, update
 
 from tests.helpers.clock import FakeClock
 from tomarr.commands.purge_http_cache import PURGE_HTTP_CACHE
+from tomarr.commands.runner import wait_for_wake
 from tomarr.commands.scheduler import CommandScheduler, Schedule
 from tomarr.core.database import Database
 from tomarr.domain.command import Command, CommandStatus
@@ -19,15 +20,21 @@ INTERVAL = 100.0
 
 
 class Ticks:
-    """A sleep that waits to be released, so a test decides when the scheduler ticks again."""
+    """A wait that ends when the test releases it or the scheduler stops, so a test decides when
+    the scheduler ticks again and never really waits."""
 
     def __init__(self) -> None:
         self._asleep = asyncio.Event()
         self._release = asyncio.Event()
 
-    async def sleep(self, delay: float) -> None:
+    async def wait(self, stopping: asyncio.Event, delay: float) -> None:
         self._asleep.set()
-        await self._release.wait()
+        waiters = [asyncio.ensure_future(event.wait()) for event in (stopping, self._release)]
+        try:
+            await asyncio.wait(waiters, return_when=asyncio.FIRST_COMPLETED)
+        finally:
+            for waiter in waiters:
+                waiter.cancel()
         self._release.clear()
 
     async def first(self) -> None:
@@ -72,12 +79,11 @@ def ticks() -> Ticks:
 def scheduler(
     service: CommandService,
     settings: SettingsService,
-    clock: FakeClock,
     ticks: Ticks,
     interval: SettingKey[float],
 ) -> CommandScheduler:
     return CommandScheduler(
-        service, settings, [Schedule(PURGE_HTTP_CACHE, interval)], clock, ticks.sleep
+        service, settings, [Schedule(PURGE_HTTP_CACHE, interval)], wait=ticks.wait
     )
 
 
@@ -182,7 +188,7 @@ async def test_a_new_scheduler_after_a_restart_does_not_queue_early(
     async def run_a_fresh_scheduler() -> None:
         ticks = Ticks()
         schedules = [Schedule(PURGE_HTTP_CACHE, interval)]
-        fresh = CommandScheduler(service, settings, schedules, clock, ticks.sleep)
+        fresh = CommandScheduler(service, settings, schedules, wait=ticks.wait)
         async with running(fresh, ticks):
             pass
 
@@ -225,3 +231,61 @@ async def test_a_failing_tick_is_logged_and_the_next_tick_still_queues(
     [record] = [r for r in caplog.records if r.levelno >= logging.ERROR]
     assert record.__dict__["schedule_type"] == PURGE_HTTP_CACHE
     assert record.exc_info is not None
+
+
+async def test_start_while_running_raises(scheduler: CommandScheduler, ticks: Ticks) -> None:
+    async with running(scheduler, ticks):
+        with pytest.raises(RuntimeError):
+            scheduler.start()
+
+
+async def test_stop_wakes_a_scheduler_waiting_on_the_real_wait(
+    service: CommandService, settings: SettingsService, interval: SettingKey[float]
+) -> None:
+    idle = asyncio.Event()
+
+    async def wait(stopping: asyncio.Event, delay: float) -> None:
+        idle.set()
+        await wait_for_wake(stopping, delay)
+
+    scheduler = CommandScheduler(
+        service, settings, [Schedule(PURGE_HTTP_CACHE, interval)], wait=wait, tick=3600.0
+    )
+    scheduler.start()
+    async with asyncio.timeout(1):
+        await idle.wait()
+        await scheduler.stop()
+
+
+async def test_stop_lets_a_tick_in_progress_finish(
+    service: CommandService,
+    settings: SettingsService,
+    interval: SettingKey[float],
+    ticks: Ticks,
+    monkeypatch: pytest.MonkeyPatch,
+    database: Database,
+) -> None:
+    real_get = settings.get
+    reading = asyncio.Event()
+    gate = asyncio.Event()
+
+    async def gated_get[T](key: SettingKey[T]) -> T:
+        reading.set()
+        await gate.wait()
+        return await real_get(key)
+
+    monkeypatch.setattr(settings, "get", gated_get)
+    scheduler = CommandScheduler(
+        service, settings, [Schedule(PURGE_HTTP_CACHE, interval)], wait=ticks.wait
+    )
+
+    scheduler.start()
+    async with asyncio.timeout(1):
+        await reading.wait()
+        stopping = asyncio.create_task(scheduler.stop())
+        await asyncio.sleep(0)
+        assert not stopping.done()
+        gate.set()
+        await stopping
+
+    assert len(await commands(database)) == 1

@@ -81,8 +81,6 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
             command_service,
             settings_service,
             [Schedule(PURGE_HTTP_CACHE, PURGE_HTTP_CACHE_INTERVAL)],
-            clock=time.time,
-            sleep=asyncio.sleep,
         )
         # Before the workers start, so a Command cut off by the last shutdown runs again.
         await command_service.requeue_interrupted()
