@@ -1,6 +1,6 @@
 import logging
 import os
-from collections.abc import Iterator
+from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 
 import pytest
@@ -8,7 +8,9 @@ from fastapi.testclient import TestClient
 
 from tomarr.app import create_app
 from tomarr.core.config import load_settings
+from tomarr.core.database import Database, create_database
 from tomarr.core.logging import close_logging
+from tomarr.core.migrations import upgrade_to_head
 
 TESTS_DIR = Path(__file__).parent
 UVICORN_LOGGERS = ("uvicorn", "uvicorn.error", "uvicorn.access")
@@ -54,6 +56,20 @@ def api_key(tmp_path: Path) -> str:
 def client() -> Iterator[TestClient]:
     with TestClient(create_app()) as test_client:
         yield test_client
+
+
+@pytest.fixture
+def db_path(tmp_path: Path) -> Path:
+    path = tmp_path / "tomarr.db"
+    upgrade_to_head(path)
+    return path
+
+
+@pytest.fixture
+async def database(db_path: Path) -> AsyncIterator[Database]:
+    db = create_database(db_path)
+    yield db
+    await db.dispose()
 
 
 @pytest.fixture(scope="module")

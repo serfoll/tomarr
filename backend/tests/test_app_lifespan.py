@@ -57,7 +57,7 @@ def test_lifespan_migrates_the_database_to_head(tmp_path: Path) -> None:
             tables = connection.execute(text("SELECT name FROM sqlite_master")).scalars().all()
         engine.dispose()
 
-    assert revision == "0001"
+    assert revision == "0002"
     assert "setting" in tables
 
 
