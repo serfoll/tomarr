@@ -1,12 +1,13 @@
 import json
 from pathlib import Path
 
+import pytest
 from fastapi import FastAPI, HTTPException
 from fastapi.testclient import TestClient
 
 from tomarr.api.errors import ERRORS
 from tomarr.app import create_app
-from tomarr.core.errors import ErrorCode, RateLimited
+from tomarr.core.errors import DomainError, ErrorCode, RateLimited
 
 API = "/api/v1"
 SETUP = f"{API}/auth/setup"
@@ -87,10 +88,28 @@ def test_rate_limited_body_has_no_delay_and_no_retry_after_header() -> None:
     assert "retry-after" not in response.headers
 
 
-def test_the_other_messages_are_fixed_text() -> None:
-    for code, kind in ERRORS.items():
-        if code is not ErrorCode.RATE_LIMITED:
-            assert "{" not in kind.message
+def domain_error_app(error: type[DomainError]) -> FastAPI:
+    app = create_app()
+
+    @app.get(f"{API}/domain-error")
+    def fail() -> None:
+        raise error()
+
+    return app
+
+
+# The 404, 405, other HTTP, validation and 500 messages are checked in their own tests here.
+@pytest.mark.parametrize(
+    "error", [error for error in DomainError.__subclasses__() if error is not RateLimited]
+)
+def test_the_other_domain_errors_send_their_table_message_unchanged(
+    error: type[DomainError],
+) -> None:
+    with TestClient(domain_error_app(error)) as client:
+        response = client.get(f"{API}/domain-error")
+
+    assert response.json()["code"] == error.code
+    assert response.json()["message"] == ERRORS[error.code].message
 
 
 def test_the_500_log_line_has_the_stack_and_the_same_request_id(tmp_path: Path) -> None:

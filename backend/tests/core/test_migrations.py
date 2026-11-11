@@ -76,17 +76,6 @@ def test_second_upgrade_changes_nothing(tmp_path: Path) -> None:
     assert _settings(path) == [("kept", '"yes"')]
 
 
-def test_upgrade_creates_the_http_cache_table(tmp_path: Path) -> None:
-    path = tmp_path / "tomarr.db"
-
-    upgrade_to_head(path)
-
-    engine = create_engine(f"sqlite:///{path}")
-    columns = {column["name"] for column in inspect(engine).get_columns("http_cache")}
-    engine.dispose()
-    assert columns == {"key", "adapter", "status_code", "headers", "body", "expires_at"}
-
-
 def test_migrated_schema_matches_models(tmp_path: Path) -> None:
     path = tmp_path / "tomarr.db"
     upgrade_to_head(path)

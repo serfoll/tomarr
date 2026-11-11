@@ -3,6 +3,7 @@ import re
 import pytest
 from sqlalchemy import select
 
+from tests.helpers.clock import FakeClock
 from tomarr.core.database import Database
 from tomarr.core.response_cache import CachedResponse, ResponseCache
 from tomarr.domain.http_cache import HttpCacheEntry
@@ -10,21 +11,15 @@ from tomarr.domain.http_cache import HttpCacheEntry
 URL = "https://api.example.test/series?key=hunter2"
 
 
-class Clock:
-    def __init__(self, start: float = 1_000.0) -> None:
-        self.time = start
-
-    def __call__(self) -> float:
-        return self.time
+@pytest.fixture
+def clock() -> FakeClock:
+    clock = FakeClock()
+    clock.now = 1_000.0
+    return clock
 
 
 @pytest.fixture
-def clock() -> Clock:
-    return Clock()
-
-
-@pytest.fixture
-def cache(database: Database, clock: Clock) -> ResponseCache:
+def cache(database: Database, clock: FakeClock) -> ResponseCache:
     return ResponseCache(database.session_factory, clock)
 
 
@@ -56,21 +51,21 @@ async def test_get_returns_what_put_stored(cache: ResponseCache) -> None:
 
 
 async def test_get_returns_none_once_the_entry_has_expired(
-    cache: ResponseCache, clock: Clock
+    cache: ResponseCache, clock: FakeClock
 ) -> None:
     await cache.put("mangabaka", "GET", URL, _response(), ttl=60)
 
-    clock.time += 59
+    clock.now += 59
     assert await cache.get("mangabaka", "GET", URL) is not None
-    clock.time += 1
+    clock.now += 1
     assert await cache.get("mangabaka", "GET", URL) is None
 
 
 async def test_put_on_an_existing_key_replaces_the_row(
-    cache: ResponseCache, database: Database, clock: Clock
+    cache: ResponseCache, database: Database, clock: FakeClock
 ) -> None:
     await cache.put("mangabaka", "GET", URL, _response(b"old"), ttl=60)
-    clock.time += 10
+    clock.now += 10
 
     await cache.put("mangabaka", "GET", URL, _response(b"new"), ttl=60)
 
