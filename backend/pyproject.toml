@@ -41,6 +41,16 @@ select = ["E", "F", "I", "UP", "B", "ASYNC", "SIM", "RUF", "T20", "TID251"]
 "typing.Any".msg = "No Any. Use object or a Protocol and narrow it (code-standards.md)."
 "typing_extensions.Any".msg = "No Any. Use object or a Protocol and narrow it (code-standards.md)."
 "httpx2.AsyncClient".msg = "Get clients from HttpClientFactory in core/http.py, so rate limits and the cache apply."
+"httpx2.Client".msg = "Send requests through HttpClientFactory in core/http.py, so rate limits and the cache apply."
+"httpx2.request".msg = "Send requests through HttpClientFactory in core/http.py, so rate limits and the cache apply."
+"httpx2.get".msg = "Send requests through HttpClientFactory in core/http.py, so rate limits and the cache apply."
+"httpx2.post".msg = "Send requests through HttpClientFactory in core/http.py, so rate limits and the cache apply."
+"httpx2.put".msg = "Send requests through HttpClientFactory in core/http.py, so rate limits and the cache apply."
+"httpx2.patch".msg = "Send requests through HttpClientFactory in core/http.py, so rate limits and the cache apply."
+"httpx2.delete".msg = "Send requests through HttpClientFactory in core/http.py, so rate limits and the cache apply."
+"httpx2.head".msg = "Send requests through HttpClientFactory in core/http.py, so rate limits and the cache apply."
+"httpx2.options".msg = "Send requests through HttpClientFactory in core/http.py, so rate limits and the cache apply."
+"httpx2.stream".msg = "Send requests through HttpClientFactory in core/http.py, so rate limits and the cache apply."
 
 [tool.ruff.lint.per-file-ignores]
 "src/tomarr/core/http.py" = ["TID251"]
