@@ -3,6 +3,7 @@ from sqlalchemy import URL, create_engine
 from sqlalchemy.pool import NullPool
 
 # Imported for its side effect: the model registers itself on Base.metadata.
+import tomarr.domain.http_cache  # pyright: ignore[reportUnusedImport]
 import tomarr.domain.setting  # noqa: F401  # pyright: ignore[reportUnusedImport]
 from tomarr.domain.base import Base
 

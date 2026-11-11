@@ -14,6 +14,7 @@ from sqlalchemy import create_engine, inspect, text
 from tomarr.core.database import create_database
 from tomarr.core.migrations import SCRIPT_LOCATION, upgrade_to_head
 from tomarr.domain.base import Base
+from tomarr.domain.http_cache import HttpCacheEntry
 from tomarr.domain.setting import Setting
 
 
@@ -75,10 +76,22 @@ def test_second_upgrade_changes_nothing(tmp_path: Path) -> None:
     assert _settings(path) == [("kept", '"yes"')]
 
 
+def test_upgrade_creates_the_http_cache_table(tmp_path: Path) -> None:
+    path = tmp_path / "tomarr.db"
+
+    upgrade_to_head(path)
+
+    engine = create_engine(f"sqlite:///{path}")
+    columns = {column["name"] for column in inspect(engine).get_columns("http_cache")}
+    engine.dispose()
+    assert columns == {"key", "adapter", "status_code", "headers", "body", "expires_at"}
+
+
 def test_migrated_schema_matches_models(tmp_path: Path) -> None:
     path = tmp_path / "tomarr.db"
     upgrade_to_head(path)
     assert Setting.__tablename__ in Base.metadata.tables
+    assert HttpCacheEntry.__tablename__ in Base.metadata.tables
 
     engine = create_engine(f"sqlite:///{path}")
     with engine.connect() as connection:
