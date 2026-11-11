@@ -40,8 +40,13 @@ class CommandRunner:
         self._wait = wait
         self._events = [asyncio.Event() for _ in range(workers)]
         self._tasks: list[asyncio.Task[None]] = []
+        self._handlers: set[asyncio.Future[dict[str, object] | None]] = set()
+        self._stopping = False
 
     def start(self) -> None:
+        if self._tasks:
+            raise RuntimeError("The command runner is already running")
+        self._stopping = False
         self._tasks = [
             asyncio.create_task(self._work(event), name=f"command-worker-{index}")
             for index, event in enumerate(self._events)
@@ -52,15 +57,19 @@ class CommandRunner:
             event.set()
 
     async def stop(self) -> None:
-        for task in self._tasks:
-            task.cancel()
+        # Only handlers are cancelled. Cancelling a worker inside a service call makes SQLAlchemy
+        # force-close the connection, and the next one can then wait out SQLite's busy timeout.
+        self._stopping = True
+        self.wake()
+        for handler in self._handlers:
+            handler.cancel()
         for outcome in await asyncio.gather(*self._tasks, return_exceptions=True):
             if isinstance(outcome, Exception):
                 logger.error("Command worker stopped with an error", exc_info=outcome)
         self._tasks = []
 
     async def _work(self, event: asyncio.Event) -> None:
-        while True:
+        while not self._stopping:
             # Cleared before the claim, so a wake that lands while claiming is not lost.
             event.clear()
             command: Command | None = None
@@ -75,6 +84,8 @@ class CommandRunner:
                 # worker. The backoff keeps a database that stays broken from being hammered.
                 command_id = None if command is None else command.id
                 logger.exception("Command worker failed", extra={"command_id": command_id})
+                if command is not None:
+                    await self._fail_quietly(command.id)
                 delay = ERROR_BACKOFF
             await self._wait(event, delay)
 
@@ -87,14 +98,22 @@ class CommandRunner:
         return min(max(earliest - self._clock(), 0.0), MAX_WAIT)
 
     async def _run(self, command: Command) -> None:
-        # CancelledError is not an Exception, so a Command cancelled at shutdown is not recorded
-        # and stays running for the next start to requeue.
         try:
             handler = self._registry.get(command.type)
-            result = await handler(command.payload)
+            task = asyncio.ensure_future(handler(command.payload))
+            self._handlers.add(task)
+            if self._stopping:
+                task.cancel()
+            try:
+                await asyncio.wait([task])
+            finally:
+                self._handlers.discard(task)
+            if task.cancelled() and self._stopping:
+                # Not recorded, so the row stays running for the next start to requeue.
+                return
             # Inside the try so a result that cannot be stored fails the Command instead of
             # leaving it running.
-            await self._service.complete(command.id, result)
+            await self._service.complete(command.id, _result(task))
         except RateLimited as error:
             logger.info(
                 "Command rate limited",
@@ -104,5 +123,28 @@ class CommandRunner:
         except Exception as error:
             # Only the code is stored, since the exception text can hold a URL with a key in it.
             logger.exception("Command failed", extra={"command_id": command.id})
-            code = error.code if isinstance(error, DomainError) else ErrorCode.INTERNAL_ERROR
-            await self._service.fail(command.id, code)
+            await self._service.fail(command.id, _error_code(error))
+
+    async def _fail_quietly(self, id: int) -> None:
+        # The last chance to end a claimed Command whose outcome could not be stored. Left
+        # running, it would look busy until the next start and block its schedule.
+        try:
+            await self._service.fail(id, ErrorCode.INTERNAL_ERROR)
+        except Exception:
+            logger.exception("Command could not be failed", extra={"command_id": id})
+
+
+def _result[T](task: asyncio.Future[T]) -> T:
+    """The handler's result, or its exception. A handler that cancelled itself or raised a
+    BaseException gets a RuntimeError instead, so it fails its Command and not the worker."""
+    if task.cancelled():
+        raise RuntimeError("The command handler was cancelled")
+    error = task.exception()
+    if error is not None and not isinstance(error, Exception):
+        raise RuntimeError("The command handler raised a BaseException") from error
+    return task.result()
+
+
+def _error_code(error: Exception) -> ErrorCode:
+    code = getattr(error, "code", None) if isinstance(error, DomainError) else None
+    return code if isinstance(code, ErrorCode) else ErrorCode.INTERNAL_ERROR

@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import logging
+import math
 from collections.abc import AsyncIterator
 
 import pytest
@@ -428,3 +429,245 @@ async def test_stop_logs_a_worker_that_died_with_an_error(
     [record] = [r for r in caplog.records if r.levelno >= logging.ERROR]
     assert record.getMessage() == "Command worker stopped with an error"
     assert record.exc_info is not None
+
+
+def with_text_code() -> DomainError:
+    # An instance attribute, since a subclass here would break the test that every DomainError
+    # subclass has a valid code.
+    error = DomainError("x")
+    error.code = "boom"  # pyright: ignore[reportAttributeAccessIssue]
+    return error
+
+
+@pytest.mark.parametrize("error", [DomainError("x"), with_text_code()], ids=["none", "text"])
+async def test_a_domain_error_without_a_valid_code_fails_with_internal_error(
+    runner: CommandRunner,
+    service: CommandService,
+    registry: CommandRegistry,
+    database: Database,
+    wait: FakeWait,
+    error: DomainError,
+) -> None:
+    async def handler(payload: dict[str, object]) -> dict[str, object] | None:
+        raise error
+
+    register(registry, handler)
+    command = await service.enqueue("Test")
+
+    runner.start()
+    await wait.idle()
+
+    row = await stored(database, command.id)
+    assert row.status is CommandStatus.FAILED
+    assert row.result == {"error": "internal_error"}
+
+
+class Fatal(BaseException):
+    pass
+
+
+async def cancel_itself(payload: dict[str, object]) -> dict[str, object] | None:
+    future = asyncio.get_running_loop().create_future()
+    future.cancel()
+    await future
+    return None
+
+
+async def raise_a_base_exception(payload: dict[str, object]) -> dict[str, object] | None:
+    raise Fatal
+
+
+@pytest.mark.parametrize("handler", [cancel_itself, raise_a_base_exception])
+async def test_a_handler_ending_without_an_exception_fails_and_the_worker_keeps_going(
+    runner: CommandRunner,
+    service: CommandService,
+    registry: CommandRegistry,
+    database: Database,
+    wait: FakeWait,
+    handler: Handler,
+) -> None:
+    async def ok(payload: dict[str, object]) -> dict[str, object] | None:
+        return {"ok": True}
+
+    registry.register("Odd", handler)
+    register(registry, ok)
+    odd = await service.enqueue("Odd")
+
+    runner.start()
+    await wait.idle()
+
+    row = await stored(database, odd.id)
+    assert row.status is CommandStatus.FAILED
+    assert row.result == {"error": "internal_error"}
+
+    good = await service.enqueue("Test")
+    runner.wake()
+    await wait.idle()
+
+    assert (await stored(database, good.id)).status is CommandStatus.COMPLETED
+
+
+class FailFailsOnce(CommandService):
+    """Fails its first fail, the way a locked database would."""
+
+    fails = 0
+
+    async def fail(self, id: int, error: ErrorCode) -> Command:
+        self.fails += 1
+        if self.fails == 1:
+            raise RuntimeError("database is locked")
+        return await super().fail(id, error)
+
+
+async def test_a_command_whose_outcome_cannot_be_stored_is_failed_instead_of_left_running(
+    database: Database,
+    registry: CommandRegistry,
+    clock: FakeClock,
+    wait: FakeWait,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    async def handler(payload: dict[str, object]) -> dict[str, object] | None:
+        raise RuntimeError("upstream broke")
+
+    register(registry, handler)
+    service = FailFailsOnce(database.session_factory, on_change=lambda command: None, now=clock)
+    command = await service.enqueue("Test")
+    runner = CommandRunner(service, registry, workers=1, clock=clock, wait=wait)
+
+    runner.start()
+    try:
+        await wait.idle()
+    finally:
+        async with asyncio.timeout(GUARD):
+            await runner.stop()
+
+    row = await stored(database, command.id)
+    assert row.status is CommandStatus.FAILED
+    assert row.result == {"error": "internal_error"}
+    assert wait.timeouts == [ERROR_BACKOFF]
+    [worker_failed] = [r for r in caplog.records if r.getMessage() == "Command worker failed"]
+    assert getattr(worker_failed, "command_id", None) == command.id
+
+
+class FailAlwaysFails(CommandService):
+    async def fail(self, id: int, error: ErrorCode) -> Command:
+        raise RuntimeError("database is locked")
+
+
+async def test_a_failed_failure_record_is_logged_and_the_worker_keeps_going(
+    database: Database,
+    registry: CommandRegistry,
+    clock: FakeClock,
+    wait: FakeWait,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    async def handler(payload: dict[str, object]) -> dict[str, object] | None:
+        if payload.get("bad"):
+            raise RuntimeError("upstream broke")
+        return None
+
+    register(registry, handler)
+    service = FailAlwaysFails(database.session_factory, on_change=lambda command: None, now=clock)
+    stuck = await service.enqueue("Test", {"bad": True})
+    runner = CommandRunner(service, registry, workers=1, clock=clock, wait=wait)
+
+    runner.start()
+    try:
+        await wait.idle()
+        good = await service.enqueue("Test")
+        runner.wake()
+        await wait.idle()
+    finally:
+        async with asyncio.timeout(GUARD):
+            await runner.stop()
+
+    assert (await stored(database, good.id)).status is CommandStatus.COMPLETED
+    [record] = [r for r in caplog.records if r.getMessage() == "Command could not be failed"]
+    assert getattr(record, "command_id", None) == stuck.id
+
+
+async def test_a_nan_retry_after_waits_the_default_delay(
+    runner: CommandRunner,
+    service: CommandService,
+    registry: CommandRegistry,
+    database: Database,
+    wait: FakeWait,
+) -> None:
+    async def handler(payload: dict[str, object]) -> dict[str, object] | None:
+        raise RateLimited("Prowlarr", math.nan)
+
+    calls = register(registry, handler)
+    command = await service.enqueue("Test")
+
+    runner.start()
+    await wait.idle()
+
+    assert len(calls.payloads) == 1
+    assert (await stored(database, command.id)).not_before == 1060.0
+    assert wait.timeouts == [MAX_WAIT]
+
+
+async def test_start_while_running_raises(runner: CommandRunner) -> None:
+    runner.start()
+
+    with pytest.raises(RuntimeError):
+        runner.start()
+
+
+async def test_stop_wakes_a_worker_waiting_on_the_real_wait(
+    service: CommandService, registry: CommandRegistry, clock: FakeClock
+) -> None:
+    idle = asyncio.Event()
+
+    async def wait(event: asyncio.Event, delay: float) -> None:
+        idle.set()
+        await wait_for_wake(event, delay)
+
+    runner = CommandRunner(service, registry, workers=1, clock=clock, wait=wait)
+    runner.start()
+    async with asyncio.timeout(GUARD):
+        await idle.wait()
+        await runner.stop()
+
+
+class GatedClaims(CommandService):
+    """Holds each claim until the test opens the gate, and records whether one was cancelled."""
+
+    def __init__(self, database: Database, clock: FakeClock) -> None:
+        super().__init__(database.session_factory, on_change=lambda command: None, now=clock)
+        self.claiming = asyncio.Event()
+        self.gate = asyncio.Event()
+        self.cancelled = False
+
+    async def claim_next(self) -> Command | None:
+        self.claiming.set()
+        try:
+            await self.gate.wait()
+        except asyncio.CancelledError:
+            self.cancelled = True
+            raise
+        return await super().claim_next()
+
+
+async def test_stop_lets_a_service_call_finish_and_leaves_a_command_claimed_meanwhile_running(
+    database: Database, registry: CommandRegistry, clock: FakeClock, wait: FakeWait
+) -> None:
+    calls = register(registry, cancel_itself)
+    service = GatedClaims(database, clock)
+    command = await service.enqueue("Test")
+    runner = CommandRunner(service, registry, workers=1, clock=clock, wait=wait)
+
+    runner.start()
+    async with asyncio.timeout(GUARD):
+        await service.claiming.wait()
+        stopping = asyncio.create_task(runner.stop())
+        await asyncio.sleep(0)
+        assert not stopping.done()
+        service.gate.set()
+        await stopping
+
+    assert not service.cancelled
+    assert calls.payloads == []
+    row = await stored(database, command.id)
+    assert row.status is CommandStatus.RUNNING
+    assert row.result is None
