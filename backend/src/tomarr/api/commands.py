@@ -31,8 +31,8 @@ class CommandStatusEvent(BaseModel):
     @classmethod
     def from_command(cls, command: Command) -> Self:
         error = None
-        if command.status is CommandStatus.FAILED and command.result is not None:
-            error = ErrorCode(str(command.result["error"]))
+        if command.status is CommandStatus.FAILED:
+            error = _error_code(command.result)
         return cls(
             id=command.id,
             type=command.type,
@@ -45,6 +45,15 @@ class CommandStatusEvent(BaseModel):
             error=error,
             waiting_on=command.waiting_on,
         )
+
+
+def _error_code(result: dict[str, object] | None) -> ErrorCode:
+    # Anything but what fail() writes still becomes a code, since raising here would end the
+    # stream for every subscriber.
+    value = None if result is None else result.get("error")
+    if isinstance(value, str) and value in ErrorCode:
+        return ErrorCode(value)
+    return ErrorCode.INTERNAL_ERROR
 
 
 @router.get(

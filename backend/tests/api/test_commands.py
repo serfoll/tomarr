@@ -8,7 +8,7 @@ from tomarr.app import create_app, lifespan
 from tomarr.core.broadcaster import Broadcaster
 from tomarr.core.database import Database
 from tomarr.core.errors import ErrorCode
-from tomarr.domain.command import Command
+from tomarr.domain.command import Command, CommandStatus
 from tomarr.services.commands import CommandService
 
 
@@ -129,6 +129,41 @@ async def test_a_failed_command_event_has_the_error_code(
     assert data["status"] == "failed"
     assert data["error"] == "internal_error"
     assert data["ended_at"] == 1007.0
+
+
+@pytest.mark.parametrize("result", [{"error": "bogus"}, {"error": 42}, {}, {"deleted": 3}, None])
+async def test_a_failed_command_with_an_unexpected_result_reports_internal_error(
+    app: FastAPI,
+    service: CommandService,
+    broadcaster: Broadcaster[Command],
+    result: dict[str, object] | None,
+) -> None:
+    odd = Command(
+        id=1,
+        type="Test",
+        payload={},
+        status=CommandStatus.FAILED,
+        priority=0,
+        not_before=None,
+        queued_at=1.0,
+        started_at=2.0,
+        ended_at=3.0,
+        result=result,
+        waiting_on=None,
+    )
+
+    async with EventStream(app) as stream:
+        await stream.next_event()
+
+        broadcaster.publish(odd)
+        _, data = await stream.next_event()
+        later = await service.enqueue("Later")
+        _, after = await stream.next_event()
+
+    assert isinstance(data, dict)
+    assert data["error"] == "internal_error"
+    assert isinstance(after, dict)
+    assert after["id"] == later.id
 
 
 async def test_a_rescheduled_command_event_names_the_service_and_the_retry_time(
