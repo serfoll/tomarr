@@ -136,6 +136,12 @@ def document_error_responses(app: FastAPI) -> None:
                 if "422" in responses:
                     del responses["422"]
                     responses["400"] = _VALIDATION_RESPONSE
+                # FastAPI documents every response of a streaming route as a stream, but the
+                # error handlers answer it in JSON like any other route.
+                for code, response in responses.items():
+                    content = response.get("content", {})
+                    if code.startswith(("4", "5")) and "text/event-stream" in content:
+                        content["application/json"] = content.pop("text/event-stream")
         for name in ("HTTPValidationError", "ValidationError"):
             schema["components"]["schemas"].pop(name, None)
         return schema

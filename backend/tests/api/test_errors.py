@@ -218,6 +218,7 @@ def test_openapi_declares_error_response_on_400_401_409_and_500() -> None:
     assert schema(SETUP, "post", "400") == ERROR_RESPONSE_REF
     assert schema(f"{API}/auth/login", "post", "401") == ERROR_RESPONSE_REF
     assert schema(f"{API}/system/status", "get", "401") == ERROR_RESPONSE_REF
+    assert schema(f"{API}/commands/events", "get", "401") == ERROR_RESPONSE_REF
     assert schema(SETUP, "post", "409") == ERROR_RESPONSE_REF
     for path, operations in paths.items():
         for method in operations:
