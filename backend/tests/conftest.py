@@ -28,6 +28,8 @@ def isolated_environment(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Ite
     for name in [name for name in os.environ if name.startswith("TOMARR__")]:
         monkeypatch.delenv(name)
     monkeypatch.setenv("TOMARR_CONFIG_DIR", str(tmp_path))
+    # The default is the checkout's frontend/dist, so a local build would change what tests see.
+    monkeypatch.setenv("TOMARR_STATIC_DIR", str(tmp_path / "no-build"))
     root = logging.getLogger()
     root_level = root.level
     saved = {

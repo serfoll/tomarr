@@ -129,7 +129,20 @@ See `docs/adr/0005`.
 
 ## Configuration and storage
 
-`/config` holds `tomarr.db`, `config.toml`, `logs/` and `backups/`. The database is SQLite with WAL (write-ahead logging) and foreign keys enabled for every connection. Migrations are applied on startup from `src/tomarr/migrations/` before the app accepts requests. `config.toml` holds only what's needed before the database opens: bind address, port, URL base, API key, log level. It has three sections: `[server]` with `bindaddress`, `port` and `urlbase`, `[auth]` with `apikey`, and `[log]` with `level`. Everything else is a setting in the database, edited in the UI. Settings are read and written through `SettingsService`, and all setting keys are declared through its registry. Secrets are stored as plain text values. See `docs/adr/0008`. Environment variables override `config.toml` (`TOMARR__SERVER__PORT` style), written `TOMARR__SECTION__KEY`, so the log level is `TOMARR__LOG__LEVEL`. The log file is `/config/logs/tomarr.log`. The container runs as PUID/PGID from the environment.
+`/config` holds `tomarr.db`, `config.toml`, `logs/` and `backups/`. The database is SQLite with WAL (write-ahead logging) and foreign keys enabled for every connection. Migrations are applied on startup from `src/tomarr/migrations/` before the app accepts requests. `config.toml` holds only what's needed before the database opens: bind address, port, URL base, API key, log level. It has three sections: `[server]` with `bindaddress`, `port` and `urlbase`, `[auth]` with `apikey`, and `[log]` with `level`. Everything else is a setting in the database, edited in the UI. Settings are read and written through `SettingsService`, and all setting keys are declared through its registry. Secrets are stored as plain text values. See `docs/adr/0008`. Environment variables override `config.toml` (`TOMARR__SERVER__PORT` style), written `TOMARR__SECTION__KEY`, so the log level is `TOMARR__LOG__LEVEL`. The log file is `/config/logs/tomarr.log`. The container runs as PUID/PGID from the environment. Two internal variables exist for tests and local runs and are not user settings: `TOMARR_CONFIG_DIR` moves `/config`, and `TOMARR_STATIC_DIR` sets where the frontend build is read from. An empty value of either counts as unset.
+
+## Serving the frontend
+
+`api/static.py` registers a catch-all route at `/{path:path}` for `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE` and `OPTIONS`, as the last route in `create_app()`, so every API route, `/docs`, `/redoc` and `/openapi.json` match first. It is left out of the OpenAPI schema. The build is read from `TOMARR_STATIC_DIR`, which defaults to `frontend/dist` in the checkout. If the directory has no `index.html` (missing, or a half-written build), the route is not registered and the backend behaves as it does without a frontend.
+
+- The catch-all never matches a path under `/api`. Routing there works as if there were no build: a wrong method on a real API route is a 405 with that route's `Allow` header, and a path that matches no API route is the JSON 404 for any method. Neither ever returns `index.html`.
+- A path that resolves to a file inside the build directory returns that file for `GET` and `HEAD`. A path that resolves outside it, by `..`, an absolute path or a symlink, or that is too long for the file system, is treated as any other unknown path.
+- An unknown path under `/assets` is the JSON 404, so a browser holding an old `index.html` never gets HTML for a module script.
+- Any other path returns `index.html` with status 200 for `GET` and `HEAD`, so a deep link to a client route loads the app and the router takes over.
+- Outside `/api`, the other registered methods get the JSON 405 with `Allow: GET, HEAD`.
+- The build is made for the base path `/`. `urlbase` is not applied to it yet.
+
+In development, `pnpm dev` runs the Vite dev server, which proxies `/api` to the backend on `127.0.0.1:8000`. If `TOMARR_DEV_API_KEY` is set, the proxy adds it as the `X-Api-Key` header, so the shell can call guarded routes without a login page. The variable is read by `vite.config.ts` only and never ships in the build.
 
 ## Auth
 
