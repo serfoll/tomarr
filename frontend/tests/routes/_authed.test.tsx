@@ -11,13 +11,19 @@ import { renderApp } from "../helpers/render-app";
 
 const credentials = { username: "admin", password: "fake-password-1" };
 
-test("a fresh install sends the visitor to sign-up", async () => {
+test("a fresh install sends the visitor straight to sign-up", async () => {
 	stubFetch(fakeAuthBackend().routes);
 
 	const router = renderApp("/");
+	const visited: string[] = [];
+	router.subscribe("onBeforeLoad", ({ toLocation }) => {
+		visited.push(toLocation.pathname);
+	});
 
 	expect(await screen.findByRole("heading", { name: "Sign up" })).toBeDefined();
 	expect(router.state.location.pathname).toBe("/sign-up");
+	// Sign-in's own guard would also forward a fresh install, so only the path taken shows this guard's choice.
+	expect(visited).not.toContain("/sign-in");
 });
 
 test("a visitor who is not signed in goes to sign-in with the requested path", async () => {

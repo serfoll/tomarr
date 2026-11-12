@@ -73,6 +73,7 @@ test("signing in with a redirect to another host lands on the app root", async (
 	const { router } = await openSignIn(
 		`/sign-in?redirect=${encodeURIComponent("//evil.com")}`,
 	);
+	expect(router.state.location.search).toEqual({ redirect: "/" });
 
 	submit();
 
