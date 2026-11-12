@@ -1,9 +1,10 @@
 import { ApiError, UnreadableResponseError } from "@/api/errors";
 import { useSystemStatus } from "@/api/use-system-status";
+import { unreadableResponseText } from "@/lib/request-error-text";
 
 function errorText(error: Error): string {
 	if (error instanceof UnreadableResponseError) {
-		return "Tomarr sent an answer the page could not read. Reload the page, and check the Tomarr log if it keeps happening.";
+		return unreadableResponseText;
 	}
 	if (!(error instanceof ApiError)) {
 		return "Could not reach Tomarr. Check that it is running, then reload.";

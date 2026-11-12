@@ -133,6 +133,10 @@ export interface components {
             setup_required: boolean;
             /** Authenticated */
             authenticated: boolean;
+            /** Password Min Length */
+            password_min_length: number;
+            /** Password Max Length */
+            password_max_length: number;
         };
         /** Body_login_api_v1_auth_login_post */
         Body_login_api_v1_auth_login_post: {
