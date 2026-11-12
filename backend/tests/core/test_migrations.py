@@ -14,6 +14,7 @@ from sqlalchemy import create_engine, inspect, text
 from tomarr.core.database import create_database
 from tomarr.core.migrations import SCRIPT_LOCATION, upgrade_to_head
 from tomarr.domain.base import Base
+from tomarr.domain.command import Command
 from tomarr.domain.http_cache import HttpCacheEntry
 from tomarr.domain.setting import Setting
 
@@ -81,6 +82,7 @@ def test_migrated_schema_matches_models(tmp_path: Path) -> None:
     upgrade_to_head(path)
     assert Setting.__tablename__ in Base.metadata.tables
     assert HttpCacheEntry.__tablename__ in Base.metadata.tables
+    assert Command.__tablename__ in Base.metadata.tables
 
     engine = create_engine(f"sqlite:///{path}")
     with engine.connect() as connection:
@@ -88,6 +90,24 @@ def test_migrated_schema_matches_models(tmp_path: Path) -> None:
     engine.dispose()
 
     assert differences == []
+
+
+def test_upgrade_creates_the_command_table_and_the_indexes(tmp_path: Path) -> None:
+    path = tmp_path / "tomarr.db"
+
+    upgrade_to_head(path)
+
+    engine = create_engine(f"sqlite:///{path}")
+    inspector = inspect(engine)
+    command_indexes = {
+        index["name"]: index["column_names"] for index in inspector.get_indexes("command")
+    }
+    cache_indexes = {
+        index["name"]: index["column_names"] for index in inspector.get_indexes("http_cache")
+    }
+    engine.dispose()
+    assert command_indexes == {"ix_command_claim": ["status", "priority", "queued_at"]}
+    assert cache_indexes == {"ix_http_cache_expires_at": ["expires_at"]}
 
 
 def test_upgrade_finds_scripts_from_any_working_directory(

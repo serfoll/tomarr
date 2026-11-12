@@ -2,6 +2,7 @@ import hashlib
 from collections.abc import Callable
 from dataclasses import dataclass
 
+from sqlalchemy import delete
 from sqlalchemy.dialects.sqlite import insert
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
@@ -53,6 +54,15 @@ class ResponseCache:
         )
         async with self._session_factory.begin() as session:
             await session.execute(statement)
+
+    async def purge_expired(self) -> int:
+        async with self._session_factory.begin() as session:
+            deleted = await session.scalars(
+                delete(HttpCacheEntry)
+                .where(HttpCacheEntry.expires_at <= self._now())
+                .returning(HttpCacheEntry.key)
+            )
+            return len(deleted.all())
 
 
 def _key(adapter: str, method: str, url: str) -> str:

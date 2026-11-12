@@ -1,15 +1,30 @@
+import asyncio
 import logging
 import sqlite3
+import time
+from contextlib import AsyncExitStack
 from pathlib import Path
 
 import pytest
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, select, text
 from sqlalchemy.pool import QueuePool
 
+from tests.helpers.event_stream import EventStream
 from tomarr.app import create_app, lifespan
+from tomarr.commands.purge_http_cache import PURGE_HTTP_CACHE
+from tomarr.commands.runner import CommandRunner
+from tomarr.commands.scheduler import CommandScheduler
+from tomarr.core.broadcaster import Broadcaster
 from tomarr.core.database import Database
 from tomarr.core.http import HttpClientFactory
+from tomarr.domain.command import Command, CommandStatus
+from tomarr.services.commands import CommandService
+
+# The runner and scheduler use the real clock here, so a test polls for the outcome it waits on.
+POLL_TIMEOUT = 5.0
+POLL_INTERVAL = 0.01
 
 
 def test_lifespan_creates_config_and_log_file_and_releases_handlers(tmp_path: Path) -> None:
@@ -58,7 +73,7 @@ def test_lifespan_migrates_the_database_to_head(tmp_path: Path) -> None:
             tables = connection.execute(text("SELECT name FROM sqlite_master")).scalars().all()
         engine.dispose()
 
-    assert revision == "0002"
+    assert revision == "0003"
     assert "setting" in tables
     assert "http_cache" in tables
 
@@ -78,7 +93,8 @@ def test_lifespan_opens_the_database_and_disposes_it_on_shutdown() -> None:
 
         assert client.portal is not None
         client.portal.call(open_connection)
-        assert pool.checkedin() == 1
+        # The command workers and scheduler use the pool too, so it can hold more than one.
+        assert pool.checkedin() >= 1
 
     assert pool.checkedin() == 0
     assert database.engine.pool is not pool
@@ -181,3 +197,102 @@ def test_lifespan_does_not_warn_once_credentials_are_set(tmp_path: Path) -> None
         pass
 
     assert NO_CREDENTIALS_WARNING not in log_file.read_text(encoding="utf-8")
+
+
+def test_lifespan_puts_the_command_queue_on_app_state() -> None:
+    app = create_app()
+
+    with TestClient(app):
+        assert isinstance(app.state.commands, CommandService)
+        assert isinstance(app.state.broadcaster, Broadcaster)
+        assert isinstance(app.state.runner, CommandRunner)
+        assert isinstance(app.state.scheduler, CommandScheduler)
+
+
+async def purge_commands(app: FastAPI) -> list[Command]:
+    database: Database = app.state.database
+    async with database.session_factory() as session:
+        commands = await session.scalars(
+            select(Command).where(Command.type == PURGE_HTTP_CACHE).order_by(Command.id)
+        )
+        return list(commands)
+
+
+async def wait_for_completed_purge(app: FastAPI) -> list[Command]:
+    async with asyncio.timeout(POLL_TIMEOUT):
+        while True:
+            commands = await purge_commands(app)
+            if any(command.status is CommandStatus.COMPLETED for command in commands):
+                return commands
+            await asyncio.sleep(POLL_INTERVAL)
+
+
+async def test_the_first_start_queues_a_purge_that_completes() -> None:
+    app = create_app()
+
+    async with lifespan(app):
+        [command] = await wait_for_completed_purge(app)
+
+    assert command.status is CommandStatus.COMPLETED
+    assert command.result == {"deleted": 0}
+
+
+async def test_a_command_left_running_is_requeued_at_start_and_runs(database: Database) -> None:
+    now = time.time()
+    interrupted = Command(
+        type=PURGE_HTTP_CACHE,
+        payload={},
+        status=CommandStatus.RUNNING,
+        priority=0,
+        queued_at=now,
+        started_at=now,
+    )
+    async with database.session_factory.begin() as session:
+        session.add(interrupted)
+    app = create_app()
+
+    async with lifespan(app):
+        [command] = await wait_for_completed_purge(app)
+
+    assert command.id == interrupted.id
+    assert command.result == {"deleted": 0}
+
+
+async def test_shutdown_stops_every_task_and_ends_an_open_event_stream(api_key: str) -> None:
+    app = create_app()
+    before = asyncio.all_tasks()
+
+    async with AsyncExitStack() as running:
+        await running.enter_async_context(lifespan(app))
+        async with EventStream(app, api_key) as stream:
+            await stream.next_event()
+
+            await running.aclose()
+            await stream.ended()
+
+    assert stream.status == 200
+    assert asyncio.all_tasks() <= before
+
+
+async def test_shutdown_closes_the_broadcaster_before_stopping_the_scheduler(
+    api_key: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    app = create_app()
+    stop = CommandScheduler.stop
+    subscribers_at_stop: list[int] = []
+
+    async def recording_stop(scheduler: CommandScheduler) -> None:
+        subscribers_at_stop.append(app.state.broadcaster.subscriber_count)
+        await stop(scheduler)
+
+    monkeypatch.setattr(CommandScheduler, "stop", recording_stop)
+
+    async with AsyncExitStack() as running:
+        await running.enter_async_context(lifespan(app))
+        async with EventStream(app, api_key) as stream:
+            await stream.next_event()
+            assert app.state.broadcaster.subscriber_count == 1
+
+            await running.aclose()
+
+    assert subscribers_at_stop == [0]

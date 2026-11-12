@@ -8,6 +8,7 @@ from fastapi import Depends, FastAPI, params
 from fastapi.routing import iter_route_contexts
 from fastapi.testclient import TestClient
 
+from tests.helpers.event_stream import EVENTS_PATH
 from tomarr.api.auth import require_auth
 from tomarr.app import create_app
 from tomarr.core.auth import hash_password
@@ -495,6 +496,13 @@ def test_a_password_change_ends_an_existing_session() -> None:
 
 def test_every_api_route_is_guarded_or_public() -> None:
     assert unguarded_paths(create_app()) == []
+
+
+def test_the_walk_sees_the_command_events_route_as_guarded() -> None:
+    app = create_app()
+
+    assert EVENTS_PATH in {route.path for route in iter_route_contexts(app.routes)}
+    assert EVENTS_PATH not in unguarded_paths(app)
 
 
 def test_the_walk_flags_an_unguarded_route() -> None:
