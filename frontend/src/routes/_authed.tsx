@@ -16,12 +16,13 @@ import { SignOutButton } from "@/components/sign-out-button";
 export const Route = createFileRoute("/_authed")({
 	beforeLoad: async ({ context, location }) => {
 		const status = await ensureAuthStatus(context.queryClient);
+		if (status.authenticated) {
+			return;
+		}
 		if (status.setup_required) {
 			throw redirect({ to: "/sign-up" });
 		}
-		if (!status.authenticated) {
-			throw redirect({ to: "/sign-in", search: { redirect: location.href } });
-		}
+		throw redirect({ to: "/sign-in", search: { redirect: location.href } });
 	},
 	component: AuthedLayout,
 });

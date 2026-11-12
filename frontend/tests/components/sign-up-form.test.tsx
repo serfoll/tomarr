@@ -48,6 +48,17 @@ test("labels the fields with the autocomplete hints a password manager reads", a
 	).toBe("new-password");
 });
 
+test("tells the visitor to save the password without naming the reset variable", async () => {
+	await openSignUp();
+
+	const note = screen.getByText(
+		"Save your password somewhere safe, such as a password manager. If you lose it, the Tomarr documentation explains how to reset it.",
+	);
+	expect(note.getAttribute("role")).toBeNull();
+	expect(note.textContent).not.toContain("TOMARR");
+	expect(screen.queryByRole("alert")).toBeNull();
+});
+
 test("a blank username shows a message and sends nothing", async () => {
 	const { fetchMock } = await openSignUp();
 
