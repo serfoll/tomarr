@@ -111,6 +111,26 @@ test("a valid sign-up posts only the username and password and lands in the app"
 	).toEqual({ username: "admin", password });
 });
 
+test("two submits before the first answers send one setup request", async () => {
+	const backend = fakeAuthBackend();
+	const held = heldRoute(backend.routes[setupKey]);
+	const { fetchMock } = await openSignUp({
+		...backend.routes,
+		[setupKey]: held.route,
+	});
+	fillIn("Username", "admin");
+	fillIn("Password", password);
+	fillIn("Confirm password", password);
+	const form = screen.getByRole("button", { name: "Sign up" }).closest("form");
+
+	fireEvent.submit(form as HTMLFormElement);
+	fireEvent.submit(form as HTMLFormElement);
+	held.release();
+
+	await screen.findByRole("heading", { name: "Tomarr" });
+	expect(requestsTo(fetchMock, setupKey)).toHaveLength(1);
+});
+
 test("a password set in the meantime sends the visitor to a plain sign-in form", async () => {
 	const backend = fakeAuthBackend();
 	const { router } = await openSignUp(backend.routes);

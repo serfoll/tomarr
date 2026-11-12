@@ -19,6 +19,9 @@ export function SignInForm({ onSignedIn }: SignInFormProps) {
 
 	function submit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
+		if (signIn.isPending) {
+			return;
+		}
 		setMessage("");
 		signIn.mutate(
 			{ username, password },

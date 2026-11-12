@@ -51,6 +51,24 @@ test("an answer that is not an auth status says the page could not read it", asy
 	);
 });
 
+test.each([0, -1, 1.5])(
+	"a password minimum of %s is not an auth status",
+	async (passwordMinLength) => {
+		stubFetch({
+			[statusKey]: () =>
+				Response.json({
+					setup_required: true,
+					authenticated: false,
+					password_min_length: passwordMinLength,
+				}),
+		});
+
+		renderApp("/sign-up");
+
+		expect(await alertText()).toContain("could not read");
+	},
+);
+
 test("Try again asks the backend again and lands in the app once it answers", async () => {
 	let backendUp = false;
 	const backend = fakeAuthBackend({ credentials, signedIn: true });

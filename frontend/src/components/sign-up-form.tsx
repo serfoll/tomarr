@@ -40,6 +40,9 @@ export function SignUpForm({
 
 	function submit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
+		if (signUp.isPending) {
+			return;
+		}
 		const problem = problemBeforeSending();
 		setMessage(problem);
 		if (problem !== "") {

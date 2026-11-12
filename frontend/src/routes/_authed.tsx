@@ -1,5 +1,16 @@
-import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
-import { ensureAuthStatus } from "@/api/use-auth-status";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	createFileRoute,
+	Outlet,
+	redirect,
+	useRouter,
+} from "@tanstack/react-router";
+import { useEffect } from "react";
+import {
+	authStatusQueryOptions,
+	dropPrivateQueries,
+	ensureAuthStatus,
+} from "@/api/use-auth-status";
 import { SignOutButton } from "@/components/sign-out-button";
 
 export const Route = createFileRoute("/_authed")({
@@ -16,6 +27,20 @@ export const Route = createFileRoute("/_authed")({
 });
 
 function AuthedLayout() {
+	const router = useRouter();
+	const queryClient = useQueryClient();
+	// A static stale time would exempt the status from the refetch that follows sign-out and a 401.
+	const status = useQuery({ ...authStatusQueryOptions, refetchOnMount: false });
+	const signedOut = status.data !== undefined && !status.data.authenticated;
+
+	// Sign-out and an ended session both land here once the status is refetched, and the guard picks the page.
+	useEffect(() => {
+		if (signedOut) {
+			dropPrivateQueries(queryClient);
+			void router.invalidate();
+		}
+	}, [signedOut, queryClient, router]);
+
 	return (
 		<>
 			<SignOutButton />

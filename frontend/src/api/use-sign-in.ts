@@ -17,6 +17,8 @@ async function signIn(credentials: Credentials) {
 export function useSignIn() {
 	const queryClient = useQueryClient();
 	return useMutation({
+		// The default keeps the variables, which hold the password, for five minutes after the form closes.
+		gcTime: 0,
 		mutationFn: signIn,
 		onSuccess: () => refetchAuthStatus(queryClient),
 	});

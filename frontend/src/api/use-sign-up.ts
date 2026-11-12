@@ -17,6 +17,7 @@ async function signUp(credentials: Credentials) {
 export function useSignUp() {
 	const queryClient = useQueryClient();
 	return useMutation({
+		gcTime: 0,
 		mutationFn: signUp,
 		onSuccess: () => refetchAuthStatus(queryClient),
 	});

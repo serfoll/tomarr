@@ -28,6 +28,25 @@ function submit(password = credentials.password) {
 	fireEvent.click(screen.getByRole("button", { name: "Sign in" }));
 }
 
+test("two submits before the first answers send one login request", async () => {
+	const backend = fakeAuthBackend({ credentials });
+	const held = heldRoute(backend.routes[loginKey]);
+	const { fetchMock } = await openSignIn("/sign-in", {
+		...backend.routes,
+		[loginKey]: held.route,
+	});
+	fillIn("Username", credentials.username);
+	fillIn("Password", credentials.password);
+	const form = screen.getByRole("button", { name: "Sign in" }).closest("form");
+
+	fireEvent.submit(form as HTMLFormElement);
+	fireEvent.submit(form as HTMLFormElement);
+	held.release();
+
+	await screen.findByRole("heading", { name: "Tomarr" });
+	expect(requestsTo(fetchMock, loginKey)).toHaveLength(1);
+});
+
 test("labels the fields with the autocomplete hints a password manager reads", async () => {
 	await openSignIn();
 

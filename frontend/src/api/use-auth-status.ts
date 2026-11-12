@@ -24,7 +24,9 @@ function isAuthStatus(body: unknown): body is AuthStatus {
 		"authenticated" in body &&
 		typeof body.authenticated === "boolean" &&
 		"password_min_length" in body &&
-		typeof body.password_min_length === "number"
+		typeof body.password_min_length === "number" &&
+		Number.isInteger(body.password_min_length) &&
+		body.password_min_length >= 1
 	);
 }
 
@@ -73,5 +75,12 @@ export function refetchAuthStatus(queryClient: QueryClient) {
 	return queryClient.invalidateQueries({
 		queryKey: authStatusKey,
 		refetchType: "all",
+	});
+}
+
+// Everything cached except the auth status belongs to the visitor who just signed out.
+export function dropPrivateQueries(queryClient: QueryClient) {
+	queryClient.removeQueries({
+		predicate: (query) => query.queryKey[0] !== authStatusKey[0],
 	});
 }
