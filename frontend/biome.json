@@ -1,0 +1,60 @@
+{
+	"$schema": "https://biomejs.dev/schemas/2.6.6/schema.json",
+	"vcs": {
+		"enabled": true,
+		"clientKind": "git",
+		"useIgnoreFile": true,
+		"root": ".."
+	},
+	"files": {
+		"ignoreUnknown": false,
+		"includes": ["**", "!dist", "!src/routeTree.gen.ts"]
+	},
+	"formatter": {
+		"enabled": true,
+		"indentStyle": "tab"
+	},
+	"linter": {
+		"enabled": true,
+		"rules": {
+			"preset": "recommended",
+			"suspicious": {
+				"noExplicitAny": "error"
+			},
+			"style": {
+				"useFilenamingConvention": {
+					"level": "error",
+					"options": { "filenameCases": ["kebab-case"] }
+				},
+				"useConsistentTypeDefinitions": {
+					"level": "error",
+					"options": { "style": "interface" }
+				},
+				"noRestrictedImports": {
+					"level": "error",
+					"options": {
+						"patterns": [
+							{
+								"group": ["../../**"],
+								"message": "Import through the @/ alias instead of a deep relative path."
+							}
+						]
+					}
+				}
+			}
+		}
+	},
+	"javascript": {
+		"formatter": {
+			"quoteStyle": "double"
+		}
+	},
+	"assist": {
+		"enabled": true,
+		"actions": {
+			"source": {
+				"organizeImports": "on"
+			}
+		}
+	}
+}

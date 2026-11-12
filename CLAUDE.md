@@ -99,14 +99,20 @@ Scaffold issues install only packages listed here. Any later addition is asked f
 
 ## Commands
 
-The backend is scaffolded; the frontend and Docker parts are not yet. Backend commands run from `backend/` and exist now. Until a frontend or Docker command exists in `package.json` or a compose file, don't reference it as if it does.
+The backend and frontend are scaffolded; the Docker parts are not yet. Backend commands run from `backend/` and frontend commands from `frontend/`. Until a command exists in `pyproject.toml`, `package.json` or a compose file, don't reference it as if it does.
 
 | Task | Command |
 |---|---|
 | Backend tests (from `backend/`) | `uv run pytest` |
 | Backend lint and types (from `backend/`) | `uv run ruff check . && uv run ruff format --check . && uv run pyright` |
 | Backend dev server (from `backend/`). The timeout stops an open event stream from blocking Ctrl-C | `uv run uvicorn tomarr.app:create_app --factory --reload --timeout-graceful-shutdown 5` |
-| Frontend lint | `pnpm lint` |
-| Frontend tests | `pnpm test` |
-| Regenerate API types | `pnpm gen:api` |
+| Frontend dev server (from `frontend/`). Proxies `/api` to the backend on `127.0.0.1:8000` | `pnpm dev` |
+| Frontend dev server signed in to the backend (from `frontend/`) | `TOMARR_DEV_API_KEY="$(sed -n 's/^apikey = "\(.*\)"$/\1/p' "${TOMARR_CONFIG_DIR:-/config}/config.toml")" pnpm dev` |
+| Frontend lint (from `frontend/`) | `pnpm lint` |
+| Frontend types (from `frontend/`) | `pnpm typecheck` |
+| Frontend tests (from `frontend/`) | `pnpm test` |
+| Frontend build into `frontend/dist/` (from `frontend/`). Type checks first | `pnpm build` |
+| Regenerate API types (planned for #13) | `pnpm gen:api` |
 | Dev stack (Prowlarr, qBittorrent, SABnzbd, Suwayomi, Kavita) | `docker compose -f docker/docker-compose.dev.yml up` |
+
+The dev server adds `X-Api-Key` to proxied `/api` requests when `TOMARR_DEV_API_KEY` is set. Read the key from `config.toml` with a command substitution as shown above, and never type it into a command. Vite reads it in `vite.config.ts` only, so it never reaches the bundle.
