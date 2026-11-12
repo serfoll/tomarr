@@ -70,6 +70,16 @@ test("a password shorter than the server's minimum shows that minimum and sends 
 	expect(requestsTo(fetchMock, setupKey)).toHaveLength(0);
 });
 
+test("the minimum counts characters as the server does, not UTF-16 units", async () => {
+	const { fetchMock } = await openSignUp();
+	const fourEmoji = "🔑🔑🔑🔑";
+
+	submit({ chosen: fourEmoji, confirmation: fourEmoji });
+
+	expect(await alertText()).toBe("Choose a password of at least 8 characters.");
+	expect(requestsTo(fetchMock, setupKey)).toHaveLength(0);
+});
+
 test("a confirmation that does not match shows a message and sends nothing", async () => {
 	const { fetchMock } = await openSignUp();
 

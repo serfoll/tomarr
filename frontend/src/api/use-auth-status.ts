@@ -57,7 +57,7 @@ export function useAuthStatus() {
 	return useQuery(authStatusQueryOptions);
 }
 
-// The cached status is trusted until a mutation refetches it. A failed refetch keeps the old data next to the error, and a guard that trusted it would send a visitor who just signed in back to sign-in.
+// The cached status is trusted until a mutation refetches it. A failed refetch keeps the old data next to the error, so that data is fetched again instead.
 export function ensureAuthStatus(queryClient: QueryClient) {
 	const lastFetchFailed =
 		queryClient.getQueryState(authStatusKey)?.status === "error";
