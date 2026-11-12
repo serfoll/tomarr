@@ -133,11 +133,13 @@ See `docs/adr/0005`.
 
 ## Serving the frontend
 
-`api/static.py` registers a catch-all route for every method at `/{path:path}` as the last route in `create_app()`, so every API route, `/docs`, `/redoc` and `/openapi.json` match first. It is left out of the OpenAPI schema. The build is read from `TOMARR_STATIC_DIR`, which defaults to `frontend/dist` in the checkout. If that directory does not exist, the route is not registered and the backend behaves as it does without a frontend.
+`api/static.py` registers a catch-all route at `/{path:path}` for `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE` and `OPTIONS`, as the last route in `create_app()`, so every API route, `/docs`, `/redoc` and `/openapi.json` match first. It is left out of the OpenAPI schema. The build is read from `TOMARR_STATIC_DIR`, which defaults to `frontend/dist` in the checkout. An empty value counts as unset. If the directory has no `index.html` (missing, or a half-written build), the route is not registered and the backend behaves as it does without a frontend.
 
-- A path that resolves to a file inside the build directory returns that file. A path that resolves outside it, by `..`, an absolute path or a symlink, is treated as any other unknown path.
-- Any other path returns `index.html` with status 200 for `GET` and `HEAD`, so a deep link to a client route loads the app and the router takes over. Other methods get a 405.
-- A path under `/api` that matches no route raises a 404 for every method, which the error handlers turn into the JSON error shape. It never returns `index.html`, and it is checked before the method.
+- The catch-all never matches a path under `/api`. Routing there works as if there were no build: a wrong method on a real API route is a 405 with that route's `Allow` header, and a path that matches no API route is the JSON 404 for any method. Neither ever returns `index.html`.
+- A path that resolves to a file inside the build directory returns that file for `GET` and `HEAD`. A path that resolves outside it, by `..`, an absolute path or a symlink, or that is too long for the file system, is treated as any other unknown path.
+- An unknown path under `/assets` is the JSON 404, so a browser holding an old `index.html` never gets HTML for a module script.
+- Any other path returns `index.html` with status 200 for `GET` and `HEAD`, so a deep link to a client route loads the app and the router takes over.
+- Outside `/api`, the other registered methods get the JSON 405 with `Allow: GET, HEAD`.
 - The build is made for the base path `/`. `urlbase` is not applied to it yet.
 
 In development, `pnpm dev` runs the Vite dev server, which proxies `/api` to the backend on `127.0.0.1:8000`. If `TOMARR_DEV_API_KEY` is set, the proxy adds it as the `X-Api-Key` header, so the shell can call guarded routes without a login page. The variable is read by `vite.config.ts` only and never ships in the build.
