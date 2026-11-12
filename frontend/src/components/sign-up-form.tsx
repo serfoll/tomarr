@@ -84,6 +84,10 @@ export function SignUpForm({
 					onChange={(event) => setConfirmation(event.target.value)}
 				/>
 			</label>
+			<p>
+				Save your password somewhere safe, such as a password manager. If you
+				lose it, the Tomarr documentation explains how to reset it.
+			</p>
 			{message !== "" && <p role="alert">{message}</p>}
 			<button type="submit" disabled={signUp.isPending}>
 				Sign up

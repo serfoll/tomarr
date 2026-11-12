@@ -17,11 +17,11 @@ export const Route = createFileRoute("/sign-in")({
 	},
 	beforeLoad: async ({ context }) => {
 		const status = await ensureAuthStatus(context.queryClient);
-		if (status.setup_required) {
-			throw redirect({ to: "/sign-up" });
-		}
 		if (status.authenticated) {
 			throw redirect({ to: "/" });
+		}
+		if (status.setup_required) {
+			throw redirect({ to: "/sign-up" });
 		}
 	},
 	component: SignInPage,
