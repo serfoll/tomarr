@@ -2,7 +2,9 @@ import { act } from "@testing-library/react";
 import { describe, expect, test, vi } from "vitest";
 import { ApiError } from "@/api/errors";
 import {
+	errorBody,
 	expectStatusRefetchAwaited,
+	noContent,
 	renderHookWithQuery,
 	requestsTo,
 	statusBody,
@@ -24,12 +26,7 @@ interface Suite {
 }
 
 const credentials = { username: "admin", password: "p&ss word=1+%" };
-const noContent = () => new Response(null, { status: 204 });
 const statusRoute = () => Response.json(statusBody);
-
-function errorBody(code: string) {
-	return { code, message: "Server text.", request_id: "abc123" };
-}
 
 export function describeCredentialsMutation({
 	name,
