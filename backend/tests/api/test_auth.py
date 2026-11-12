@@ -578,3 +578,76 @@ def test_the_walk_flags_an_unguarded_method_on_a_public_path() -> None:
         return None
 
     assert unguarded_paths(app) == [f"{API}/system/health"]
+
+
+RESET_PASSWORD_ENV = "TOMARR__AUTH__RESET_PASSWORD"
+NEW_USERNAME = "owner"
+NEW_PASSWORD = "a brand new password"
+
+
+def set_up_and_keep_the_cookie() -> str:
+    with TestClient(create_app()) as first:
+        assert set_up(first).status_code == 204
+        cookie = first.cookies.get("tomarr_session")
+    assert cookie is not None
+    return cookie
+
+
+def setup_required_after_a_restart() -> bool:
+    with TestClient(create_app()) as restarted:
+        return restarted.get(f"{API}/auth/status").json()["setup_required"]
+
+
+def test_the_reset_window_lets_one_setup_replace_the_credentials(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    set_up_and_keep_the_cookie()
+    monkeypatch.setenv(RESET_PASSWORD_ENV, "true")
+
+    with TestClient(create_app()) as client:
+        assert client.get(f"{API}/auth/status").json()["setup_required"] is True
+
+        response = set_up(client, NEW_USERNAME, NEW_PASSWORD)
+        assert response.status_code == 204
+        assert sets_session_cookie(response)
+        assert client.get(GUARDED).status_code == 200
+        assert client.get(f"{API}/auth/status").json()["setup_required"] is False
+
+        again = set_up(client, "intruder", "another password")
+        assert again.status_code == 409
+        assert error_code(again) == "setup_already_done"
+
+
+def test_the_reset_ends_the_old_cookie_and_the_old_password(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    old_cookie = set_up_and_keep_the_cookie()
+    monkeypatch.setenv(RESET_PASSWORD_ENV, "true")
+
+    with TestClient(create_app()) as client:
+        assert set_up(client, NEW_USERNAME, NEW_PASSWORD).status_code == 204
+        client.cookies.clear()
+        client.cookies.set("tomarr_session", old_cookie)
+
+        assert client.get(GUARDED).status_code == 401
+        client.cookies.clear()
+        assert log_in(client).status_code == 401
+        assert log_in(client, NEW_USERNAME, PASSWORD).status_code == 401
+        assert log_in(client, NEW_USERNAME, NEW_PASSWORD).status_code == 204
+
+
+def test_after_a_reset_the_window_stays_closed_until_a_start_without_the_variable(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    set_up_and_keep_the_cookie()
+    monkeypatch.setenv(RESET_PASSWORD_ENV, "true")
+    with TestClient(create_app()) as client:
+        assert set_up(client, NEW_USERNAME, NEW_PASSWORD).status_code == 204
+
+    assert setup_required_after_a_restart() is False
+
+    monkeypatch.delenv(RESET_PASSWORD_ENV)
+    assert setup_required_after_a_restart() is False
+
+    monkeypatch.setenv(RESET_PASSWORD_ENV, "true")
+    assert setup_required_after_a_restart() is True

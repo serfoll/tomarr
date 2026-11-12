@@ -16,10 +16,11 @@ from tomarr.services import auth as auth_module
 from tomarr.services.auth import (
     CREDENTIALS,
     LOCAL_BYPASS,
+    RESET_CONSUMED,
     AuthService,
     Credentials,
 )
-from tomarr.services.settings import SettingsService, registry
+from tomarr.services.settings import SettingKey, SettingsService, registry
 
 USERNAME = "reader"
 PASSWORD = "correct horse battery"
@@ -39,7 +40,12 @@ def settings(database: Database) -> SettingsService:
 
 @pytest.fixture
 def auth(settings: SettingsService) -> AuthService:
-    return AuthService(settings)
+    return AuthService(settings, reset_requested=False)
+
+
+@pytest.fixture
+def reset_auth(settings: SettingsService) -> AuthService:
+    return AuthService(settings, reset_requested=True)
 
 
 @pytest.fixture
@@ -99,7 +105,7 @@ def test_keys_are_declared_on_the_registry() -> None:
     # SettingsRegistry.keys() is not a dict method, the registry is not iterable.
     names = {key.name for key in registry.keys()}  # noqa: SIM118
 
-    assert {"auth.credentials", "auth.local_bypass"} <= names
+    assert {"auth.credentials", "auth.local_bypass", "auth.reset_consumed"} <= names
 
 
 async def test_setup_required_is_true_on_a_fresh_database(auth: AuthService) -> None:
@@ -139,7 +145,7 @@ async def test_each_setup_generates_its_own_session_secret(
     try:
         other_settings = SettingsService(other_db.session_factory)
         await auth.setup(USERNAME, PASSWORD)
-        await AuthService(other_settings).setup(USERNAME, PASSWORD)
+        await AuthService(other_settings, reset_requested=False).setup(USERNAME, PASSWORD)
 
         first = await settings.get(CREDENTIALS)
         second = await other_settings.get(CREDENTIALS)
@@ -366,3 +372,199 @@ def test_credentials_repr_hides_the_hash_and_the_secret() -> None:
 
     assert "hash-value" not in shown
     assert "secret-value" not in shown
+
+
+NEW_USERNAME = "owner"
+NEW_PASSWORD = "a brand new password"
+
+
+def record_writes(settings: SettingsService, monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    written: list[str] = []
+    real_set = settings.set
+
+    async def recording_set[T](key: SettingKey[T], value: T) -> None:
+        written.append(key.name)
+        await real_set(key, value)
+
+    monkeypatch.setattr(settings, "set", recording_set)
+    return written
+
+
+def fail_writes_to(
+    failing: SettingKey[object], settings: SettingsService, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    real_set = settings.set
+
+    async def failing_set[T](key: SettingKey[T], value: T) -> None:
+        if key.name == failing.name:
+            raise RuntimeError("write failed")
+        await real_set(key, value)
+
+    monkeypatch.setattr(settings, "set", failing_set)
+
+
+async def test_the_reset_window_is_open_with_credentials_stored(
+    reset_auth: AuthService, seeded: Credentials
+) -> None:
+    assert await reset_auth.setup_required() is True
+
+
+async def test_setup_in_the_reset_window_replaces_the_credentials(
+    reset_auth: AuthService, settings: SettingsService, seeded: Credentials
+) -> None:
+    token = await reset_auth.setup(NEW_USERNAME, NEW_PASSWORD)
+
+    credentials = await settings.get(CREDENTIALS)
+    assert credentials is not None
+    assert credentials.username == NEW_USERNAME
+    new_password_matches = verify_password(NEW_PASSWORD, credentials.password_hash)
+    assert new_password_matches
+    new_secret = credentials.session_secret != seeded.session_secret
+    assert new_secret
+    accepted = await reset_auth.verify_session(token)
+    assert accepted
+
+
+async def test_a_second_setup_in_the_reset_window_raises_and_keeps_the_reset_credentials(
+    reset_auth: AuthService, settings: SettingsService, seeded: Credentials
+) -> None:
+    await reset_auth.setup(NEW_USERNAME, NEW_PASSWORD)
+    after_reset = await settings.get(CREDENTIALS)
+
+    with pytest.raises(SetupAlreadyDone):
+        await reset_auth.setup("intruder", "another password")
+
+    unchanged = await settings.get(CREDENTIALS) == after_reset
+    assert unchanged
+    assert await reset_auth.setup_required() is False
+
+
+async def test_concurrent_setups_in_the_reset_window_leave_one_winner(
+    reset_auth: AuthService, settings: SettingsService, seeded: Credentials
+) -> None:
+    results = await asyncio.gather(
+        reset_auth.setup("first", "first password"),
+        reset_auth.setup("second", "second password"),
+        return_exceptions=True,
+    )
+
+    winners = [r for r in results if isinstance(r, str)]
+    loser_count = sum(isinstance(r, SetupAlreadyDone) for r in results)
+    winner_count = len(winners)
+    assert winner_count == 1
+    assert loser_count == 1
+    credentials = await settings.get(CREDENTIALS)
+    assert credentials is not None
+    assert credentials.username in {"first", "second"}
+
+
+async def test_the_reset_ends_the_old_session_and_the_old_password(
+    reset_auth: AuthService, seeded: Credentials
+) -> None:
+    old_token = await reset_auth.login(USERNAME, PASSWORD)
+    assert old_token is not None
+
+    await reset_auth.setup(NEW_USERNAME, NEW_PASSWORD)
+
+    old_session_rejected = await reset_auth.verify_session(old_token) is False
+    assert old_session_rejected
+    old_password_rejected = await reset_auth.login(USERNAME, PASSWORD) is None
+    assert old_password_rejected
+    old_password_new_name_rejected = await reset_auth.login(NEW_USERNAME, PASSWORD) is None
+    assert old_password_new_name_rejected
+    new_login = await reset_auth.login(NEW_USERNAME, NEW_PASSWORD)
+    assert new_login is not None
+
+
+async def test_after_a_reset_a_restart_with_the_variable_still_set_stays_closed(
+    reset_auth: AuthService, settings: SettingsService, seeded: Credentials
+) -> None:
+    await reset_auth.setup(NEW_USERNAME, NEW_PASSWORD)
+
+    restarted = AuthService(settings, reset_requested=True)
+    await restarted.rearm_reset()
+
+    assert await restarted.setup_required() is False
+    with pytest.raises(SetupAlreadyDone):
+        await restarted.setup("intruder", "another password")
+
+
+async def test_a_restart_without_the_variable_rearms_the_next_reset(
+    reset_auth: AuthService, settings: SettingsService, seeded: Credentials
+) -> None:
+    await reset_auth.setup(NEW_USERNAME, NEW_PASSWORD)
+
+    unset = AuthService(settings, reset_requested=False)
+    await unset.rearm_reset()
+    assert await unset.setup_required() is False
+
+    set_again = AuthService(settings, reset_requested=True)
+    await set_again.rearm_reset()
+    assert await set_again.setup_required() is True
+
+
+async def test_without_the_variable_nothing_changes_and_rearm_writes_nothing(
+    auth: AuthService,
+    settings: SettingsService,
+    seeded: Credentials,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    written = record_writes(settings, monkeypatch)
+
+    await auth.rearm_reset()
+
+    assert written == []
+    assert await auth.setup_required() is False
+    with pytest.raises(SetupAlreadyDone):
+        await auth.setup(NEW_USERNAME, NEW_PASSWORD)
+    unchanged = await settings.get(CREDENTIALS) == seeded
+    assert unchanged
+    assert await settings.get(RESET_CONSUMED) is False
+
+
+async def test_rearm_with_the_variable_set_writes_nothing(
+    reset_auth: AuthService,
+    settings: SettingsService,
+    seeded: Credentials,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    written = record_writes(settings, monkeypatch)
+
+    await reset_auth.rearm_reset()
+
+    assert written == []
+
+
+async def test_a_failed_credentials_write_closes_the_window_and_keeps_the_old_password(
+    reset_auth: AuthService,
+    settings: SettingsService,
+    seeded: Credentials,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fail_writes_to(CREDENTIALS, settings, monkeypatch)
+
+    with pytest.raises(RuntimeError, match="write failed"):
+        await reset_auth.setup(NEW_USERNAME, NEW_PASSWORD)
+
+    assert await reset_auth.setup_required() is False
+    unchanged = await settings.get(CREDENTIALS) == seeded
+    assert unchanged
+    old_login = await reset_auth.login(USERNAME, PASSWORD)
+    assert old_login is not None
+
+
+async def test_a_failed_marker_write_leaves_the_window_open_and_nothing_changed(
+    reset_auth: AuthService,
+    settings: SettingsService,
+    seeded: Credentials,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fail_writes_to(RESET_CONSUMED, settings, monkeypatch)
+
+    with pytest.raises(RuntimeError, match="write failed"):
+        await reset_auth.setup(NEW_USERNAME, NEW_PASSWORD)
+
+    assert await reset_auth.setup_required() is True
+    unchanged = await settings.get(CREDENTIALS) == seeded
+    assert unchanged
+    assert await settings.get(RESET_CONSUMED) is False

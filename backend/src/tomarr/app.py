@@ -58,7 +58,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
             database.session_factory, clock=time.monotonic, sleep=asyncio.sleep, now=time.time
         )
         settings_service = SettingsService(database.session_factory)
-        auth_service = AuthService(settings_service)
+        auth_service = AuthService(settings_service, reset_requested=settings.auth.reset_password)
+        await auth_service.rearm_reset()
         app.state.auth = auth_service
         if await auth_service.setup_required():
             logger.warning(
