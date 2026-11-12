@@ -21,7 +21,7 @@ from tomarr.core.broadcaster import Broadcaster
 from tomarr.core.database import Database
 from tomarr.core.http import HttpClientFactory
 from tomarr.domain.command import Command, CommandStatus
-from tomarr.services.auth import CREDENTIALS
+from tomarr.services.auth import CREDENTIALS, Credentials
 from tomarr.services.commands import CommandService
 from tomarr.services.settings import SettingsService
 
@@ -293,6 +293,32 @@ def test_a_reset_logs_neither_the_password_nor_the_hash(
     # Counted, so a failure cannot print the password or the hash.
     leaks = sum(RESET_PASSWORD in text or password_hash in text for text in logged)
     assert leaks == 0
+
+
+def test_debug_logging_of_a_setup_and_login_leaks_no_credential(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    monkeypatch.setenv("TOMARR__LOG__LEVEL", "debug")
+    app = create_app()
+    form = {"username": "owner", "password": RESET_PASSWORD}
+
+    async def stored_credentials() -> Credentials:
+        credentials = await SettingsService(app.state.database.session_factory).get(CREDENTIALS)
+        assert credentials is not None
+        return credentials
+
+    with TestClient(app) as client:
+        assert client.post("/api/v1/auth/setup", data=form).status_code == 204
+        assert client.post("/api/v1/auth/login", data=form).status_code == 204
+        assert client.portal is not None
+        credentials = client.portal.call(stored_credentials)
+
+    logged = [record.getMessage() for record in caplog.records]
+    logged.append((tmp_path / "logs" / "tomarr.log").read_text(encoding="utf-8"))
+    leaked = (RESET_PASSWORD, credentials.password_hash, credentials.session_secret)
+    # Counted, so a failure cannot print a credential.
+    leaks = [sum(value in text for text in logged) for value in leaked]
+    assert leaks == [0, 0, 0]
 
 
 def test_lifespan_puts_the_command_queue_on_app_state() -> None:
