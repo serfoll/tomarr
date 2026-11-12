@@ -88,9 +88,10 @@ def config_dir() -> Path:
 
 def static_dir() -> Path:
     # TOMARR_STATIC_DIR points the image at the build it ships. The default is the checkout's
-    # build, so a local run serves what `pnpm build` wrote.
+    # build, so a local run serves what `pnpm build` wrote. An empty value counts as unset, since
+    # Path("") is the working directory.
     default = Path(__file__).parents[4] / "frontend" / "dist"
-    return Path(os.environ.get("TOMARR_STATIC_DIR", default))
+    return Path(os.environ.get("TOMARR_STATIC_DIR") or default)
 
 
 def load_settings(config_dir: Path) -> Settings:

@@ -133,8 +133,8 @@ def create_app() -> FastAPI:
     app.include_router(protected, prefix="/api/v1")
     app.include_router(auth.router, prefix="/api/v1")
     app.include_router(system.public_router, prefix="/api/v1")
-    # Last, so every route above matches first.
+    # Last, so every route above matches first. A build without index.html is half written.
     build = static_dir()
-    if build.is_dir():
+    if (build / "index.html").is_file():
         static.serve_build(app, build)
     return app

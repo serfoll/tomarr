@@ -70,7 +70,30 @@ def test_a_write_method_on_a_static_path_is_405(static_client: TestClient) -> No
 
     assert response.status_code == 405
     assert response.json()["code"] == ErrorCode.METHOD_NOT_ALLOWED
-    assert "GET" in response.headers["allow"]
+    assert response.headers["allow"] == "GET, HEAD"
+
+
+@pytest.mark.parametrize(
+    ("method", "path", "allowed"),
+    [
+        ("POST", HEALTH, "GET"),
+        ("POST", "/api/v1/system/status", "GET"),
+        ("PUT", "/api/v1/auth/login", "POST"),
+        ("GET", "/api/v1/auth/login", "POST"),
+    ],
+)
+def test_a_wrong_method_on_an_api_route_stays_405(
+    static_client: TestClient, method: str, path: str, allowed: str
+) -> None:
+    response = static_client.request(method, path)
+
+    assert response.status_code == 405
+    assert response.json() == {
+        "code": "method_not_allowed",
+        "message": "This address does not accept that method.",
+        "request_id": response.headers["x-request-id"],
+    }
+    assert response.headers["allow"] == allowed
 
 
 @pytest.mark.parametrize("path", ["/api", "/api/v1/does-not-exist", "/api/anything/else"])
@@ -92,6 +115,7 @@ def test_an_unknown_api_path_is_the_json_404(static_client: TestClient, path: st
         ("PUT", "/api/v1/nope"),
         ("PATCH", "/api/v1/nope"),
         ("DELETE", "/api/v1/nope"),
+        ("OPTIONS", "/api/v1/nope"),
         ("POST", "/api"),
     ],
 )
@@ -106,6 +130,36 @@ def test_a_write_method_on_an_unknown_api_path_is_the_json_404(
         "message": "Nothing exists at this address.",
         "request_id": response.headers["x-request-id"],
     }
+
+
+def test_head_on_an_unknown_api_path_is_a_404_without_html(static_client: TestClient) -> None:
+    response = static_client.head("/api/v1/nope")
+
+    assert response.status_code == 404
+    assert response.headers["content-type"] == "application/json"
+
+
+@pytest.mark.parametrize("path", ["/assets/old-hash.js", "/assets/", "/assets/" + "a" * 256])
+def test_a_missing_asset_is_the_json_404_not_index_html(
+    static_client: TestClient, path: str
+) -> None:
+    response = static_client.get(path)
+
+    assert response.status_code == 404
+    assert response.json()["code"] == ErrorCode.NOT_FOUND
+
+
+@pytest.mark.parametrize(
+    "path",
+    ["/" + "a" * 256, "/series/" + "a" * 1100, "/" + "/".join(["b" * 250] * 200)],
+)
+def test_a_path_too_long_for_the_file_system_is_a_client_route(
+    static_client: TestClient, path: str
+) -> None:
+    response = static_client.get(path)
+
+    assert response.status_code == 200
+    assert response.text == INDEX
 
 
 def test_api_routes_still_answer(static_client: TestClient) -> None:
@@ -191,6 +245,18 @@ def test_the_app_without_a_build_directory_serves_the_api_and_a_json_404(
     with TestClient(create_app()) as client:
         assert client.get(HEALTH).status_code == 200
         response = client.get("/")
+
+    assert response.status_code == 404
+    assert response.json()["code"] == ErrorCode.NOT_FOUND
+
+
+def test_a_build_without_index_html_is_not_served(
+    build_dir: Path,
+) -> None:
+    (build_dir / "index.html").unlink()
+
+    with TestClient(create_app()) as client:
+        response = client.get("/series/1")
 
     assert response.status_code == 404
     assert response.json()["code"] == ErrorCode.NOT_FOUND

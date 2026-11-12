@@ -127,6 +127,15 @@ def test_static_dir_defaults_to_the_frontend_build(monkeypatch: pytest.MonkeyPat
     assert static_dir() == repo / "frontend" / "dist"
 
 
+def test_an_empty_static_dir_is_the_default_not_the_working_directory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("TOMARR_STATIC_DIR", "")
+    repo = Path(__file__).parents[3]
+
+    assert static_dir() == repo / "frontend" / "dist"
+
+
 @pytest.mark.parametrize("port", [0, 65536])
 def test_port_outside_1_to_65535_is_rejected(port: int) -> None:
     with pytest.raises(ValidationError):
