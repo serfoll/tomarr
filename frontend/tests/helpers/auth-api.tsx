@@ -13,6 +13,7 @@ export const statusBody = {
 	setup_required: false,
 	authenticated: true,
 	password_min_length: 12,
+	password_max_length: 256,
 };
 
 function Wrapper({ children }: { children: ReactNode }) {
@@ -104,6 +105,7 @@ export function fakeAuthBackend({
 				setup_required: state.credentials === undefined,
 				authenticated: state.signedIn,
 				password_min_length: passwordMinLength,
+				password_max_length: 256,
 			}),
 		"POST /api/v1/auth/setup": async (request) => {
 			if (state.credentials !== undefined) {

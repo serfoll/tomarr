@@ -51,23 +51,52 @@ test("an answer that is not an auth status says the page could not read it", asy
 	);
 });
 
+function stubPasswordLimits(limits: { min: number; max: number }) {
+	stubFetch({
+		[statusKey]: () =>
+			Response.json({
+				setup_required: true,
+				authenticated: false,
+				password_min_length: limits.min,
+				password_max_length: limits.max,
+			}),
+	});
+}
+
 test.each([0, -1, 1.5])(
 	"a password minimum of %s is not an auth status",
-	async (passwordMinLength) => {
-		stubFetch({
-			[statusKey]: () =>
-				Response.json({
-					setup_required: true,
-					authenticated: false,
-					password_min_length: passwordMinLength,
-				}),
-		});
+	async (min) => {
+		stubPasswordLimits({ min, max: 256 });
 
 		renderApp("/sign-up");
 
 		expect(await alertText()).toContain("could not read");
 	},
 );
+
+test.each([
+	[1e9, 256],
+	[257, 256],
+	[8, 256.5],
+	[8, 0],
+])(
+	"a password minimum of %s with a maximum of %s is not an auth status",
+	async (min, max) => {
+		stubPasswordLimits({ min, max });
+
+		renderApp("/sign-up");
+
+		expect(await alertText()).toContain("could not read");
+	},
+);
+
+test("a password minimum equal to the maximum is an auth status", async () => {
+	stubPasswordLimits({ min: 12, max: 12 });
+
+	renderApp("/sign-up");
+
+	expect(await screen.findByLabelText("Password")).toBeDefined();
+});
 
 test("Try again asks the backend again and lands in the app once it answers", async () => {
 	let backendUp = false;

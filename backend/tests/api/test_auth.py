@@ -14,7 +14,13 @@ from tomarr.app import create_app
 from tomarr.core.auth import hash_password
 from tomarr.core.database import create_database
 from tomarr.core.migrations import upgrade_to_head
-from tomarr.services.auth import CREDENTIALS, LOCAL_BYPASS, MIN_PASSWORD_LENGTH, AuthService
+from tomarr.services.auth import (
+    CREDENTIALS,
+    LOCAL_BYPASS,
+    MAX_CREDENTIAL_LENGTH,
+    MIN_PASSWORD_LENGTH,
+    AuthService,
+)
 from tomarr.services.settings import SettingsService
 
 API = "/api/v1"
@@ -225,11 +231,12 @@ def test_openapi_declares_the_form_field_limits() -> None:
     assert form_field_limits("Body_setup_api_v1_auth_setup_post", "password") == (8, 256)
 
 
-def test_openapi_auth_status_lists_the_password_minimum_as_a_required_integer() -> None:
+@pytest.mark.parametrize("field", ["password_min_length", "password_max_length"])
+def test_openapi_auth_status_lists_the_password_limits_as_required_integers(field: str) -> None:
     schema = create_app().openapi()["components"]["schemas"]["AuthStatus"]
 
-    assert schema["properties"]["password_min_length"]["type"] == "integer"
-    assert "password_min_length" in schema["required"]
+    assert schema["properties"][field]["type"] == "integer"
+    assert field in schema["required"]
 
 
 def test_auth_status_password_minimum_is_the_one_the_setup_form_enforces(
@@ -240,6 +247,14 @@ def test_auth_status_password_minimum_is_the_one_the_setup_form_enforces(
     assert client.get(f"{API}/auth/status").json()["password_min_length"] == minimum
 
 
+def test_auth_status_password_maximum_is_the_one_the_setup_form_enforces(
+    client: TestClient,
+) -> None:
+    _, maximum = form_field_limits("Body_setup_api_v1_auth_setup_post", "password")
+
+    assert client.get(f"{API}/auth/status").json()["password_max_length"] == maximum
+
+
 def test_auth_status_before_setup_without_credentials(client: TestClient) -> None:
     response = client.get(f"{API}/auth/status")
 
@@ -247,6 +262,7 @@ def test_auth_status_before_setup_without_credentials(client: TestClient) -> Non
         "setup_required": True,
         "authenticated": False,
         "password_min_length": MIN_PASSWORD_LENGTH,
+        "password_max_length": MAX_CREDENTIAL_LENGTH,
     }
 
 
@@ -257,6 +273,7 @@ def test_auth_status_is_authenticated_with_the_api_key(client: TestClient, api_k
         "setup_required": True,
         "authenticated": True,
         "password_min_length": MIN_PASSWORD_LENGTH,
+        "password_max_length": MAX_CREDENTIAL_LENGTH,
     }
 
 
@@ -267,6 +284,7 @@ def test_auth_status_after_setup_follows_the_session_cookie(client: TestClient) 
         "setup_required": False,
         "authenticated": True,
         "password_min_length": MIN_PASSWORD_LENGTH,
+        "password_max_length": MAX_CREDENTIAL_LENGTH,
     }
 
     client.cookies.clear()
@@ -275,6 +293,7 @@ def test_auth_status_after_setup_follows_the_session_cookie(client: TestClient) 
         "setup_required": False,
         "authenticated": False,
         "password_min_length": MIN_PASSWORD_LENGTH,
+        "password_max_length": MAX_CREDENTIAL_LENGTH,
     }
 
 
@@ -288,6 +307,7 @@ def test_auth_status_is_authenticated_for_a_bypassed_local_client(tmp_path: Path
         "setup_required": True,
         "authenticated": True,
         "password_min_length": MIN_PASSWORD_LENGTH,
+        "password_max_length": MAX_CREDENTIAL_LENGTH,
     }
 
 

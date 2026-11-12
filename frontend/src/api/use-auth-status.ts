@@ -26,7 +26,11 @@ function isAuthStatus(body: unknown): body is AuthStatus {
 		"password_min_length" in body &&
 		typeof body.password_min_length === "number" &&
 		Number.isInteger(body.password_min_length) &&
-		body.password_min_length >= 1
+		body.password_min_length >= 1 &&
+		"password_max_length" in body &&
+		typeof body.password_max_length === "number" &&
+		Number.isInteger(body.password_max_length) &&
+		body.password_min_length <= body.password_max_length
 	);
 }
 
@@ -45,6 +49,7 @@ async function getAuthStatus(): Promise<AuthStatus> {
 		setup_required: data.setup_required,
 		authenticated: data.authenticated,
 		password_min_length: data.password_min_length,
+		password_max_length: data.password_max_length,
 	};
 }
 

@@ -32,6 +32,7 @@ class AuthStatus(BaseModel):
     setup_required: bool
     authenticated: bool
     password_min_length: int
+    password_max_length: int
 
 
 def get_auth_service(request: Request) -> AuthService:
@@ -82,6 +83,7 @@ async def get_status(request: Request, auth: AuthServiceDep) -> AuthStatus:
         setup_required=await auth.setup_required(),
         authenticated=await is_authenticated(request, api_key, auth),
         password_min_length=MIN_PASSWORD_LENGTH,
+        password_max_length=MAX_CREDENTIAL_LENGTH,
     )
 
 

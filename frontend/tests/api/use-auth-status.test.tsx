@@ -16,7 +16,7 @@ function renderUseAuthStatus() {
 	};
 }
 
-test("requests the auth status same-origin and returns the three fields", async () => {
+test("requests the auth status same-origin and returns the four fields", async () => {
 	const fetchMock = vi.fn().mockResolvedValue(Response.json(statusBody));
 	vi.stubGlobal("fetch", fetchMock);
 
@@ -82,7 +82,7 @@ test.each([
 	["an empty object", () => Response.json({})],
 	[
 		"a missing setup_required",
-		() => Response.json({ authenticated: true, password_min_length: 12 }),
+		() => Response.json({ ...statusBody, setup_required: undefined }),
 	],
 	[
 		"a string setup_required",
@@ -90,7 +90,7 @@ test.each([
 	],
 	[
 		"a missing authenticated",
-		() => Response.json({ setup_required: false, password_min_length: 12 }),
+		() => Response.json({ ...statusBody, authenticated: undefined }),
 	],
 	[
 		"a null authenticated",
@@ -98,11 +98,19 @@ test.each([
 	],
 	[
 		"a missing password_min_length",
-		() => Response.json({ setup_required: false, authenticated: true }),
+		() => Response.json({ ...statusBody, password_min_length: undefined }),
 	],
 	[
 		"a string password_min_length",
 		() => Response.json({ ...statusBody, password_min_length: "12" }),
+	],
+	[
+		"a missing password_max_length",
+		() => Response.json({ ...statusBody, password_max_length: undefined }),
+	],
+	[
+		"a string password_max_length",
+		() => Response.json({ ...statusBody, password_max_length: "256" }),
 	],
 	["invalid JSON", () => new Response("<html>proxy page</html>")],
 	["a 204", () => new Response(null, { status: 204 })],
