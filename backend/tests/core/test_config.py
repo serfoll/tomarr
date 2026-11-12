@@ -112,6 +112,14 @@ def test_config_dir_defaults_to_slash_config() -> None:
     assert config_dir() == Path("/config")
 
 
+def test_an_empty_config_dir_is_the_default_not_the_working_directory(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("TOMARR_CONFIG_DIR", "")
+
+    assert config_dir() == Path("/config")
+
+
 def test_static_dir_comes_from_the_environment(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

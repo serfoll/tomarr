@@ -83,7 +83,8 @@ class Settings(BaseSettings):
 def config_dir() -> Path:
     # The container always uses /config, so users only change the host side of the mount.
     # TOMARR_CONFIG_DIR exists so tests and local runs can avoid writing to /config.
-    return Path(os.environ.get("TOMARR_CONFIG_DIR", "/config"))
+    # An empty value counts as unset, since Path("") is the working directory.
+    return Path(os.environ.get("TOMARR_CONFIG_DIR") or "/config")
 
 
 def static_dir() -> Path:
