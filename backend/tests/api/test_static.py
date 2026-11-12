@@ -85,6 +85,29 @@ def test_an_unknown_api_path_is_the_json_404(static_client: TestClient, path: st
     }
 
 
+@pytest.mark.parametrize(
+    ("method", "path"),
+    [
+        ("POST", "/api/v1/nope"),
+        ("PUT", "/api/v1/nope"),
+        ("PATCH", "/api/v1/nope"),
+        ("DELETE", "/api/v1/nope"),
+        ("POST", "/api"),
+    ],
+)
+def test_a_write_method_on_an_unknown_api_path_is_the_json_404(
+    static_client: TestClient, method: str, path: str
+) -> None:
+    response = static_client.request(method, path)
+
+    assert response.status_code == 404
+    assert response.json() == {
+        "code": "not_found",
+        "message": "Nothing exists at this address.",
+        "request_id": response.headers["x-request-id"],
+    }
+
+
 def test_api_routes_still_answer(static_client: TestClient) -> None:
     response = static_client.get(HEALTH)
 
