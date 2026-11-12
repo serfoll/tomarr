@@ -1,9 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
-import {
-	ApiError,
-	getSystemStatus,
-	UnreadableResponseError,
-} from "@/api/status";
+import { ApiError, UnreadableResponseError } from "@/api/errors";
+import { useSystemStatus } from "@/api/use-system-status";
 
 function errorText(error: Error): string {
 	if (error instanceof UnreadableResponseError) {
@@ -19,12 +15,7 @@ function errorText(error: Error): string {
 }
 
 export function BackendVersion() {
-	const status = useQuery({
-		queryKey: ["system", "status"],
-		queryFn: getSystemStatus,
-		// Retrying cannot fix a 401 and would leave the loading text up for seconds.
-		retry: false,
-	});
+	const status = useSystemStatus();
 
 	if (status.isPending) {
 		return <p>Loading the backend version.</p>;
