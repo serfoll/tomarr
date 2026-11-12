@@ -133,11 +133,11 @@ See `docs/adr/0005`.
 
 ## Serving the frontend
 
-`api/static.py` registers a catch-all `GET` and `HEAD` route at `/{path:path}` as the last route in `create_app()`, so every API route, `/docs`, `/redoc` and `/openapi.json` match first. It is left out of the OpenAPI schema. The build is read from `TOMARR_STATIC_DIR`, which defaults to `frontend/dist` in the checkout. If that directory does not exist, the route is not registered and the backend behaves as it does without a frontend.
+`api/static.py` registers a catch-all route for every method at `/{path:path}` as the last route in `create_app()`, so every API route, `/docs`, `/redoc` and `/openapi.json` match first. It is left out of the OpenAPI schema. The build is read from `TOMARR_STATIC_DIR`, which defaults to `frontend/dist` in the checkout. If that directory does not exist, the route is not registered and the backend behaves as it does without a frontend.
 
 - A path that resolves to a file inside the build directory returns that file. A path that resolves outside it, by `..`, an absolute path or a symlink, is treated as any other unknown path.
-- Any other path returns `index.html` with status 200, so a deep link to a client route loads the app and the router takes over.
-- A path under `/api` that matches no route raises a 404, which the error handlers turn into the JSON error shape. It never returns `index.html`.
+- Any other path returns `index.html` with status 200 for `GET` and `HEAD`, so a deep link to a client route loads the app and the router takes over. Other methods get a 405.
+- A path under `/api` that matches no route raises a 404 for every method, which the error handlers turn into the JSON error shape. It never returns `index.html`, and it is checked before the method.
 - The build is made for the base path `/`. `urlbase` is not applied to it yet.
 
 In development, `pnpm dev` runs the Vite dev server, which proxies `/api` to the backend on `127.0.0.1:8000`. If `TOMARR_DEV_API_KEY` is set, the proxy adds it as the `X-Api-Key` header, so the shell can call guarded routes without a login page. The variable is read by `vite.config.ts` only and never ships in the build.
