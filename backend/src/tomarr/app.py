@@ -61,7 +61,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         auth_service = AuthService(settings_service, reset_requested=settings.auth.reset_password)
         await auth_service.rearm_reset()
         app.state.auth = auth_service
-        if await auth_service.setup_required():
+        if settings.auth.reset_password:
+            if await auth_service.setup_required():
+                logger.warning(
+                    "TOMARR__AUTH__RESET_PASSWORD is set, so the sign-up page is open to replace"
+                    " the login. Sign up again, then remove the variable and restart Tomarr."
+                )
+            else:
+                logger.warning(
+                    "TOMARR__AUTH__RESET_PASSWORD is still set, but the password was already"
+                    " reset. Remove the variable and restart Tomarr."
+                )
+        elif await auth_service.setup_required():
             logger.warning(
                 "No credentials are set. Open Tomarr in a browser to create the first login."
             )
