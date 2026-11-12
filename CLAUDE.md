@@ -112,7 +112,8 @@ The backend and frontend are scaffolded; the Docker parts are not yet. Backend c
 | Frontend types (from `frontend/`) | `pnpm typecheck` |
 | Frontend tests (from `frontend/`) | `pnpm test` |
 | Frontend build into `frontend/dist/` (from `frontend/`). Type checks first | `pnpm build` |
-| Regenerate API types (planned for #13) | `pnpm gen:api` |
+| Regenerate API types (from `frontend/`). Needs `uv` and the backend installed. Never edit `src/api/schema.gen.ts` by hand | `pnpm gen:api` |
+| Check the generated API types are current (from `frontend/`). Same needs as `pnpm gen:api` | `pnpm gen:api:check` |
 | Dev stack (Prowlarr, qBittorrent, SABnzbd, Suwayomi, Kavita) | `docker compose -f docker/docker-compose.dev.yml up` |
 
 The dev server adds `X-Api-Key` to proxied `/api` requests when `TOMARR_DEV_API_KEY` is set. Read the key from `config.toml` with a command substitution as shown above, and never type it into a command. Vite reads it in `vite.config.ts` only, so it never reaches the bundle.

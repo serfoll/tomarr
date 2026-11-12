@@ -17,5 +17,10 @@
 		"skipLibCheck": true,
 		"noEmit": true
 	},
-	"include": ["vite.config.ts", "vite-proxy.ts", "tests/vite-proxy.test.ts"]
+	"include": [
+		"vite.config.ts",
+		"vite-proxy.ts",
+		"tests/vite-proxy.test.ts",
+		"tests/scripts/gen-api.test.ts"
+	]
 }
