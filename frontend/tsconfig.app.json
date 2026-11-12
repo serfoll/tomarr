@@ -22,5 +22,5 @@
 		}
 	},
 	"include": ["src", "tests"],
-	"exclude": ["tests/vite-proxy.test.ts"]
+	"exclude": ["tests/vite-proxy.test.ts", "tests/scripts/gen-api.test.ts"]
 }
