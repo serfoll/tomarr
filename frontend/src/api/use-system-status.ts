@@ -21,12 +21,20 @@ function isErrorResponse(body: unknown): body is ErrorResponse {
 }
 
 async function getSystemStatus() {
+	// openapi-fetch parses a success body itself and a malformed one rejects with a SyntaxError.
+	// Only a SyntaxError raised after the response arrived is a body problem, so a failure inside fetch passes through.
+	let responded = false;
 	const { data, error, response } = await client
-		.GET("/api/v1/system/status")
+		.GET("/api/v1/system/status", {
+			fetch: async (request) => {
+				const received = await globalThis.fetch(request);
+				responded = true;
+				return received;
+			},
+		})
 		.catch((cause: unknown) => {
-			// openapi-fetch parses a success body itself and a malformed one rejects with a SyntaxError.
 			// A network failure rejects with a TypeError and must stay that way.
-			throw cause instanceof SyntaxError
+			throw responded && cause instanceof SyntaxError
 				? new UnreadableResponseError()
 				: cause;
 		});
@@ -36,9 +44,9 @@ async function getSystemStatus() {
 			isErrorResponse(error) ? error : undefined,
 		);
 	}
-	// A 204 or an empty body has no data, and the schema type does not know a version can be missing or empty.
+	// A 204 or an empty body has no data, and the schema type does not know a version can be missing or blank.
 	const version: unknown = data?.version;
-	if (typeof version !== "string" || version === "") {
+	if (typeof version !== "string" || version.trim() === "") {
 		throw new UnreadableResponseError();
 	}
 	return { version };

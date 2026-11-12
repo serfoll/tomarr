@@ -114,3 +114,28 @@ test(
 	},
 	RUN_TIMEOUT_MS,
 );
+
+test(
+	"--check says the file is missing, not out of date, when there is no committed file",
+	() => {
+		const result = run(["--check"], {
+			TOMARR_GEN_API_TARGET: join(workDir, "missing.gen.ts"),
+		});
+
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("missing");
+		expect(result.stderr).not.toContain("out of date");
+	},
+	RUN_TIMEOUT_MS,
+);
+
+test("an argument after the first is refused before anything runs", () => {
+	const before = readFileSync(target, "utf8");
+
+	const result = run(["--check", "--bogus"]);
+
+	expect(result.status).toBe(2);
+	expect(result.stderr).toContain("--bogus");
+	expect(readFileSync(target, "utf8")).toBe(before);
+	expect(leftoverTempEntries()).toEqual([]);
+});

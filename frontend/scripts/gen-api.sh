@@ -17,6 +17,14 @@ case "${1:-}" in
 		exit 2
 		;;
 esac
+if [ "$#" -gt 1 ]; then
+	echo "Unexpected argument '$2'. Use no argument to regenerate or --check to compare." >&2
+	exit 2
+fi
+if [ "$check" = true ] && [ ! -f "$target" ]; then
+	echo "The generated API types file is missing: $target. Run pnpm gen:api and commit the result." >&2
+	exit 1
+fi
 
 tmp="$(mktemp -d "${TMPDIR:-/tmp}/gen-api.XXXXXX")"
 trap 'rm -rf "$tmp"' EXIT

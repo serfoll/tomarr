@@ -90,6 +90,7 @@ test.each([
 	["a number version", () => Response.json({ version: 1 })],
 	["an object version", () => Response.json({ version: { major: 1 } })],
 	["an empty version", () => Response.json({ version: "" })],
+	["a whitespace-only version", () => Response.json({ version: "   " })],
 	["invalid JSON", () => new Response("<html>proxy page</html>")],
 	["a 204", () => new Response(null, { status: 204 })],
 ])("rejects a success response with %s as unreadable", async (_, response) => {
@@ -99,4 +100,15 @@ test.each([
 
 	await waitFor(() => expect(result.current.isError).toBe(true));
 	expect(result.current.error).toBeInstanceOf(UnreadableResponseError);
+});
+
+test("rejects a SyntaxError thrown by fetch itself as that error, not as unreadable", async () => {
+	const failure = new SyntaxError("not from a response body");
+	vi.stubGlobal("fetch", vi.fn().mockRejectedValue(failure));
+
+	const { result } = renderUseSystemStatus();
+
+	await waitFor(() => expect(result.current.isError).toBe(true));
+	expect(result.current.error).toBe(failure);
+	expect(result.current.error).not.toBeInstanceOf(UnreadableResponseError);
 });
