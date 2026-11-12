@@ -7,7 +7,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from tomarr.core.config import Auth, Log, Server, config_dir, load_settings
+from tomarr.core.config import Auth, Log, Server, config_dir, load_settings, static_dir
 
 
 @pytest.fixture(autouse=True)
@@ -110,6 +110,21 @@ def test_config_dir_comes_from_the_environment(
 
 def test_config_dir_defaults_to_slash_config() -> None:
     assert config_dir() == Path("/config")
+
+
+def test_static_dir_comes_from_the_environment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("TOMARR_STATIC_DIR", str(tmp_path))
+
+    assert static_dir() == tmp_path
+
+
+def test_static_dir_defaults_to_the_frontend_build(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("TOMARR_STATIC_DIR", raising=False)
+    repo = Path(__file__).parents[3]
+
+    assert static_dir() == repo / "frontend" / "dist"
 
 
 @pytest.mark.parametrize("port", [0, 65536])
