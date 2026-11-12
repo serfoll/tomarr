@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 import sqlite3
 import time
@@ -20,7 +21,9 @@ from tomarr.core.broadcaster import Broadcaster
 from tomarr.core.database import Database
 from tomarr.core.http import HttpClientFactory
 from tomarr.domain.command import Command, CommandStatus
+from tomarr.services.auth import CREDENTIALS
 from tomarr.services.commands import CommandService
+from tomarr.services.settings import SettingsService
 
 # The runner and scheduler use the real clock here, so a test polls for the outcome it waits on.
 POLL_TIMEOUT = 5.0
@@ -197,6 +200,99 @@ def test_lifespan_does_not_warn_once_credentials_are_set(tmp_path: Path) -> None
         pass
 
     assert NO_CREDENTIALS_WARNING not in log_file.read_text(encoding="utf-8")
+
+
+RESET_PASSWORD_ENV = "TOMARR__AUTH__RESET_PASSWORD"
+RESET_PASSWORD = "a brand new password"
+
+
+def warnings_in_log(tmp_path: Path) -> list[str]:
+    lines = (tmp_path / "logs" / "tomarr.log").read_text(encoding="utf-8").splitlines()
+    records = [json.loads(line) for line in lines]
+    return [record["message"] for record in records if record["level"] == "WARNING"]
+
+
+def set_up_once(username: str = "reader", password: str = "correct horse") -> None:
+    with TestClient(create_app()) as client:
+        response = client.post(
+            "/api/v1/auth/setup", data={"username": username, "password": password}
+        )
+        assert response.status_code == 204
+
+
+def test_lifespan_warns_once_naming_the_variable_while_the_reset_window_is_open(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    set_up_once()
+    (tmp_path / "logs" / "tomarr.log").unlink()
+    monkeypatch.setenv(RESET_PASSWORD_ENV, "true")
+
+    with TestClient(create_app()):
+        pass
+
+    warnings = warnings_in_log(tmp_path)
+    assert [w for w in warnings if RESET_PASSWORD_ENV in w] == [
+        f"{RESET_PASSWORD_ENV} is set, so the sign-up page is open to replace the login. "
+        "Sign up again, then remove the variable and restart Tomarr."
+    ]
+    assert not any(NO_CREDENTIALS_WARNING in w for w in warnings)
+
+
+def test_lifespan_warns_once_that_the_variable_is_still_set_after_the_reset(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    set_up_once()
+    monkeypatch.setenv(RESET_PASSWORD_ENV, "true")
+    set_up_once("owner", RESET_PASSWORD)
+    (tmp_path / "logs" / "tomarr.log").unlink()
+
+    with TestClient(create_app()):
+        pass
+
+    warnings = warnings_in_log(tmp_path)
+    assert [w for w in warnings if RESET_PASSWORD_ENV in w] == [
+        f"{RESET_PASSWORD_ENV} is still set, but the password was already reset. "
+        "Remove the variable and restart Tomarr."
+    ]
+    assert not any(NO_CREDENTIALS_WARNING in w for w in warnings)
+
+
+def test_lifespan_does_not_name_the_variable_while_it_is_unset(tmp_path: Path) -> None:
+    with TestClient(create_app()):
+        pass
+
+    warnings = warnings_in_log(tmp_path)
+    assert not any(RESET_PASSWORD_ENV in w for w in warnings)
+    assert any(NO_CREDENTIALS_WARNING in w for w in warnings)
+
+
+def test_a_reset_logs_neither_the_password_nor_the_hash(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture
+) -> None:
+    set_up_once()
+    monkeypatch.setenv(RESET_PASSWORD_ENV, "true")
+    app = create_app()
+
+    async def stored_hash() -> str:
+        credentials = await SettingsService(app.state.database.session_factory).get(CREDENTIALS)
+        assert credentials is not None
+        return credentials.password_hash
+
+    with TestClient(app) as client:
+        response = client.post(
+            "/api/v1/auth/setup", data={"username": "owner", "password": RESET_PASSWORD}
+        )
+        assert response.status_code == 204
+        assert client.portal is not None
+        password_hash = client.portal.call(stored_hash)
+    with TestClient(create_app()):
+        pass
+
+    logged = [record.getMessage() for record in caplog.records]
+    logged.append((tmp_path / "logs" / "tomarr.log").read_text(encoding="utf-8"))
+    # Counted, so a failure cannot print the password or the hash.
+    leaks = sum(RESET_PASSWORD in text or password_hash in text for text in logged)
+    assert leaks == 0
 
 
 def test_lifespan_puts_the_command_queue_on_app_state() -> None:
