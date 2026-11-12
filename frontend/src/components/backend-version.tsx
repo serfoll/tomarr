@@ -1,7 +1,14 @@
 import { useQuery } from "@tanstack/react-query";
-import { ApiError, getSystemStatus } from "@/api/status";
+import {
+	ApiError,
+	getSystemStatus,
+	UnreadableResponseError,
+} from "@/api/status";
 
 function errorText(error: Error): string {
+	if (error instanceof UnreadableResponseError) {
+		return "Tomarr sent an answer the page could not read. Reload the page, and check the Tomarr log if it keeps happening.";
+	}
 	if (!(error instanceof ApiError)) {
 		return "Could not reach Tomarr. Check that it is running, then reload.";
 	}

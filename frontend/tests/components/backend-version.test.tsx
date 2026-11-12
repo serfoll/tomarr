@@ -67,3 +67,15 @@ test("names the status and what to do for any other failure", async () => {
 		),
 	).toBeDefined();
 });
+
+test("says the answer could not be read when the body is not a status", async () => {
+	vi.stubGlobal("fetch", vi.fn().mockResolvedValue(Response.json(null)));
+
+	renderBackendVersion();
+
+	expect(
+		await screen.findByText(
+			"Tomarr sent an answer the page could not read. Reload the page, and check the Tomarr log if it keeps happening.",
+		),
+	).toBeDefined();
+});
