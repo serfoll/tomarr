@@ -25,7 +25,7 @@ function SignUpPage() {
 	// The cached status still says sign-up is open, and the sign-in guard would send the visitor straight back.
 	async function goToSignIn() {
 		await refetchAuthStatus(queryClient);
-		await navigate({ to: "/sign-in", search: { passwordSet: true } });
+		await navigate({ to: "/sign-in" });
 	}
 
 	return (

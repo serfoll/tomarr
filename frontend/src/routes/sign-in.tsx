@@ -5,7 +5,6 @@ import { safeRedirectPath } from "@/lib/safe-redirect-path";
 
 interface SignInSearch {
 	redirect?: string;
-	passwordSet?: boolean;
 }
 
 export const Route = createFileRoute("/sign-in")({
@@ -13,9 +12,6 @@ export const Route = createFileRoute("/sign-in")({
 		const valid: SignInSearch = {};
 		if (search.redirect !== undefined) {
 			valid.redirect = safeRedirectPath(search.redirect);
-		}
-		if (search.passwordSet === true) {
-			valid.passwordSet = true;
 		}
 		return valid;
 	},
@@ -38,7 +34,6 @@ function SignInPage() {
 	return (
 		<>
 			<h1>Sign in</h1>
-			{search.passwordSet && <p>A password is already set. Sign in instead.</p>}
 			<SignInForm
 				onSignedIn={() => navigate({ href: safeRedirectPath(search.redirect) })}
 			/>

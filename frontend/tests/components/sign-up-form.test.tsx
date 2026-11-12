@@ -111,7 +111,7 @@ test("a valid sign-up posts only the username and password and lands in the app"
 	).toEqual({ username: "admin", password });
 });
 
-test("a password set in the meantime sends the visitor to sign-in with a note", async () => {
+test("a password set in the meantime sends the visitor to a plain sign-in form", async () => {
 	const backend = fakeAuthBackend();
 	const { router } = await openSignUp(backend.routes);
 	backend.state.credentials = { username: "other", password: "fake-other-3" };
@@ -120,9 +120,8 @@ test("a password set in the meantime sends the visitor to sign-in with a note", 
 
 	expect(await screen.findByRole("heading", { name: "Sign in" })).toBeDefined();
 	expect(router.state.location.pathname).toBe("/sign-in");
-	expect(
-		screen.getByText("A password is already set. Sign in instead."),
-	).toBeDefined();
+	expect(router.state.location.search).toEqual({});
+	expect(screen.queryByRole("paragraph")).toBeNull();
 });
 
 test.each([
