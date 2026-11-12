@@ -142,13 +142,17 @@ See `docs/adr/0005`.
 - Outside `/api`, the other registered methods get the JSON 405 with `Allow: GET, HEAD`.
 - The build is made for the base path `/`. `urlbase` is not applied to it yet.
 
-In development, `pnpm dev` runs the Vite dev server, which proxies `/api` to the backend on `127.0.0.1:8000`. If `TOMARR_DEV_API_KEY` is set, the proxy adds it as the `X-Api-Key` header, so the shell can call guarded routes without a login page. The variable is read by `vite.config.ts` only and never ships in the build.
+In development, `pnpm dev` runs the Vite dev server, which proxies `/api` to the backend on `127.0.0.1:8000`. If `TOMARR_DEV_API_KEY` is set, the proxy adds it as the `X-Api-Key` header, so the shell can call guarded routes without signing in. The variable is read by `vite.config.ts` only and never ships in the build.
 
 The frontend's API types are generated from the backend's OpenAPI schema into `frontend/src/api/schema.gen.ts`. `pnpm gen:api` regenerates them after a backend schema change. `pnpm gen:api:check` fails when the committed file is out of date and is meant to run in CI (issue #16 wires it in). Only `src/api/client.ts` makes requests, and the query hooks in `src/api/` call it.
 
 ## Auth
 
 Every API request needs either the `X-Api-Key` header or a session cookie from the form login. An option allows unauthenticated access from local addresses, off by default. The API key is accepted in the header only. First-run credentials are set through `POST /api/v1/auth/setup`. Settings `auth.credentials` and `auth.local_bypass` control credentials and local bypass. `GET /api/v1/system/health` is the one open system route. The local bypass judges only the connecting address, so behind a reverse proxy that adds no forwarding headers every request looks local, and the option should stay off. The session cookie is marked `Secure` only when the request reaches Tomarr over HTTPS, so behind a proxy that terminates TLS the server must trust the proxy headers for the flag to apply (#14 sets this up).
+
+`GET /api/v1/auth/status` is open and returns `setup_required`, `authenticated` and `password_min_length`, the minimum the setup form enforces, so the sign-up page shows the server's number.
+
+In the frontend, the app routes sit under the pathless layout `src/routes/_authed.tsx`. Its `beforeLoad` reads the auth status from the `QueryClient` in the router context and sends the visitor to `/sign-up` on a fresh install, or to `/sign-in?redirect=<requested path>` when not signed in. `/sign-up` and `/sign-in` run the reverse check. The guard trusts the cached status until a sign-up, sign-in or sign-out refetches it, and fetches it again if the last refetch failed. `/sign-up` posts to `/api/v1/auth/setup` and lands in the app; a 409 sends the visitor to sign-in. `/sign-in` posts to `/api/v1/auth/login` and follows the `redirect` param only when `safeRedirectPath` accepts it as a same-origin path, otherwise `/`. The "Sign out" button in the layout posts to `/api/v1/auth/logout` and lands on `/sign-in`. A visitor let in by the API key or the local bypass stays authenticated after signing out, because the cookie was not what let them in.
 
 ## Error handling and logging
 
