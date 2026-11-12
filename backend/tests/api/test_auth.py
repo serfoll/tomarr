@@ -14,7 +14,7 @@ from tomarr.app import create_app
 from tomarr.core.auth import hash_password
 from tomarr.core.database import create_database
 from tomarr.core.migrations import upgrade_to_head
-from tomarr.services.auth import CREDENTIALS, LOCAL_BYPASS, AuthService
+from tomarr.services.auth import CREDENTIALS, LOCAL_BYPASS, MIN_PASSWORD_LENGTH, AuthService
 from tomarr.services.settings import SettingsService
 
 API = "/api/v1"
@@ -87,6 +87,11 @@ def enable_local_bypass(directory: Path) -> None:
             await database.dispose()
 
     asyncio.run(seed())
+
+
+def form_field_limits(schema: str, field: str) -> tuple[int, int]:
+    properties = create_app().openapi()["components"]["schemas"][schema]["properties"][field]
+    return properties["minLength"], properties["maxLength"]
 
 
 def unguarded_paths(app: FastAPI) -> list[str]:
@@ -214,28 +219,45 @@ def test_openapi_keeps_the_success_codes_of_login_setup_and_status() -> None:
 
 def test_openapi_declares_the_form_field_limits() -> None:
     # FastAPI answers an empty form value as a missing field, so the minimum of 1 only shows here.
-    schemas = create_app().openapi()["components"]["schemas"]
+    assert form_field_limits("Body_login_api_v1_auth_login_post", "username") == (1, 256)
+    assert form_field_limits("Body_login_api_v1_auth_login_post", "password") == (1, 256)
+    assert form_field_limits("Body_setup_api_v1_auth_setup_post", "username") == (1, 256)
+    assert form_field_limits("Body_setup_api_v1_auth_setup_post", "password") == (8, 256)
 
-    def limits(schema: str, field: str) -> tuple[int, int]:
-        properties = schemas[schema]["properties"][field]
-        return properties["minLength"], properties["maxLength"]
 
-    assert limits("Body_login_api_v1_auth_login_post", "username") == (1, 256)
-    assert limits("Body_login_api_v1_auth_login_post", "password") == (1, 256)
-    assert limits("Body_setup_api_v1_auth_setup_post", "username") == (1, 256)
-    assert limits("Body_setup_api_v1_auth_setup_post", "password") == (8, 256)
+def test_openapi_auth_status_lists_the_password_minimum_as_a_required_integer() -> None:
+    schema = create_app().openapi()["components"]["schemas"]["AuthStatus"]
+
+    assert schema["properties"]["password_min_length"]["type"] == "integer"
+    assert "password_min_length" in schema["required"]
+
+
+def test_auth_status_password_minimum_is_the_one_the_setup_form_enforces(
+    client: TestClient,
+) -> None:
+    minimum, _ = form_field_limits("Body_setup_api_v1_auth_setup_post", "password")
+
+    assert client.get(f"{API}/auth/status").json()["password_min_length"] == minimum
 
 
 def test_auth_status_before_setup_without_credentials(client: TestClient) -> None:
     response = client.get(f"{API}/auth/status")
 
-    assert response.json() == {"setup_required": True, "authenticated": False}
+    assert response.json() == {
+        "setup_required": True,
+        "authenticated": False,
+        "password_min_length": MIN_PASSWORD_LENGTH,
+    }
 
 
 def test_auth_status_is_authenticated_with_the_api_key(client: TestClient, api_key: str) -> None:
     response = client.get(f"{API}/auth/status", headers={"X-Api-Key": api_key})
 
-    assert response.json() == {"setup_required": True, "authenticated": True}
+    assert response.json() == {
+        "setup_required": True,
+        "authenticated": True,
+        "password_min_length": MIN_PASSWORD_LENGTH,
+    }
 
 
 def test_auth_status_after_setup_follows_the_session_cookie(client: TestClient) -> None:
@@ -244,6 +266,7 @@ def test_auth_status_after_setup_follows_the_session_cookie(client: TestClient) 
     assert client.get(f"{API}/auth/status").json() == {
         "setup_required": False,
         "authenticated": True,
+        "password_min_length": MIN_PASSWORD_LENGTH,
     }
 
     client.cookies.clear()
@@ -251,6 +274,7 @@ def test_auth_status_after_setup_follows_the_session_cookie(client: TestClient) 
     assert client.get(f"{API}/auth/status").json() == {
         "setup_required": False,
         "authenticated": False,
+        "password_min_length": MIN_PASSWORD_LENGTH,
     }
 
 
@@ -260,7 +284,11 @@ def test_auth_status_is_authenticated_for_a_bypassed_local_client(tmp_path: Path
     with TestClient(create_app(), client=LOCAL_PEER) as local:
         response = local.get(f"{API}/auth/status")
 
-    assert response.json() == {"setup_required": True, "authenticated": True}
+    assert response.json() == {
+        "setup_required": True,
+        "authenticated": True,
+        "password_min_length": MIN_PASSWORD_LENGTH,
+    }
 
 
 def test_setup_sets_the_session_cookie_and_the_next_guarded_call_passes(
