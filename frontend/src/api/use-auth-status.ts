@@ -57,7 +57,18 @@ export function useAuthStatus() {
 	return useQuery(authStatusQueryOptions);
 }
 
-// "all" also refetches the status when nothing is watching it, as with the route guard, which reads it through ensureQueryData.
+// The cached status is trusted until a mutation refetches it. A failed refetch keeps the old data next to the error, so that data is fetched again instead.
+export function ensureAuthStatus(queryClient: QueryClient) {
+	const lastFetchFailed =
+		queryClient.getQueryState(authStatusKey)?.status === "error";
+	return queryClient.query(
+		lastFetchFailed
+			? authStatusQueryOptions
+			: { ...authStatusQueryOptions, staleTime: "static" },
+	);
+}
+
+// "all" also refetches the status when nothing is watching it, as with the route guards, which read it through ensureAuthStatus.
 export function refetchAuthStatus(queryClient: QueryClient) {
 	return queryClient.invalidateQueries({
 		queryKey: authStatusKey,
