@@ -234,3 +234,33 @@ def test_validation_error_names_the_field_and_hides_the_value(tmp_path: Path) ->
         load_settings(tmp_path)
 
     assert "123456789012" not in str(excinfo.value)
+
+
+def test_reset_password_is_off_by_default(tmp_path: Path) -> None:
+    assert load_settings(tmp_path).auth.reset_password is False
+
+
+@pytest.mark.parametrize(("value", "expected"), [("true", True), ("1", True), ("false", False)])
+def test_reset_password_comes_from_the_environment(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, value: str, expected: bool
+) -> None:
+    monkeypatch.setenv("TOMARR__AUTH__RESET_PASSWORD", value)
+
+    assert load_settings(tmp_path).auth.reset_password is expected
+
+
+def test_reset_password_comes_from_the_file(tmp_path: Path) -> None:
+    (tmp_path / "config.toml").write_text('[auth]\napikey = "k"\nreset_password = true\n')
+
+    assert load_settings(tmp_path).auth.reset_password is True
+
+
+def test_first_run_file_does_not_write_reset_password(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("TOMARR__AUTH__RESET_PASSWORD", "true")
+
+    load_settings(tmp_path)
+
+    written = tomllib.loads((tmp_path / "config.toml").read_text())
+    assert "reset_password" not in written["auth"]

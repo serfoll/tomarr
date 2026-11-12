@@ -44,6 +44,7 @@ class Auth(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     apikey: str = Field(min_length=1)
+    reset_password: bool = False
 
 
 class Log(BaseModel):
