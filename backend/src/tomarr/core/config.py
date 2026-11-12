@@ -86,6 +86,13 @@ def config_dir() -> Path:
     return Path(os.environ.get("TOMARR_CONFIG_DIR", "/config"))
 
 
+def static_dir() -> Path:
+    # TOMARR_STATIC_DIR points the image at the build it ships. The default is the checkout's
+    # build, so a local run serves what `pnpm build` wrote.
+    default = Path(__file__).parents[4] / "frontend" / "dist"
+    return Path(os.environ.get("TOMARR_STATIC_DIR", default))
+
+
 def load_settings(config_dir: Path) -> Settings:
     path = config_dir / CONFIG_FILE_NAME
     if not path.exists():

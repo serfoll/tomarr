@@ -6,7 +6,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import APIRouter, Depends, FastAPI, status
 
-from tomarr.api import auth, commands, system
+from tomarr.api import auth, commands, static, system
 from tomarr.api.errors import ErrorResponse, document_error_responses, install_error_handlers
 from tomarr.api.request_id import RequestIdMiddleware
 from tomarr.commands.purge_http_cache import (
@@ -18,7 +18,7 @@ from tomarr.commands.registry import CommandRegistry
 from tomarr.commands.runner import CommandRunner
 from tomarr.commands.scheduler import CommandScheduler, Schedule
 from tomarr.core.broadcaster import Broadcaster
-from tomarr.core.config import config_dir, load_settings
+from tomarr.core.config import config_dir, load_settings, static_dir
 from tomarr.core.database import Database, create_database
 from tomarr.core.http import HttpClientFactory
 from tomarr.core.logging import close_logging, configure_logging
@@ -133,4 +133,8 @@ def create_app() -> FastAPI:
     app.include_router(protected, prefix="/api/v1")
     app.include_router(auth.router, prefix="/api/v1")
     app.include_router(system.public_router, prefix="/api/v1")
+    # Last, so every route above matches first.
+    build = static_dir()
+    if build.is_dir():
+        static.serve_build(app, build)
     return app
