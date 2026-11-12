@@ -37,7 +37,7 @@ frontend/
   src/
     routes/           TanStack Router file routes
     components/       shared UI, one per file
-    api/              generated client and query hooks
+    api/              client generated from the backend's OpenAPI schema (`pnpm gen:api`), and the query hooks that call it
 docker/               Dockerfile, entrypoint, docker-compose.dev.yml
 docs/adr/             architecture decision records
 CONTEXT/              product, process and (later) design docs
@@ -143,6 +143,8 @@ See `docs/adr/0005`.
 - The build is made for the base path `/`. `urlbase` is not applied to it yet.
 
 In development, `pnpm dev` runs the Vite dev server, which proxies `/api` to the backend on `127.0.0.1:8000`. If `TOMARR_DEV_API_KEY` is set, the proxy adds it as the `X-Api-Key` header, so the shell can call guarded routes without a login page. The variable is read by `vite.config.ts` only and never ships in the build.
+
+The frontend's API types are generated from the backend's OpenAPI schema into `frontend/src/api/schema.gen.ts`. `pnpm gen:api` regenerates them after a backend schema change. `pnpm gen:api:check` fails when the committed file is out of date and is meant to run in CI (issue #16 wires it in). Only `src/api/client.ts` makes requests, and the query hooks in `src/api/` call it.
 
 ## Auth
 
