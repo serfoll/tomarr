@@ -7,6 +7,8 @@ import {
 	requestErrorText,
 } from "@/lib/request-error-text";
 
+const wrongPasswordsBeforeResetHint = 2;
+
 interface SignInFormProps {
 	onSignedIn: () => void;
 }
@@ -16,6 +18,7 @@ export function SignInForm({ onSignedIn }: SignInFormProps) {
 	const [username, setUsername] = useState("");
 	const [password, setPassword] = useState("");
 	const [message, setMessage] = useState("");
+	const [wrongPasswordCount, setWrongPasswordCount] = useState(0);
 
 	function submit(event: FormEvent<HTMLFormElement>) {
 		event.preventDefault();
@@ -30,6 +33,7 @@ export function SignInForm({ onSignedIn }: SignInFormProps) {
 				onError: (error) => {
 					if (error instanceof ApiError && error.status === 401) {
 						setPassword("");
+						setWrongPasswordCount((count) => count + 1);
 					}
 					setMessage(
 						requestErrorText(error, {
@@ -52,6 +56,12 @@ export function SignInForm({ onSignedIn }: SignInFormProps) {
 				onPasswordChange={setPassword}
 			/>
 			{message !== "" && <p role="alert">{message}</p>}
+			{wrongPasswordCount >= wrongPasswordsBeforeResetHint && (
+				<p>
+					Forgot your password? The Tomarr documentation explains how to reset
+					it.
+				</p>
+			)}
 			<button type="submit" disabled={signIn.isPending}>
 				Sign in
 			</button>

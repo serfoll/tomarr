@@ -31,17 +31,21 @@ class Credentials(BaseModel):
 
 CREDENTIALS = registry.declare("auth.credentials", TypeAdapter(Credentials | None), None)
 LOCAL_BYPASS = registry.declare("auth.local_bypass", TypeAdapter(bool), False)
+RESET_CONSUMED = registry.declare("auth.reset_consumed", TypeAdapter(bool), False)
 
 
 class AuthService:
-    def __init__(self, settings: SettingsService) -> None:
+    def __init__(self, settings: SettingsService, *, reset_requested: bool) -> None:
         self._settings = settings
+        self._reset_requested = reset_requested
         # The container runs one uvicorn process, so a process-local lock is enough.
         self._setup_lock = asyncio.Lock()
         self._hashing = asyncio.Semaphore(MAX_CONCURRENT_HASHES)
 
     async def setup_required(self) -> bool:
-        return await self._settings.get(CREDENTIALS) is None
+        if await self._settings.get(CREDENTIALS) is None:
+            return True
+        return self._reset_requested and not await self._settings.get(RESET_CONSUMED)
 
     async def setup(self, username: str, password: str) -> str:
         async with self._setup_lock:
@@ -52,8 +56,17 @@ class AuthService:
                 password_hash=await self._argon2(hash_password, password),
                 session_secret=secrets.token_urlsafe(32),
             )
+            # The marker goes first: if the credentials write then fails, the window is closed
+            # and the old password still works, rather than the window staying open for anyone.
+            if self._reset_requested:
+                await self._settings.set(RESET_CONSUMED, True)
             await self._settings.set(CREDENTIALS, credentials)
         return _issue_session(credentials)
+
+    async def rearm_reset(self) -> None:
+        """Called at startup, so removing the variable lets the next set open a new window."""
+        if not self._reset_requested and await self._settings.get(RESET_CONSUMED):
+            await self._settings.set(RESET_CONSUMED, False)
 
     async def login(self, username: str, password: str) -> str | None:
         credentials = await self._settings.get(CREDENTIALS)

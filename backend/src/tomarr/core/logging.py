@@ -21,6 +21,7 @@ CREDENTIAL_KEYS = (
     "api-key",
     "token",
     "password",
+    "password_hash",
     "authorization",
     "x-api-key",
     "secret",

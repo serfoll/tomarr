@@ -86,6 +86,8 @@ def json_lines(text: str) -> list[dict[str, object]]:
         ("Sending x-goog-api-key: abc123", ()),
         ("Request headers: %s", ({"x-goog-api-key": "abc123"},)),
         ("Request api-key=abc123 cookie=abc123", ()),
+        ("Storing %s", ('{"username": "owner", "password_hash": "abc123"}',)),
+        ("Checking password_hash=abc123", ()),
         ("Token exchange with client_secret=abc123", ()),
     ],
 )

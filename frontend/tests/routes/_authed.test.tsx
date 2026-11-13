@@ -6,7 +6,12 @@ import {
 	authStatusQueryOptions,
 	refetchAuthStatus,
 } from "@/api/use-auth-status";
-import { fakeAuthBackend, requestsTo, stubFetch } from "../helpers/auth-api";
+import {
+	fakeAuthBackend,
+	requestsTo,
+	statusBody,
+	stubFetch,
+} from "../helpers/auth-api";
 import { renderApp } from "../helpers/render-app";
 
 const credentials = { username: "admin", password: "fake-password-1" };
@@ -24,6 +29,20 @@ test("a fresh install sends the visitor straight to sign-up", async () => {
 	expect(router.state.location.pathname).toBe("/sign-up");
 	// Sign-in's own guard would also forward a fresh install, so only the path taken shows this guard's choice.
 	expect(visited).not.toContain("/sign-in");
+});
+
+test("a signed-in visitor stays in the app while sign-up is reopened", async () => {
+	const { routes } = fakeAuthBackend({ credentials, signedIn: true });
+	stubFetch({
+		...routes,
+		"GET /api/v1/auth/status": () =>
+			Response.json({ ...statusBody, setup_required: true }),
+	});
+
+	const router = renderApp("/");
+
+	expect(await screen.findByText("Backend version 1.2.3")).toBeDefined();
+	expect(router.state.location.pathname).toBe("/");
 });
 
 test("a visitor who is not signed in goes to sign-in with the requested path", async () => {
