@@ -13,10 +13,29 @@ from sqlalchemy import create_engine, inspect, text
 
 from tomarr.core.database import create_database
 from tomarr.core.migrations import SCRIPT_LOCATION, upgrade_to_head
+from tomarr.domain.alias import Alias
 from tomarr.domain.base import Base
+from tomarr.domain.chapter import Chapter, Episode
 from tomarr.domain.command import Command
+from tomarr.domain.edition import Edition
+from tomarr.domain.external_id import SeriesExternalId, VolumeExternalId
 from tomarr.domain.http_cache import HttpCacheEntry
+from tomarr.domain.mapping import Mapping
+from tomarr.domain.series import Series
 from tomarr.domain.setting import Setting
+from tomarr.domain.volume import Volume
+
+LIBRARY_MODELS = [
+    Series,
+    Edition,
+    Volume,
+    Chapter,
+    Episode,
+    Mapping,
+    SeriesExternalId,
+    VolumeExternalId,
+    Alias,
+]
 
 
 def _config(path: Path) -> Config:
@@ -83,6 +102,8 @@ def test_migrated_schema_matches_models(tmp_path: Path) -> None:
     assert Setting.__tablename__ in Base.metadata.tables
     assert HttpCacheEntry.__tablename__ in Base.metadata.tables
     assert Command.__tablename__ in Base.metadata.tables
+    for model in LIBRARY_MODELS:
+        assert model.__tablename__ in Base.metadata.tables
 
     engine = create_engine(f"sqlite:///{path}")
     with engine.connect() as connection:
@@ -108,6 +129,31 @@ def test_upgrade_creates_the_command_table_and_the_indexes(tmp_path: Path) -> No
     engine.dispose()
     assert command_indexes == {"ix_command_claim": ["status", "priority", "queued_at"]}
     assert cache_indexes == {"ix_http_cache_expires_at": ["expires_at"]}
+
+
+def _table_names(path: Path) -> set[str]:
+    engine = create_engine(f"sqlite:///{path}")
+    names = set(inspect(engine).get_table_names())
+    engine.dispose()
+    return names
+
+
+def test_upgrade_creates_the_library_tables(tmp_path: Path) -> None:
+    path = tmp_path / "tomarr.db"
+
+    upgrade_to_head(path)
+
+    assert {model.__tablename__ for model in LIBRARY_MODELS} <= _table_names(path)
+
+
+def test_downgrade_to_0003_removes_the_library_tables(tmp_path: Path) -> None:
+    path = tmp_path / "tomarr.db"
+    upgrade_to_head(path)
+
+    command.downgrade(_config(path), "0003")
+
+    assert _current_revision(path) == "0003"
+    assert _table_names(path) == {"alembic_version", "setting", "http_cache", "command"}
 
 
 def test_upgrade_finds_scripts_from_any_working_directory(

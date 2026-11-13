@@ -78,6 +78,18 @@ Results are merged by Provenance priority. Locked fields and Mappings are skippe
 
 **Importing.** `CheckDownloads` polls the download clients and the Suwayomi download queue. Finished items queue `ImportDownload`, which extracts the archive, converts to CBZ, writes `ComicInfo.xml`, hardlinks (or copies) into the Series folder under the root folder, records the files, and calls Kavita to scan that folder.
 
+## Data model
+
+Library tables, one module each under `domain/`: `series`, `edition`, `volume`, `chapter` (Chapter and Episode), `mapping`, `series_external_id` and `volume_external_id` (in `external_id.py`), and `alias`. See `docs/adr/0003`.
+
+- **Series, Edition, Volume.** A Series has Editions, and exactly one is primary (a partial unique index on `edition.series_id`). Volumes belong to an Edition and are unique per Edition and number. A webtoon Series has no Volume rows.
+- **Chapters and Episodes.** Chapters belong to the Series and are unique per Series and number. An Episode is the platform's own numbering, with an optional season and an optional Chapter. A missing season counts as one value for uniqueness.
+- **Mapping.** One row per Volume and Chapter, for one Edition, with a Provenance, a nullable Confidence and a Locked flag. A Chapter sits in at most one Volume of an Edition. A composite foreign key keeps the Volume in the Mapping's Edition. Nothing in the database checks that the Chapter and the Edition belong to the same Series, so the service that writes Mappings does.
+- **Provenance and locks.** `may_overwrite(existing, incoming, locked)` in `domain/provenance.py` is the rule: a lower-priority value never replaces a higher one, equal priority may refresh, and a Locked row accepts only `user`. A lock protects only its own row. Adding a new Mapping, Chapter or Volume is never refused, so a refresh keeps adding future volumes and chapters. Wanted and indexer searches never read Provenance or locks.
+- **Numbers.** Chapter and Volume numbers are `Numeric(8, 3)`, read back as `Decimal`. SQLite stores them as REAL, so they sort as numbers (10, 10.5, 11) and `0` is valid. A fourth decimal place is not refused by the column, so number normalization has to cap it.
+- **Enums.** Enum columns are plain strings with no CHECK, because SQLite cannot alter a constraint in place.
+- **Deleting.** Foreign keys cascade from Series, and from Edition and Volume to their children, so deleting a Series removes everything under it. Deleting a Chapter sets `episode.chapter_id` to NULL. Files on disk are never touched by the database.
+
 ## Suwayomi adapter
 
 Suwayomi-Server exposes a GraphQL API at `/api/graphql`. The adapter in `chapter_sources/suwayomi/` covers: listing installed sources, searching a source, reading a manga's chapter list, enqueueing chapter downloads and reading download status. Confirm every query and mutation against the running server's schema before writing it; the API changes between Suwayomi releases.
