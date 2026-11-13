@@ -77,6 +77,102 @@ test("a wrong password shows an alert, keeps the username and clears the passwor
 	).toEqual({ username: "admin", password: "fake-wrong-password" });
 });
 
+const resetHint =
+	"Forgot your password? The Tomarr documentation explains how to reset it.";
+
+test("the reset hint is absent after no failures and after one wrong password", async () => {
+	await openSignIn();
+	expect(screen.queryByText(resetHint)).toBeNull();
+
+	submit("fake-wrong-password");
+	await screen.findByRole("alert");
+
+	expect(screen.queryByText(resetHint)).toBeNull();
+});
+
+test("two wrong passwords in a row show the reset hint as a plain paragraph", async () => {
+	await openSignIn();
+
+	submit("fake-wrong-password");
+	await screen.findByRole("alert");
+	submit("fake-wrong-password");
+
+	const hint = await screen.findByText(resetHint);
+	expect(hint.tagName).toBe("P");
+	expect(hint.getAttribute("role")).toBeNull();
+	expect(hint.textContent).not.toContain("TOMARR");
+	expect(screen.getAllByRole("alert")).toHaveLength(1);
+});
+
+test("the reset hint stays after a third wrong password", async () => {
+	await openSignIn();
+
+	for (let attempt = 0; attempt < 3; attempt++) {
+		submit("fake-wrong-password");
+		await waitFor(() =>
+			expect(screen.getByLabelText<HTMLInputElement>("Password").value).toBe(
+				"",
+			),
+		);
+	}
+
+	expect(screen.getByText(resetHint)).toBeDefined();
+});
+
+test.each([
+	{
+		name: "400s",
+		answer: () =>
+			Response.json(errorBody("validation_failed"), { status: 400 }),
+	},
+	{
+		name: "network failures",
+		answer: () => {
+			throw new TypeError("Failed to fetch");
+		},
+	},
+	{
+		name: "500s",
+		answer: () => Response.json(errorBody("internal_error"), { status: 500 }),
+	},
+])("two $name do not show the reset hint", async ({ answer }) => {
+	const { routes } = fakeAuthBackend({ credentials });
+	const { fetchMock } = await openSignIn("/sign-in", {
+		...routes,
+		[loginKey]: answer,
+	});
+
+	submit();
+	await waitFor(() => expect(requestsTo(fetchMock, loginKey)).toHaveLength(1));
+	await screen.findByRole("alert");
+	submit();
+	await waitFor(() => expect(requestsTo(fetchMock, loginKey)).toHaveLength(2));
+	await screen.findByRole("alert");
+
+	expect(screen.queryByText(resetHint)).toBeNull();
+});
+
+test("a wrong password and a server error do not add up to the reset hint", async () => {
+	const backend = fakeAuthBackend({ credentials });
+	let failWithServerError = false;
+	const { fetchMock } = await openSignIn("/sign-in", {
+		...backend.routes,
+		[loginKey]: (request) =>
+			failWithServerError
+				? Response.json(errorBody("internal_error"), { status: 500 })
+				: backend.routes[loginKey](request),
+	});
+
+	submit("fake-wrong-password");
+	await waitFor(() => expect(requestsTo(fetchMock, loginKey)).toHaveLength(1));
+	failWithServerError = true;
+	submit();
+	await waitFor(() => expect(requestsTo(fetchMock, loginKey)).toHaveLength(2));
+	await screen.findByText(/status 500/);
+
+	expect(screen.queryByText(resetHint)).toBeNull();
+});
+
 test("signing in follows a safe redirect", async () => {
 	const { router } = await openSignIn(
 		`/sign-in?redirect=${encodeURIComponent("/?from=link")}`,

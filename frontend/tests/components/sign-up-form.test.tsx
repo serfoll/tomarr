@@ -52,7 +52,7 @@ test("tells the visitor to save the password without naming the reset variable",
 	await openSignUp();
 
 	const note = screen.getByText(
-		"Save your password somewhere safe, such as a password manager. If you lose it, the Tomarr documentation explains how to reset it.",
+		"Save your password somewhere safe, such as a password manager.",
 	);
 	expect(note.getAttribute("role")).toBeNull();
 	expect(note.textContent).not.toContain("TOMARR");
