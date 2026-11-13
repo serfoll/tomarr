@@ -151,6 +151,9 @@ def upgrade() -> None:
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_episode")),
     )
+    with op.batch_alter_table("episode", schema=None) as batch_op:
+        batch_op.create_index(batch_op.f("ix_episode_chapter_id"), ["chapter_id"], unique=False)
+
     # Alembic cannot see an expression index, so this one is written by hand. It is created
     # without batch mode, because batch reflection warns that it cannot read the index.
     op.create_index(
@@ -221,6 +224,10 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id", name=op.f("pk_mapping")),
         sa.UniqueConstraint("edition_id", "chapter_id", name=op.f("uq_mapping_edition_id")),
     )
+    with op.batch_alter_table("mapping", schema=None) as batch_op:
+        batch_op.create_index(batch_op.f("ix_mapping_chapter_id"), ["chapter_id"], unique=False)
+        batch_op.create_index(batch_op.f("ix_mapping_volume_id"), ["volume_id"], unique=False)
+
     op.create_table(
         "volume_external_id",
         sa.Column("id", sa.Integer(), nullable=False),

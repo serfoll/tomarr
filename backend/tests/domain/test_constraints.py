@@ -46,6 +46,10 @@ def _duplicates(library: Library) -> dict[str, list[object]]:
             Episode(series_id=series_id, number=3, season=None, chapter_id=None),
             Episode(series_id=series_id, number=3, season=None, chapter_id=None),
         ],
+        "episode in season 0 and without a season": [
+            Episode(series_id=series_id, number=3, season=0, chapter_id=None),
+            Episode(series_id=series_id, number=3, season=None, chapter_id=None),
+        ],
     }
 
 
@@ -59,6 +63,7 @@ def _duplicates(library: Library) -> dict[str, list[object]]:
         "volume external id",
         "episode with a season",
         "episode without a season",
+        "episode in season 0 and without a season",
     ],
 )
 async def test_unique_rows_are_refused(session: AsyncSession, library: Library, name: str) -> None:

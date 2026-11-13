@@ -8,9 +8,9 @@ from alembic.autogenerate import compare_metadata
 from alembic.config import Config
 from alembic.operations import MigrationScript
 from alembic.runtime.migration import MigrationContext
-from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, inspect, text
 
+from tests.helpers.migrations import head_revision
 from tomarr.core.database import create_database
 from tomarr.core.migrations import SCRIPT_LOCATION, upgrade_to_head
 from tomarr.domain.alias import Alias
@@ -45,12 +45,6 @@ def _config(path: Path) -> Config:
     return config
 
 
-def _head_revision() -> str | None:
-    config = Config()
-    config.set_main_option("script_location", SCRIPT_LOCATION)
-    return ScriptDirectory.from_config(config).get_current_head()
-
-
 def _current_revision(path: Path) -> str | None:
     engine = create_engine(f"sqlite:///{path}")
     with engine.connect() as connection:
@@ -76,7 +70,7 @@ def test_upgrade_creates_database_at_head(tmp_path: Path) -> None:
     engine = create_engine(f"sqlite:///{path}")
     assert "setting" in inspect(engine).get_table_names()
     engine.dispose()
-    head = _head_revision()
+    head = head_revision()
     assert head is not None
     assert _current_revision(path) == head
 
@@ -131,6 +125,41 @@ def test_upgrade_creates_the_command_table_and_the_indexes(tmp_path: Path) -> No
     assert cache_indexes == {"ix_http_cache_expires_at": ["expires_at"]}
 
 
+def _index_columns(path: Path, table: str) -> dict[str, list[str | None]]:
+    engine = create_engine(f"sqlite:///{path}")
+    indexes = inspect(engine).get_indexes(table)
+    engine.dispose()
+    return {index["name"]: index["column_names"] for index in indexes if index["name"]}
+
+
+# Reflecting `episode` warns that it cannot read the expression index, which is expected.
+@pytest.mark.filterwarnings("ignore:Skipped unsupported reflection of expression-based index")
+def test_upgrade_creates_the_indexes_the_library_reads_and_cascades_use(tmp_path: Path) -> None:
+    path = tmp_path / "tomarr.db"
+
+    upgrade_to_head(path)
+
+    mapping = _index_columns(path, "mapping")
+    assert mapping["ix_mapping_volume_id"] == ["volume_id"]
+    assert mapping["ix_mapping_chapter_id"] == ["chapter_id"]
+    assert _index_columns(path, "episode")["ix_episode_chapter_id"] == ["chapter_id"]
+
+
+def test_upgrade_creates_the_external_id_lookup_indexes(tmp_path: Path) -> None:
+    path = tmp_path / "tomarr.db"
+
+    upgrade_to_head(path)
+
+    assert _index_columns(path, "series_external_id")["ix_series_external_id_provider_value"] == [
+        "provider",
+        "value",
+    ]
+    assert _index_columns(path, "volume_external_id")["ix_volume_external_id_provider_value"] == [
+        "provider",
+        "value",
+    ]
+
+
 def _table_names(path: Path) -> set[str]:
     engine = create_engine(f"sqlite:///{path}")
     names = set(inspect(engine).get_table_names())
@@ -166,7 +195,7 @@ def test_upgrade_finds_scripts_from_any_working_directory(
 
     upgrade_to_head(path)
 
-    assert _current_revision(path) == _head_revision()
+    assert _current_revision(path) == head_revision()
 
 
 def test_upgrade_leaves_logging_handlers_alone(tmp_path: Path) -> None:

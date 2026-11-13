@@ -24,11 +24,15 @@ class Episode(Base):
     # The platform's own numbering, which can restart each season.
     number: Mapped[int]
     season: Mapped[int | None]
-    chapter_id: Mapped[int | None] = mapped_column(ForeignKey("chapter.id", ondelete="SET NULL"))
+    chapter_id: Mapped[int | None] = mapped_column(
+        ForeignKey("chapter.id", ondelete="SET NULL"), index=True
+    )
 
 
 # A plain unique constraint treats every NULL season as different. coalesce counts "no season" as
 # one value, so a real season 0 would collide with it. Platforms number seasons from 1.
+# Alembic cannot reflect an expression index on SQLite, so a batch migration of `episode` drops
+# this index and must recreate it by hand.
 Index(
     "uq_episode_series_season_number",
     Episode.series_id,

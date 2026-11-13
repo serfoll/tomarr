@@ -27,8 +27,10 @@ class Mapping(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     edition_id: Mapped[int] = mapped_column(ForeignKey("edition.id", ondelete="CASCADE"))
-    volume_id: Mapped[int]
-    chapter_id: Mapped[int] = mapped_column(ForeignKey("chapter.id", ondelete="CASCADE"))
+    volume_id: Mapped[int] = mapped_column(index=True)
+    chapter_id: Mapped[int] = mapped_column(
+        ForeignKey("chapter.id", ondelete="CASCADE"), index=True
+    )
     provenance: Mapped[Provenance] = mapped_column(string_enum(Provenance))
     # NULL for a user's Mapping, since a hand-made one is not a guess.
     confidence: Mapped[Confidence | None] = mapped_column(string_enum(Confidence))
