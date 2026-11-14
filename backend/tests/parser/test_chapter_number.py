@@ -1,3 +1,5 @@
+import copy
+import pickle
 from decimal import Decimal
 
 import pytest
@@ -168,12 +170,27 @@ def test_part_markers_add_tenths_to_a_whole_number(text: str, expected: str) -> 
         pytest.param("ch\u00a010", "10.000", id="no-break space inside"),
         pytest.param("\t10\n", "10.000", id="tab and newline around"),
         pytest.param("10\u2002part\u20032", "10.200", id="en and em space in a part marker"),
-        pytest.param("\u2467", "8.000", id="circled digit folds to a digit"),
-        pytest.param("10\u00b2", "102.000", id="superscript digit folds to a digit"),
     ],
 )
 def test_nfkc_folds_these_forms_to_ascii(text: str, expected: str) -> None:
     assert_number(text, expected)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        pytest.param("10\u00b2", id="superscript after a digit"),
+        pytest.param("10\u2075", id="superscript five after a digit"),
+        pytest.param("\u00b2", id="superscript alone"),
+        pytest.param("Ch.\u00b9\u2070", id="superscripts after a prefix"),
+        pytest.param("\u2460", id="circled one"),
+        pytest.param("\u2467", id="circled eight"),
+        pytest.param("\u2469", id="circled ten"),
+        pytest.param("10\u2170", id="small roman numeral one as a part letter"),
+    ],
+)
+def test_superscript_circled_and_roman_numerals_are_unrecognized(text: str) -> None:
+    assert reason_of(text) is UNRECOGNIZED
 
 
 @pytest.mark.parametrize(
@@ -620,6 +637,14 @@ def test_error_message_stays_short_for_a_long_input() -> None:
         normalize_chapter_number("9" * HUGE)
     assert caught.value.reason is TOO_LARGE
     assert len(str(caught.value)) < 200
+
+
+def test_error_survives_pickle_and_copy() -> None:
+    with pytest.raises(InvalidChapterNumber) as caught:
+        normalize_chapter_number("10.0001")
+    for clone in (pickle.loads(pickle.dumps(caught.value)), copy.copy(caught.value)):
+        assert clone.reason is TOO_MANY_DECIMALS
+        assert str(clone) == str(caught.value)
 
 
 def test_reasons_are_the_documented_strings() -> None:

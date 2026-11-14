@@ -38,8 +38,13 @@ class ChapterNumberReason(StrEnum):
 
 class InvalidChapterNumber(ValueError):
     def __init__(self, text: str, reason: ChapterNumberReason) -> None:
-        super().__init__(f"invalid chapter number {text[:_ECHOED_TEXT_LIMIT]!r}: {reason}")
+        # Both go to args so pickle and copy can rebuild the error.
+        super().__init__(text, reason)
+        self.text = text
         self.reason = reason
+
+    def __str__(self) -> str:
+        return f"invalid chapter number {self.text[:_ECHOED_TEXT_LIMIT]!r}: {self.reason}"
 
 
 def normalize_chapter_number(text: str) -> Decimal:
@@ -49,7 +54,11 @@ def normalize_chapter_number(text: str) -> Decimal:
     `Decimal("10.000")`. `10,5` is 10.5. `One-shot` is 1. `Special 10.1` and
     `Extra 3` keep the number as written. A part marker adds tenths to a whole
     number: `10a` and `10 part 1` are 10.1, `10i` and `10 part 9` are 10.9. That is
-    also what a real 10.1 gives, so the two cannot be told apart here.
+    also what a real 10.1 gives, so the two cannot be told apart here. Superscript,
+    circled and roman numerals are refused.
+
+    Lists and ranges (`10,12`, `10-12`) must be split by the caller before calling,
+    since `10,12` reads as 10.12.
 
     The input is `str`. A caller holding a number passes `repr(value)`, and a
     caller whose source reports "unknown" (Suwayomi uses a negative value) treats
@@ -62,6 +71,11 @@ def normalize_chapter_number(text: str) -> Decimal:
     changes the value, so `10.1000` is fine and `10.0001` is not). Nothing else
     is raised for any `str`.
     """
+    # NFKC would turn superscript, circled and roman numerals into plain digits or
+    # letters, so 10² would read as 102 and a roman numeral one as a part letter.
+    # Full-width digits are decimal and still fold.
+    if any(ch.isnumeric() and not ch.isdecimal() for ch in text):
+        raise InvalidChapterNumber(text, ChapterNumberReason.UNRECOGNIZED)
     folded = unicodedata.normalize("NFKC", text).strip().lower()
     if not folded:
         raise InvalidChapterNumber(text, ChapterNumberReason.EMPTY)
