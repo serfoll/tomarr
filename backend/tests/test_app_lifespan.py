@@ -13,6 +13,7 @@ from sqlalchemy import create_engine, select, text
 from sqlalchemy.pool import QueuePool
 
 from tests.helpers.event_stream import EventStream
+from tests.helpers.migrations import head_revision
 from tomarr.app import create_app, lifespan
 from tomarr.commands.purge_http_cache import PURGE_HTTP_CACHE
 from tomarr.commands.runner import CommandRunner
@@ -76,7 +77,7 @@ def test_lifespan_migrates_the_database_to_head(tmp_path: Path) -> None:
             tables = connection.execute(text("SELECT name FROM sqlite_master")).scalars().all()
         engine.dispose()
 
-    assert revision == "0003"
+    assert revision == head_revision()
     assert "setting" in tables
     assert "http_cache" in tables
 
