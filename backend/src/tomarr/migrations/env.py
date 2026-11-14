@@ -3,9 +3,16 @@ from sqlalchemy import URL, create_engine
 from sqlalchemy.pool import NullPool
 
 # Imported for their side effect: each model registers itself on Base.metadata.
+import tomarr.domain.alias  # pyright: ignore[reportUnusedImport]
+import tomarr.domain.chapter  # pyright: ignore[reportUnusedImport]
 import tomarr.domain.command  # pyright: ignore[reportUnusedImport]
+import tomarr.domain.edition  # pyright: ignore[reportUnusedImport]
+import tomarr.domain.external_id  # pyright: ignore[reportUnusedImport]
 import tomarr.domain.http_cache  # pyright: ignore[reportUnusedImport]
-import tomarr.domain.setting  # noqa: F401  # pyright: ignore[reportUnusedImport]
+import tomarr.domain.mapping  # pyright: ignore[reportUnusedImport]
+import tomarr.domain.series  # pyright: ignore[reportUnusedImport]
+import tomarr.domain.setting  # pyright: ignore[reportUnusedImport]
+import tomarr.domain.volume  # noqa: F401  # pyright: ignore[reportUnusedImport]
 from tomarr.domain.base import Base
 
 # logging.config.fileConfig is not called: it would replace the handlers from core/logging.py.

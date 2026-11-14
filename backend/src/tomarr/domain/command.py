@@ -1,9 +1,10 @@
 from enum import StrEnum
 
-from sqlalchemy import JSON, Enum, Index
+from sqlalchemy import JSON, Index
 from sqlalchemy.orm import Mapped, mapped_column
 
 from tomarr.domain.base import Base
+from tomarr.domain.columns import string_enum
 
 
 class CommandStatus(StrEnum):
@@ -13,20 +14,13 @@ class CommandStatus(StrEnum):
     FAILED = "failed"
 
 
-def _values(statuses: type[CommandStatus]) -> list[str]:
-    return [status.value for status in statuses]
-
-
 class Command(Base):
     __tablename__ = "command"
 
     id: Mapped[int] = mapped_column(primary_key=True)
     type: Mapped[str]
     payload: Mapped[dict[str, object]] = mapped_column(JSON)
-    # A plain string column with no CHECK constraint, since SQLite cannot alter one in place.
-    status: Mapped[CommandStatus] = mapped_column(
-        Enum(CommandStatus, native_enum=False, create_constraint=False, values_callable=_values)
-    )
+    status: Mapped[CommandStatus] = mapped_column(string_enum(CommandStatus))
     priority: Mapped[int]
     # Epoch seconds, like http_cache.expires_at.
     not_before: Mapped[float | None]
