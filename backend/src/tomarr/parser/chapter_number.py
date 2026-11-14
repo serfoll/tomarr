@@ -10,6 +10,8 @@ INTEGER_DIGITS = 5
 _QUANTUM = Decimal(1).scaleb(-DECIMAL_PLACES)
 _LIMIT = Decimal(10) ** INTEGER_DIGITS
 
+_ECHOED_TEXT_LIMIT = 80
+
 _ONE_SHOT_WORDS = frozenset({"one-shot", "oneshot"})
 _BARE_SPECIAL_WORDS = frozenset({"special", "extra", "omake", "bonus", "sp"})
 _NOT_FINITE = re.compile(r"[+-]?(?:s?nan[0-9]*|inf(?:inity)?)")
@@ -36,7 +38,7 @@ class ChapterNumberReason(StrEnum):
 
 class InvalidChapterNumber(ValueError):
     def __init__(self, text: str, reason: ChapterNumberReason) -> None:
-        super().__init__(f"invalid chapter number {text!r}: {reason}")
+        super().__init__(f"invalid chapter number {text[:_ECHOED_TEXT_LIMIT]!r}: {reason}")
         self.reason = reason
 
 

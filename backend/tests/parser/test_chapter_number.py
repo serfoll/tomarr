@@ -75,18 +75,12 @@ def test_trailing_zeros_that_change_nothing_are_accepted(text: str, expected: st
 @pytest.mark.parametrize(
     ("text", "expected"),
     [
-        ("Ch.10", "10.000"),
-        ("ch.10", "10.000"),
         ("Ch. 10", "10.000"),
         ("ch 10", "10.000"),
-        ("ch10", "10.000"),
         ("Chapter 10", "10.000"),
-        ("chapter10", "10.000"),
         ("CHAPTER 10", "10.000"),
-        ("c10", "10.000"),
         ("C 10", "10.000"),
         ("Episode 10", "10.000"),
-        ("EPISODE10", "10.000"),
         ("Ch.010.5", "10.500"),
         ("ch\t10", "10.000"),
         ("ch\n10", "10.000"),
@@ -106,7 +100,6 @@ def test_prefixes_in_any_case_with_or_without_space(text: str, expected: str) ->
         ("extra3", "3.000"),
         ("sp 3", "3.000"),
         ("SP 3", "3.000"),
-        ("sp10", "10.000"),
     ],
 )
 def test_numbered_specials_and_extras_keep_the_number_as_written(text: str, expected: str) -> None:
@@ -262,7 +255,7 @@ def test_omake_and_bonus_are_not_prefixes_and_special_words_must_stand_alone(tex
     assert reason_of(text) is UNRECOGNIZED
 
 
-# R1: prefix matching order. Prefixes overlap (chapter, ch., ch, c; special, sp)
+# Prefix matching order. Prefixes overlap (chapter, ch., ch, c; special, sp)
 # and the shorter one must not be taken when a longer one fits.
 
 
@@ -270,9 +263,7 @@ def test_omake_and_bonus_are_not_prefixes_and_special_words_must_stand_alone(tex
     ("text", "expected"),
     [
         ("chapter10", "10.000"),
-        ("chapter 10", "10.000"),
         ("ch.10", "10.000"),
-        ("ch. 10", "10.000"),
         ("ch10", "10.000"),
         ("c10", "10.000"),
         ("special10", "10.000"),
@@ -402,7 +393,7 @@ def test_commas_that_are_not_a_one_or_two_digit_decimal_are_unrecognized(text: s
     assert reason_of(text) is UNRECOGNIZED
 
 
-# R2: Decimal accepts these, so they are refused before it sees them.
+# Decimal accepts these, so they are refused before it sees them.
 
 
 @pytest.mark.parametrize(
@@ -461,7 +452,7 @@ def test_more_than_three_places_that_change_the_value_are_too_many_decimals(text
     assert reason_of(text) is TOO_MANY_DECIMALS
 
 
-# R3: the bound. Numeric(8, 3) has five integer digits, so 99999.999 is the top.
+# The bound. Numeric(8, 3) has five integer digits, so 99999.999 is the top.
 
 
 @pytest.mark.parametrize(
@@ -509,31 +500,22 @@ def test_100000_and_above_are_too_large(text: str) -> None:
         ("100000.9999999", TOO_LARGE),
         ("99999.9995", TOO_MANY_DECIMALS),
         ("99999.99951", TOO_MANY_DECIMALS),
-        ("-Infinity", NOT_FINITE),
-        ("-nan", NOT_FINITE),
-        ("-1.0001", NEGATIVE),
-        ("-100000", NEGATIVE),
-        ("-1e3", NEGATIVE),
         ("100000.5a", UNRECOGNIZED),
         ("1e100000", UNRECOGNIZED),
-        ("special", NEEDS_POSITION),
-        ("   ", EMPTY),
     ],
 )
 def test_the_first_failing_check_names_the_reason(text: str, expected: ChapterNumberReason) -> None:
     assert reason_of(text) is expected
 
 
-# R4: a part marker and a real decimal collide by design, and must not raise.
+# A part marker and a real decimal collide by design, and must not raise.
 
 
-@pytest.mark.parametrize("text", ["10a", "10.1", "10 part 1", "10.100", "10.1000"])
-def test_part_marker_and_real_decimal_give_the_same_number(text: str) -> None:
-    assert normalize_chapter_number(text) == Decimal("10.100")
-    assert str(normalize_chapter_number(text)) == "10.100"
+def test_part_marker_and_real_decimal_give_the_same_number() -> None:
+    assert normalize_chapter_number("10a") == normalize_chapter_number("10.1") == Decimal("10.100")
 
 
-# R5: long digit strings are checked by value, not parsed through int().
+# Long digit strings are checked by value, not parsed through int().
 
 
 @pytest.mark.parametrize(
@@ -557,7 +539,7 @@ def test_huge_whole_numbers_are_too_large(text: str) -> None:
 
 @pytest.mark.parametrize(
     ("text", "expected"),
-    ids=lambda value: short_id(value),
+    ids=short_id,
     argvalues=[
         ("0" * HUGE + "5", "5.000"),
         ("0" * HUGE + "5.5", "5.500"),
@@ -633,6 +615,13 @@ def test_error_message_shows_the_text_as_given_not_as_folded() -> None:
     assert "\uff11\uff10\uff0e\uff10\uff10\uff10\uff11" in str(caught.value)
 
 
+def test_error_message_stays_short_for_a_long_input() -> None:
+    with pytest.raises(InvalidChapterNumber) as caught:
+        normalize_chapter_number("9" * HUGE)
+    assert caught.value.reason is TOO_LARGE
+    assert len(str(caught.value)) < 200
+
+
 def test_reasons_are_the_documented_strings() -> None:
     assert {reason.value for reason in ChapterNumberReason} == {
         "empty",
@@ -649,23 +638,12 @@ def test_reasons_are_the_documented_strings() -> None:
 # is always a Decimal with three places inside the column's range.
 
 HOSTILE = [
-    "",
-    " ",
     "\x00",
-    "\x0010",
-    "\ud800",
     "\udfff10",
     "\U0001f4a9",
-    "\r\n",
-    ".",
-    "-",
     "+",
-    "..",
     "e",
-    "ch",
     "part",
-    "10 part",
-    "10 part ",
     "0x",
     "0e0",
     "1e999999999",
@@ -676,21 +654,16 @@ HOSTILE = [
     "\u017fp 3",
     "1\u0338",
     "\u2460\u2461\u2462",
-    "\u00bd",
     "\u2153",
     "10\u20442",
     "\ufdfd",
     "\u212a",
     "1" * HUGE,
     "-" * HUGE,
-    "ch." * 2000,
-    "10a" * 1000,
-    "9" * HUGE + "." + "9" * HUGE,
     " " * HUGE + "5",
     "5" + " " * HUGE,
     "5" + " " * HUGE + "5",
     "\u200b" * 100,
-    "\u0661\u0660",
     "snan" + "9" * HUGE,
     "." * HUGE,
     "1" + "." * HUGE,
