@@ -25,8 +25,10 @@ jobs:
         with:
           persist-credentials: false
 
+      # Same uv version as the Dockerfile. Bump the two together.
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
+          version: "0.11.33"
           python-version: "3.13"
           enable-cache: true
           cache-dependency-glob: backend/uv.lock
@@ -58,6 +60,7 @@ jobs:
         with:
           persist-credentials: false
 
+      # This step must come before setup-node, whose cache: pnpm needs pnpm on PATH.
       # The pnpm version comes from packageManager in frontend/package.json.
       # The action looks for package.json at the repo root unless told where it is.
       - uses: pnpm/action-setup@73e46992e05b19abd31f2f3c20e0e7370d762115 # v6.1.1
@@ -73,6 +76,7 @@ jobs:
       # gen:api:check runs the backend to dump the OpenAPI schema.
       - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
+          version: "0.11.33"
           python-version: "3.13"
           enable-cache: true
           cache-dependency-glob: backend/uv.lock

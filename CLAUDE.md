@@ -99,7 +99,7 @@ Scaffold issues install only packages listed here. Any later addition is asked f
 
 ### CI
 
-Signed off 2026-11-15. Every action is pinned by full commit SHA in `.github/workflows/`, with the version in a trailing comment. The version here is that comment.
+Signed off 2026-11-15. Every action is pinned by full commit SHA in `.github/workflows/`, with the version in a trailing comment. The Version column below is the version named in each workflow's trailing comment.
 
 | Action | Version | Reason |
 |---|---|---|

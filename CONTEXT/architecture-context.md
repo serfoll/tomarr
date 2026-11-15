@@ -167,7 +167,7 @@ The image installs `7zip` and `7zip-rar` (Debian `non-free`). The command is `7z
 
 In development, `pnpm dev` runs the Vite dev server, which proxies `/api` to the backend on `127.0.0.1:8000`. If `TOMARR_DEV_API_KEY` is set, the proxy adds it as the `X-Api-Key` header, so the shell can call guarded routes without signing in. The variable is read by `vite.config.ts` only and never ships in the build.
 
-The frontend's API types are generated from the backend's OpenAPI schema into `frontend/src/api/schema.gen.ts`. `pnpm gen:api` regenerates them after a backend schema change. `pnpm gen:api:check` fails when the committed file is out of date and is meant to run in CI (issue #16 wires it in). Only `src/api/client.ts` makes requests, and the query hooks in `src/api/` call it.
+The frontend's API types are generated from the backend's OpenAPI schema into `frontend/src/api/schema.gen.ts`. `pnpm gen:api` regenerates them after a backend schema change. `pnpm gen:api:check` fails when the committed file is out of date and runs in the `frontend` job of `.github/workflows/ci.yml`. Only `src/api/client.ts` makes requests, and the query hooks in `src/api/` call it.
 
 ## Auth
 
