@@ -148,6 +148,12 @@ The container starts as root and `docker/entrypoint.sh` drops to `PUID` and `PGI
 
 The image installs `7zip` and `7zip-rar` (Debian `non-free`). The command is `7z`, a wrapper for `/usr/lib/7zip/7z`; `7zz` is not installed. `7z i` lists the Rar and Rar5 formats, so Import (#45) can read CBR and RAR5 with `7z`.
 
+## CI and release
+
+`.github/workflows/ci.yml` runs on pull requests with three jobs. `backend` runs `uv sync --locked`, `ruff check`, `ruff format --check`, `pyright` and `pytest`. `frontend` runs `pnpm install --frozen-lockfile`, `pnpm lint`, `pnpm typecheck`, `pnpm test` and `pnpm gen:api:check`, so it needs the locked backend environment too. `image` builds the root `Dockerfile` for `linux/amd64` and `linux/arm64` without pushing.
+
+`.github/workflows/release.yml` runs when a tag matching `v*` is pushed. It checks the tag with `.github/scripts/check-release-version.sh`, then builds both platforms with QEMU and pushes `ghcr.io/serfoll/tomarr`. A Git tag `vMAJOR.MINOR.PATCH`, with an optional hyphenated suffix, becomes the image tag without the `v` (`0.1.0`). Stable tags, the ones with no hyphen, also get `latest`. The check fails when the tag does not match that format, and when a stable tag minus the `v` differs from `version` in `backend/pyproject.toml`. A hyphenated tag skips the version comparison but not the format check. Only `release.yml` has `packages: write`. The first publish creates the package as private, and the owner makes it public in the package settings.
+
 ## Serving the frontend
 
 `api/static.py` registers a catch-all route at `/{path:path}` for `GET`, `HEAD`, `POST`, `PUT`, `PATCH`, `DELETE` and `OPTIONS`, as the last route in `create_app()`, so every API route, `/docs`, `/redoc` and `/openapi.json` match first. It is left out of the OpenAPI schema. The build is read from `TOMARR_STATIC_DIR`, which defaults to `frontend/dist` in the checkout. If the directory has no `index.html` (missing, or a half-written build), the route is not registered and the backend behaves as it does without a frontend.

@@ -93,6 +93,22 @@ Vitest 5.1 and jsdom 31 set the Node floor for the Dockerfile's Node stage: 22.2
 
 Base image: `python:3.13-slim` (3.13.18, Debian 13 trixie).
 
+### CI
+
+Signed off 2026-11-15. Every action is pinned by full commit SHA in `.github/workflows/`, with the version in a trailing comment. The version here is that comment.
+
+| Action | Version | Reason |
+|---|---|---|
+| `actions/checkout` | v7.0.1 | Checks out the repo in every job. `dco.yml` already uses it |
+| `actions/setup-node` | v7.1.0 | Node 22.23.5 for the `frontend` job, the version in the Dockerfile's Node stage (#16) |
+| `astral-sh/setup-uv` | v10.3.3 | uv for `backend`, and for `pnpm gen:api:check` in `frontend` (#16) |
+| `pnpm/action-setup` | v6.1.1 | pnpm at the `packageManager` version for `frontend` (#16) |
+| `docker/setup-qemu-action` | v4.4.0 | Emulates arm64 for the multi-platform builds in `image` and `release` (#16) |
+| `docker/setup-buildx-action` | v4.4.1 | Buildx builder for multi-platform builds and the Actions cache (#16) |
+| `docker/login-action` | v4.8.0 | Logs in to GHCR with the workflow token in `release` (#16) |
+| `docker/metadata-action` | v6.2.0 | Image tags (`latest` on stable tags only) and OCI labels in `release` (#16) |
+| `docker/build-push-action` | v7.4.0 | Builds the root `Dockerfile` for amd64 and arm64. Pushes only in `release` (#16) |
+
 Deferred by the user until the work needs them: `pillow` (image conversion). It is asked for sign-off when that work starts.
 
 Scaffold issues install only packages listed here. Any later addition is asked first, then added to this list in the same PR.
