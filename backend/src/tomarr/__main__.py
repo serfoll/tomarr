@@ -63,7 +63,8 @@ def _is_healthy(host: str, port: int) -> bool:
         # The status line is enough, so no body is read.
         with opener.open(url, timeout=HEALTHCHECK_TIMEOUT_SECONDS) as response:
             return response.status == 200
-    except (OSError, HTTPException) as error:
+    # ValueError is what urllib raises for a host it cannot parse or encode.
+    except (OSError, HTTPException, ValueError) as error:
         reason = error.code if isinstance(error, HTTPError) else error
         logger.error("Healthcheck failed on %s: %s", url, reason)
         return False

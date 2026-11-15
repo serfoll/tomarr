@@ -342,6 +342,19 @@ def test_healthcheck_exits_1_on_an_invalid_config_file(tmp_path: Path) -> None:
     assert main(["healthcheck"]) == 1
 
 
+@pytest.mark.parametrize("bindaddress", ["a..b", "[::1]"])
+def test_healthcheck_exits_1_and_logs_once_on_a_bindaddress_urllib_rejects(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture, bindaddress: str
+) -> None:
+    write_config(tmp_path, bindaddress=bindaddress, port=free_port())
+
+    assert main(["healthcheck"]) == 1
+
+    assert len(caplog.records) == 1
+    assert "Healthcheck failed on" in caplog.text
+    assert API_KEY not in caplog.text
+
+
 def test_healthcheck_failure_message_does_not_contain_the_api_key(
     tmp_path: Path, caplog: pytest.LogCaptureFixture
 ) -> None:
