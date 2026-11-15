@@ -21,7 +21,7 @@ Project Board: https://github.com/users/serfoll/projects/16
 - Backend: Python 3.13, FastAPI, Pydantic v2, SQLAlchemy 2.1 (typed) with Alembic, SQLite in WAL mode, httpx2 (async). Package manager: uv. Lint and format: ruff. Types: pyright. Tests: pytest with recorded HTTP fixtures.
 - Frontend: React and TypeScript in a Vite SPA, TanStack Router, Query and Table. API client generated from the backend's OpenAPI schema. Package manager: pnpm. Lint and format: Biome. Tests: Vitest.
 - LLM: Google Gemini through the official `google-genai` SDK, bring your own key, behind a provider interface.
-- Shipping: one Docker image (multi-arch amd64 and arm64) published to GHCR. Config and database live in `/config`.
+- Shipping: one Docker image (multi-arch amd64 and arm64) published to GHCR, built from the `Dockerfile` at the repo root. Config and database live in `/config`. The container runs as `PUID` and `PGID` (default 1000 each).
 - License: AGPL-3.0.
 
 Design (colors, type, components) is not decided yet. Don't invent a design system; use unstyled headless primitives until `CONTEXT/design/` exists.
@@ -99,7 +99,7 @@ Scaffold issues install only packages listed here. Any later addition is asked f
 
 ## Commands
 
-The backend and frontend are scaffolded; the Docker parts are not yet. Backend commands run from `backend/` and frontend commands from `frontend/`. Until a command exists in `pyproject.toml`, `package.json` or a compose file, don't reference it as if it does.
+The backend, frontend and Docker image are scaffolded; the dev compose stack comes with #15. Backend commands run from `backend/` and frontend commands from `frontend/`. Until a command exists in `pyproject.toml`, `package.json` or a compose file, don't reference it as if it does.
 
 | Task | Command |
 |---|---|
@@ -114,6 +114,8 @@ The backend and frontend are scaffolded; the Docker parts are not yet. Backend c
 | Frontend build into `frontend/dist/` (from `frontend/`). Type checks first | `pnpm build` |
 | Regenerate API types (from `frontend/`). Needs `uv` and the backend installed. Never edit `src/api/schema.gen.ts` by hand | `pnpm gen:api` |
 | Check the generated API types are current (from `frontend/`). Same needs as `pnpm gen:api` | `pnpm gen:api:check` |
+| Build the image (from the repo root) | `docker build -t tomarr:dev .` |
+| Run the image (from the repo root). Files in `config/` belong to `PUID` and `PGID`. Open http://localhost:6464 | `docker run --rm -p 6464:6464 -v "$PWD/config":/config -e PUID="$(id -u)" -e PGID="$(id -g)" tomarr:dev` |
 | Dev stack (Prowlarr, qBittorrent, SABnzbd, Suwayomi, Kavita) | `docker compose -f docker/docker-compose.dev.yml up` |
 
 The dev server adds `X-Api-Key` to proxied `/api` requests when `TOMARR_DEV_API_KEY` is set. Read the key from `config.toml` with a command substitution as shown above, and never type it into a command. Vite reads it in `vite.config.ts` only, so it never reaches the bundle. With `TOMARR_DEV_API_KEY` set the visitor is always authenticated, so unset it to see the sign-up and sign-in pages.
