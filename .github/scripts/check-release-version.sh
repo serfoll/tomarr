@@ -13,7 +13,9 @@ fi
 tag="$1"
 pyproject="${2:-backend/pyproject.toml}"
 
-tag_re='^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z]+(\.[0-9A-Za-z]+)*)?$'
+# A suffix identifier is 0, a number without a leading zero, or alphanumeric with at least one letter.
+id='(0|[1-9][0-9]*|[0-9]*[A-Za-z][0-9A-Za-z]*)'
+tag_re="^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-$id(\.$id)*)?\$"
 if [[ ! "$tag" =~ $tag_re ]]; then
   echo "Release check failed: '$tag' is not a valid release tag. Use vMAJOR.MINOR.PATCH with an optional -suffix, for example v0.1.0 or v0.1.0-rc.1." >&2
   exit 1

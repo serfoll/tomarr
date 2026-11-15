@@ -56,6 +56,22 @@ for bad in 0.1.0 vfoo v1.2 v01.2.3 v1.02.3 v1.2.03 v1.2.3+build v1.2.3- v1.2.3-r
   expect_err "d: bad format '$bad' says the format is wrong" "not a valid release tag"
 done
 
+for good in v1.2.3-0 v1.2.3-10 v1.2.3-0a v1.2.3-rc.1; do
+  run "$good" "$pyproject"
+  expect_exit "d: valid suffix '$good' passes" 0
+done
+
+# Semver forbids leading zeros in numeric prerelease identifiers.
+for bad in v1.2.3-01 v1.2.3-rc.01; do
+  run "$bad" "$pyproject"
+  expect_exit "d: leading-zero suffix '$bad' fails" 1
+  expect_err "d: leading-zero suffix '$bad' says the format is wrong" "not a valid release tag"
+done
+
+run $'v0.1.0\n' "$pyproject"
+expect_exit "d: tag with a trailing newline fails" 1
+expect_err "d: tag with a trailing newline says the format is wrong" "not a valid release tag"
+
 run "" "$pyproject"
 expect_exit "d: empty tag fails" 1
 expect_err "d: empty tag says the format is wrong" "not a valid release tag"
