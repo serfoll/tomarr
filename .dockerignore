@@ -1,0 +1,16 @@
+.git
+**/.env*
+/config
+**/*.db*
+/tmp
+/.superpowers
+**/node_modules
+**/.venv
+**/dist
+**/.vite
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/.pyright
+**/*.egg-info
+**/.DS_Store
