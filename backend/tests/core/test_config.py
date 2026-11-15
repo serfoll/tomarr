@@ -7,7 +7,15 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from tomarr.core.config import Auth, Log, Server, config_dir, load_settings, static_dir
+from tomarr.core.config import (
+    Auth,
+    Log,
+    Server,
+    config_dir,
+    load_settings,
+    read_settings,
+    static_dir,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -264,3 +272,42 @@ def test_first_run_file_does_not_write_reset_password(
 
     written = tomllib.loads((tmp_path / "config.toml").read_text())
     assert "reset_password" not in written["auth"]
+
+
+def test_read_settings_applies_the_environment_over_the_file_and_leaves_the_file_alone(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "config.toml"
+    path.write_text('[server]\nport = 7000\n[auth]\napikey = "from-file"\n')
+    before = (path.read_bytes(), path.stat().st_mtime_ns)
+    monkeypatch.setenv("TOMARR__SERVER__PORT", "9000")
+
+    settings = read_settings(tmp_path)
+
+    assert (settings.server.port, settings.auth.apikey) == (9000, "from-file")
+    assert (path.read_bytes(), path.stat().st_mtime_ns) == before
+
+
+def test_read_settings_does_not_create_a_missing_file_or_directory(tmp_path: Path) -> None:
+    missing = tmp_path / "config"
+
+    with pytest.raises(FileNotFoundError):
+        read_settings(missing)
+
+    assert not missing.exists()
+
+
+def test_read_settings_does_not_create_the_file_in_an_existing_directory(tmp_path: Path) -> None:
+    with pytest.raises(FileNotFoundError):
+        read_settings(tmp_path)
+
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_read_settings_rejects_invalid_toml_without_echoing_the_file(tmp_path: Path) -> None:
+    (tmp_path / "config.toml").write_text('[auth]\napikey = "leaked-value\n')
+
+    with pytest.raises(ValueError, match="is not valid TOML") as error:
+        read_settings(tmp_path)
+
+    assert "leaked-value" not in str(error.value)
