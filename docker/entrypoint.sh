@@ -29,11 +29,16 @@ check_id PGID "$PGID"
 
 mkdir -p "$CONFIG_DIR" || fail "Could not create $CONFIG_DIR."
 
-# Only when the folder's owner differs, which is a first start or a changed PUID or PGID, so a
-# normal start never walks the tree. -h changes a symlink itself, never what it points to.
-if [ "$(stat -c '%u:%g' "$CONFIG_DIR")" != "$PUID:$PGID" ]; then
+# Every entry with another owner is fixed, not only the folder itself, so a file copied in as root
+# cannot stop the start. Entries that already match are left alone. -h changes a symlink itself,
+# never what it points to.
+wrong_owner() {
+    find "$CONFIG_DIR" \( ! -uid "$PUID" -o ! -gid "$PGID" \) "$@"
+}
+
+if [ -n "$(wrong_owner -print -quit)" ]; then
     echo "tomarr: Setting the owner of $CONFIG_DIR to $PUID:$PGID."
-    chown -R -h "$PUID:$PGID" "$CONFIG_DIR" \
+    wrong_owner -exec chown -h "$PUID:$PGID" {} + \
         || fail "Could not change the owner of $CONFIG_DIR to $PUID:$PGID. Check that the mount is writable and allows chown, or set PUID and PGID to its owner."
 fi
 
