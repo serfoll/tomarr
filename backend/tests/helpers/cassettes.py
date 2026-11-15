@@ -1,4 +1,5 @@
 import json
+import re
 from collections.abc import Iterator
 from pathlib import Path
 from typing import TypedDict
@@ -18,6 +19,9 @@ PARAM_NAMES = [
     "client_secret",
 ]
 PLACEHOLDER = "REDACTED"
+
+_PARAM_NAMES_FOLDED = {name.lower() for name in PARAM_NAMES}
+_PART_NAME = re.compile(r'^content-disposition:.*?\bname="([^"]*)"', re.IGNORECASE | re.MULTILINE)
 
 
 Headers = dict[str, str | list[str]]
@@ -40,11 +44,16 @@ def redact_response_headers(response: Response) -> Response:
 
 
 def scan_cassettes(directory: Path) -> list[str]:
-    """One message per header, query value, form value or JSON key that is named in the lists
-    above and holds anything but the placeholder. A message never contains the value.
+    """One message per header, query value, form value, multipart field or JSON key that is named
+    in the lists above and holds anything but the placeholder. A message never contains the value.
 
     Bodies are checked by shape, not by method or Content-Type, because vcrpy's filters skip PUT
-    and PATCH and read JSON only for exactly application/json."""
+    and PATCH and read JSON only for exactly application/json. A multipart boundary is read from
+    the body's first line for the same reason.
+
+    Query, form, multipart and JSON names match case-insensitively because ASP.NET servers such as
+    Prowlarr and Kavita accept any casing, while vcrpy's filters match exactly, so a spelling the
+    filters miss fails here and the remedy is to add it to the lists."""
     offences: list[str] = []
     for path in sorted(directory.rglob("*.yaml")):
         cassette = yaml.safe_load(path.read_text())
@@ -72,6 +81,7 @@ def _unredacted(
     if body is None:
         return
     yield from _fields("form field", parse_qsl(body, keep_blank_values=True))
+    yield from _fields("multipart field", _multipart_fields(body))
     try:
         parsed = json.loads(body)
     except ValueError:
@@ -88,14 +98,27 @@ def _headers(side: str, headers: Headers, names: list[str]) -> Iterator[tuple[st
 
 def _fields(where: str, pairs: list[tuple[str, str]]) -> Iterator[tuple[str, str]]:
     for name, value in pairs:
-        if name in PARAM_NAMES and value != PLACEHOLDER:
+        if name.lower() in _PARAM_NAMES_FOLDED and value != PLACEHOLDER:
             yield where, name
+
+
+def _multipart_fields(body: str) -> list[tuple[str, str]]:
+    first_line = body.split("\r\n", 1)[0].rstrip()
+    if not first_line.startswith("--") or len(first_line) < 3:
+        return []
+    fields: list[tuple[str, str]] = []
+    for part in body.split(first_line)[1:]:
+        head, separator, content = part.partition("\r\n\r\n")
+        match = _PART_NAME.search(head)
+        if separator and match:
+            fields.append((match.group(1), content.removesuffix("\r\n")))
+    return fields
 
 
 def _json_keys(data: object) -> Iterator[tuple[str, str]]:
     if isinstance(data, dict):
         for name, value in data.items():
-            if name in PARAM_NAMES and value != PLACEHOLDER:
+            if name.lower() in _PARAM_NAMES_FOLDED and value != PLACEHOLDER:
                 yield "JSON key", name
             else:
                 yield from _json_keys(value)

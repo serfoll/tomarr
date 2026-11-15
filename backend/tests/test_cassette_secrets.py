@@ -1,4 +1,5 @@
 import json
+from collections.abc import Callable
 from pathlib import Path
 
 import pytest
@@ -37,6 +38,14 @@ def interaction(
             "status": {"code": 200, "message": "OK"},
         },
     }
+
+
+def multipart(fields: dict[str, str], boundary: str = "b") -> str:
+    parts = [
+        f'--{boundary}\r\nContent-Disposition: form-data; name="{name}"\r\n\r\n{value}\r\n'
+        for name, value in fields.items()
+    ]
+    return "".join(parts) + f"--{boundary}--\r\n"
 
 
 def write_cassette(
@@ -119,6 +128,62 @@ def test_a_json_body_key_is_an_offence(tmp_path: Path, name: str) -> None:
     assert f"JSON key {name}" in offences[0]
 
 
+@pytest.mark.parametrize("name", PARAM_NAMES)
+def test_a_multipart_field_is_an_offence(tmp_path: Path, name: str) -> None:
+    write_cassette(
+        tmp_path,
+        interaction(
+            method="POST",
+            body=multipart({"remember": "1", name: SECRET}),
+            request_headers={"content-type": ["multipart/form-data; boundary=b"]},
+        ),
+    )
+
+    offences = scan_cassettes(tmp_path)
+
+    assert len(offences) == 1
+    assert f"multipart field {name}" in offences[0]
+
+
+# The boundary is read from the body's first line, so a missing or odd Content-Type still scans.
+@pytest.mark.parametrize("content_type", [None, "application/octet-stream"])
+def test_a_multipart_body_is_scanned_whatever_the_content_type(
+    tmp_path: Path, content_type: str | None
+) -> None:
+    headers = {"content-type": [content_type]} if content_type else None
+    body = multipart({"username": "alice", "password": SECRET}, boundary="x-7f3a")
+    write_cassette(tmp_path, interaction(method="POST", body=body, request_headers=headers))
+
+    assert len(scan_cassettes(tmp_path)) == 2
+
+
+@pytest.mark.parametrize("name", ["ApiKey", "APIKEY", "Password", "UserName", "Client_Secret"])
+@pytest.mark.parametrize(
+    ("where", "make"),
+    [
+        (
+            "query parameter",
+            lambda name: interaction(uri=f"https://api.example.test/v1?{name}={SECRET}"),
+        ),
+        ("form field", lambda name: interaction(method="POST", body=f"{name}={SECRET}")),
+        (
+            "multipart field",
+            lambda name: interaction(method="POST", body=multipart({name: SECRET})),
+        ),
+        ("JSON key", lambda name: interaction(method="POST", body=json.dumps({name: SECRET}))),
+    ],
+)
+def test_field_names_match_case_insensitively(
+    tmp_path: Path, name: str, where: str, make: Callable[[str], dict[str, object]]
+) -> None:
+    write_cassette(tmp_path, make(name))
+
+    offences = scan_cassettes(tmp_path)
+
+    assert len(offences) == 1
+    assert f"{where} {name}" in offences[0]
+
+
 def test_a_nested_json_key_is_an_offence(tmp_path: Path) -> None:
     body = json.dumps({"variables": {"filters": [{"password": SECRET}]}})
     write_cassette(tmp_path, interaction(method="POST", body=body))
@@ -199,6 +264,13 @@ def test_a_body_without_fields_is_not_an_offence(tmp_path: Path, body: str | byt
     ]
     + [
         pytest.param(
+            interaction(method="POST", body=multipart({name: PLACEHOLDER})),
+            id=f"multipart field {name}",
+        )
+        for name in PARAM_NAMES
+    ]
+    + [
+        pytest.param(
             interaction(method="POST", body=json.dumps({name: PLACEHOLDER})),
             id=f"JSON key {name}",
         )
@@ -237,6 +309,7 @@ def test_an_offence_names_the_cassette_the_interaction_and_the_field_but_not_the
         interaction(response_headers={"set-cookie": [SECRET]}),
         interaction(uri=f"https://api.example.test/v1?apikey={SECRET}"),
         interaction(method="POST", body=f"password={SECRET}"),
+        interaction(method="POST", body=multipart({"password": SECRET})),
         interaction(method="POST", body=json.dumps({"password": SECRET})),
     ],
 )
