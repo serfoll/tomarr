@@ -93,6 +93,11 @@ jobs:
         working-directory: frontend
         run: pnpm lint
 
+      # Runs before the tests, which also fail on a stale file, so the failure carries the fix instructions.
+      - name: Check generated API types
+        working-directory: frontend
+        run: pnpm gen:api:check
+
       - name: Check types
         working-directory: frontend
         run: pnpm typecheck
@@ -101,14 +106,10 @@ jobs:
         working-directory: frontend
         run: pnpm test
 
-      - name: Check generated API types
-        working-directory: frontend
-        run: pnpm gen:api:check
-
   image:
     name: image
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
