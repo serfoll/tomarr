@@ -6,6 +6,12 @@ from pathlib import Path
 import pytest
 from fastapi.testclient import TestClient
 
+from tests.helpers.cassettes import (
+    PARAM_NAMES,
+    PLACEHOLDER,
+    REQUEST_HEADER_NAMES,
+    redact_response_headers,
+)
 from tomarr.app import create_app
 from tomarr.core.config import load_settings
 from tomarr.core.database import Database, create_database
@@ -83,9 +89,12 @@ def vcr_cassette_dir(request: pytest.FixtureRequest) -> str:
 
 
 @pytest.fixture
-def vcr_config() -> dict[str, list[str]]:
+def vcr_config() -> dict[str, object]:
+    params = [(name, PLACEHOLDER) for name in PARAM_NAMES]
     return {
-        "filter_headers": ["authorization", "x-api-key", "x-goog-api-key"],
-        "filter_query_parameters": ["apikey", "api_key", "key", "token"],
-        "filter_post_data_parameters": ["apikey", "api_key", "key", "token"],
+        "filter_headers": [(name, PLACEHOLDER) for name in REQUEST_HEADER_NAMES],
+        "filter_query_parameters": params,
+        "filter_post_data_parameters": params,
+        "filter_nested_post_data_parameters": True,
+        "before_record_response": redact_response_headers,
     }

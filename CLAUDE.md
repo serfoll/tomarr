@@ -54,7 +54,7 @@ Signed off 2026-11-08. Versions are the current stable releases on that date. Th
 | `pytest` | 9.2.0 | Dev. Test runner (#5) |
 | `pytest-asyncio` | 1.4.1.post1 | Dev. Async tests (#5) |
 | `pytest-recording` | 0.14.1 | Dev. Cassettes and `--block-network` (#5) |
-| `pyyaml` | 6.0.3 | Dev. Loads the golden corpus in `tests/fixtures/releases/*.yaml` (#19). Added by audit |
+| `pyyaml` | 6.0.3 | Dev. Loads the golden corpus in `tests/fixtures/releases/*.yaml` and the cassettes for the secret scan (#19, #66). Added by audit |
 | `types-lxml` | 2026.2.16 | Dev. lxml ships no types and pyright runs strict. Added by audit |
 
 `httpx2` records and replays with `vcrpy` 9.4.2 and `pytest-recording` 0.14.1, checked 2026-11-08.

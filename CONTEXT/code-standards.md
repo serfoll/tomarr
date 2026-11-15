@@ -46,6 +46,7 @@ Code shape rules for this repo, scoped to what the linters don't already enforce
 
 - Backend tests live in `backend/tests/` at the path mirroring their source (`src/tomarr/parser/volume.py` → `tests/parser/test_volume.py`). Frontend tests live next to the mirror path under `frontend/tests/`.
 - No live network in tests. HTTP is recorded once with `pytest-recording` into cassettes under `tests/fixtures/cassettes/` and replayed. Network access is blocked during test runs. Cassettes have API keys and tokens filtered out before they're written.
+- Each adapter issue adds its provider's credential names to `backend/tests/helpers/cassettes.py` and records its cassette with them. The scan in `backend/tests/test_cassette_secrets.py` fails on a cassette that holds one of those names in a header, query value or form value. A credential in a body is replaced by value with vcrpy's `filter_sensitive_data`, and the cassette is searched for the real key.
 - The parser is tested against a golden corpus: `tests/fixtures/releases/*.yaml`, each entry a real release name and its expected Parsed release. Add a case for every parser bug before fixing it.
 - Gemini calls are tested through recorded cassettes for the adapter, and through a fake LLM provider for everything that depends on the interface.
 - Shared fixtures and fakes live in `tests/helpers/` (or `conftest.py` at the right level). Move a helper there when a second test file needs it.
