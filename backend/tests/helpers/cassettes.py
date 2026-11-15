@@ -1,4 +1,10 @@
+import json
+from collections.abc import Iterator
+from pathlib import Path
 from typing import TypedDict
+from urllib.parse import parse_qsl, urlsplit
+
+import yaml
 
 REQUEST_HEADER_NAMES = ["authorization", "x-api-key", "x-goog-api-key", "cookie"]
 RESPONSE_HEADER_NAMES = ["set-cookie"]
@@ -6,9 +12,12 @@ PARAM_NAMES = ["apikey", "api_key", "key", "token", "username", "password"]
 PLACEHOLDER = "REDACTED"
 
 
+Headers = dict[str, str | list[str]]
+
+
 class Response(TypedDict):
     status: dict[str, object]
-    headers: dict[str, str | list[str]]
+    headers: Headers
     body: dict[str, object]
 
 
@@ -20,3 +29,68 @@ def redact_response_headers(response: Response) -> Response:
         if name.lower() in RESPONSE_HEADER_NAMES:
             headers[name] = [PLACEHOLDER] * len(value) if isinstance(value, list) else PLACEHOLDER
     return response
+
+
+def scan_cassettes(directory: Path) -> list[str]:
+    """One message per header, query value, form value or JSON key that is named in the lists
+    above and holds anything but the placeholder. A message never contains the value.
+
+    Bodies are checked by shape, not by method or Content-Type, because vcrpy's filters skip PUT
+    and PATCH and read JSON only for exactly application/json."""
+    offences: list[str] = []
+    for path in sorted(directory.rglob("*.yaml")):
+        cassette = yaml.safe_load(path.read_text())
+        for index, item in enumerate(cassette["interactions"]):
+            request, response = item["request"], item["response"]
+            found = _unredacted(
+                request["headers"], response["headers"], request["uri"], request["body"]
+            )
+            offences.extend(
+                f"{path.relative_to(directory)}: interaction {index}: {where} {name} "
+                f"is not {PLACEHOLDER}"
+                for where, name in found
+            )
+    return offences
+
+
+def _unredacted(
+    request_headers: Headers, response_headers: Headers, uri: str, body: str | bytes | None
+) -> Iterator[tuple[str, str]]:
+    yield from _headers("request", request_headers, REQUEST_HEADER_NAMES)
+    yield from _headers("response", response_headers, RESPONSE_HEADER_NAMES)
+    yield from _fields("query parameter", parse_qsl(urlsplit(uri).query, keep_blank_values=True))
+    if isinstance(body, bytes):
+        body = body.decode(errors="replace")
+    if body is None:
+        return
+    yield from _fields("form field", parse_qsl(body, keep_blank_values=True))
+    try:
+        parsed = json.loads(body)
+    except ValueError:
+        return
+    yield from _json_keys(parsed)
+
+
+def _headers(side: str, headers: Headers, names: list[str]) -> Iterator[tuple[str, str]]:
+    for name, value in headers.items():
+        values = [value] if isinstance(value, str) else value
+        if name.lower() in names and any(v != PLACEHOLDER for v in values):
+            yield f"{side} header", name
+
+
+def _fields(where: str, pairs: list[tuple[str, str]]) -> Iterator[tuple[str, str]]:
+    for name, value in pairs:
+        if name in PARAM_NAMES and value != PLACEHOLDER:
+            yield where, name
+
+
+def _json_keys(data: object) -> Iterator[tuple[str, str]]:
+    if isinstance(data, dict):
+        for name, value in data.items():
+            if name in PARAM_NAMES and value != PLACEHOLDER:
+                yield "JSON key", name
+            else:
+                yield from _json_keys(value)
+    elif isinstance(data, list):
+        for item in data:
+            yield from _json_keys(item)
