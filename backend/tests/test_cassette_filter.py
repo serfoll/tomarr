@@ -87,6 +87,31 @@ def test_post_value_becomes_the_placeholder(
     assert result.body == f"{name}={PLACEHOLDER}".encode()
 
 
+# Query, form and JSON names match exactly, so Kavita's apiKey is not covered by apikey.
+PROVIDER_PARAM_NAMES = ["apiKey", "refreshToken", "client_secret"]
+
+
+@pytest.mark.parametrize("name", PROVIDER_PARAM_NAMES)
+def test_provider_param_is_replaced_in_query_form_and_json(
+    vcr_config: dict[str, object], tmp_path: Path, name: str
+) -> None:
+    query = Request("GET", f"https://example.test/path?{name}={SECRET}", None, {})
+    form = Request("POST", "https://example.test/path", f"{name}={SECRET}".encode(), {})
+    nested = json.dumps({"variables": {"input": {name: SECRET}}}).encode()
+    body = Request(
+        "POST", "https://example.test/path", nested, {"Content-Type": "application/json"}
+    )
+
+    assert (
+        filtered(vcr_config, tmp_path, query).uri
+        == f"https://example.test/path?{name}={PLACEHOLDER}"
+    )
+    assert filtered(vcr_config, tmp_path, form).body == f"{name}={PLACEHOLDER}".encode()
+    result = filtered(vcr_config, tmp_path, body).body
+    assert isinstance(result, bytes)
+    assert json.loads(result) == {"variables": {"input": {name: PLACEHOLDER}}}
+
+
 def test_login_form_fields_are_replaced_next_to_untouched_ones(
     vcr_config: dict[str, object], tmp_path: Path
 ) -> None:
