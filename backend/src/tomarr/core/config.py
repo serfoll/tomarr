@@ -102,7 +102,18 @@ def load_settings(config_dir: Path) -> Settings:
         # A key given through the environment is not copied to disk.
         key_from_env = any(name.upper() == API_KEY_ENV for name in os.environ)
         _write_first_run_file(path, with_api_key=not key_from_env)
+    return _read_settings(path)
 
+
+def read_settings(config_dir: Path) -> Settings:
+    """Load settings like `load_settings`, but never write the first-run file."""
+    path = config_dir / CONFIG_FILE_NAME
+    if not path.is_file():
+        raise FileNotFoundError(path)
+    return _read_settings(path)
+
+
+def _read_settings(path: Path) -> Settings:
     class _FileSettings(Settings):
         model_config = SettingsConfigDict(toml_file=path)
 
