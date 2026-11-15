@@ -10,8 +10,6 @@ REQUEST_HEADER_NAMES = ["authorization", "x-api-key", "x-goog-api-key", "cookie"
 RESPONSE_HEADER_NAMES = ["set-cookie"]
 PARAM_NAMES = [
     "apikey",
-    "api_key",
-    "key",
     "token",
     "username",
     "password",
