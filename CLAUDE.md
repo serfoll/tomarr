@@ -93,6 +93,10 @@ Vitest 5.1 and jsdom 31 set the Node floor for the Dockerfile's Node stage: 22.2
 
 Base image: `python:3.13-slim` (3.13.18, Debian 13 trixie).
 
+Deferred by the user until the work needs them: `pillow` (image conversion). It is asked for sign-off when that work starts.
+
+Scaffold issues install only packages listed here. Any later addition is asked first, then added to this list in the same PR.
+
 ### CI
 
 Signed off 2026-11-15. Every action is pinned by full commit SHA in `.github/workflows/`, with the version in a trailing comment. The version here is that comment.
@@ -108,10 +112,6 @@ Signed off 2026-11-15. Every action is pinned by full commit SHA in `.github/wor
 | `docker/login-action` | v4.8.0 | Logs in to GHCR with the workflow token in `release` (#16) |
 | `docker/metadata-action` | v6.2.0 | Image tags (`latest` on stable tags only) and OCI labels in `release` (#16) |
 | `docker/build-push-action` | v7.4.0 | Builds the root `Dockerfile` for amd64 and arm64. Pushes only in `release` (#16) |
-
-Deferred by the user until the work needs them: `pillow` (image conversion). It is asked for sign-off when that work starts.
-
-Scaffold issues install only packages listed here. Any later addition is asked first, then added to this list in the same PR.
 
 ## Commands
 
