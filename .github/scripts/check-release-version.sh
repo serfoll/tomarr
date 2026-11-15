@@ -46,7 +46,7 @@ if [[ -z "$version" ]]; then
 fi
 
 if [[ "${tag#v}" != "$version" ]]; then
-  echo "Release check failed: tag $tag is version ${tag#v}, but $pyproject says $version. Bump the version first, or tag $version." >&2
+  echo "Release check failed: tag $tag is version ${tag#v}, but $pyproject says $version. Bump the version first, or tag v$version." >&2
   exit 1
 fi
 

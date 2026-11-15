@@ -43,6 +43,7 @@ run v0.1.1 "$pyproject"
 expect_exit "b: stable tag differing from the pyproject version fails" 1
 expect_err "b: names the tag version" "0.1.1"
 expect_err "b: names the pyproject version" "0.1.0"
+expect_err "b: suggests tagging the pyproject version with a v" "or tag v0.1.0."
 
 run v0.0.0-ci.1 "$pyproject"
 expect_exit "c: pre-release tag skips the version comparison" 0
