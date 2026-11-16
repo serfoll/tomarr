@@ -10,6 +10,7 @@ class UnparseableReason(StrEnum):
     AUDIOBOOK = "audiobook"
     NO_TITLE = "no_title"
     INVALID_NUMBER = "invalid_number"
+    TOO_LONG = "too_long"
 
 
 class ReleaseWarning(StrEnum):

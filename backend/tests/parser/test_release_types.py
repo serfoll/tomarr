@@ -68,6 +68,7 @@ def test_enum_values_are_the_names_the_corpus_and_ui_use() -> None:
         "audiobook",
         "no_title",
         "invalid_number",
+        "too_long",
     }
     assert {w.value for w in ReleaseWarning} == {"mixed_pack", "no_numbers"}
     assert {s.value for s in Source} == {"digital", "scan", "unknown"}
