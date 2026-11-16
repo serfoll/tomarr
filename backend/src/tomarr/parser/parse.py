@@ -1,0 +1,46 @@
+from tomarr.parser.markers import read_numbers
+from tomarr.parser.media import rejection_reason
+from tomarr.parser.release import (
+    ParsedRelease,
+    ParseOutcome,
+    ReleaseWarning,
+    Unparseable,
+    UnparseableReason,
+)
+from tomarr.parser.tags import read_tags
+
+# The longest real name in the raw corpus is 261 characters. Names are untrusted
+# indexer text, so a longer one is refused instead of scanned.
+MAX_NAME_LENGTH = 1000
+_TITLE_EDGES = " -,|/:&+"
+
+
+def parse_release(name: str) -> ParseOutcome:
+    if len(name) > MAX_NAME_LENGTH:
+        return Unparseable(UnparseableReason.TOO_LONG)
+    if (reason := rejection_reason(name)) is not None:
+        return Unparseable(reason)
+    tags = read_tags(name)
+    numbers = read_numbers(tags.text)
+    if isinstance(numbers, Unparseable):
+        return numbers
+    title = " ".join(tags.text[: numbers.title_end].split()).strip(_TITLE_EDGES)
+    if not title:
+        return Unparseable(UnparseableReason.NO_TITLE)
+
+    warnings: set[ReleaseWarning] = set()
+    if not numbers.volumes and not numbers.chapters:
+        warnings.add(ReleaseWarning.NO_NUMBERS)
+    if numbers.volumes and any(chapter.volume is None for chapter in numbers.chapters):
+        warnings.add(ReleaseWarning.MIXED_PACK)
+    return ParsedRelease(
+        title=title,
+        volumes=numbers.volumes,
+        chapters=numbers.chapters,
+        group=tags.group,
+        source=tags.source,
+        language=tags.language,
+        hints=tags.hints,
+        file_format=tags.file_format,
+        warnings=frozenset(warnings),
+    )
