@@ -1,15 +1,9 @@
-import logging
-from collections.abc import Callable
-
 import httpx2
-from pydantic import ValidationError
 
-from tomarr.core.errors import ProviderError
 from tomarr.core.http import HttpClientFactory, HttpPolicy
 from tomarr.providers.anilist.mapper import parse_character_names, parse_search, parse_series
 from tomarr.providers.base import CharacterName, SeriesCandidate
-
-logger = logging.getLogger(__name__)
+from tomarr.providers.response import read_response, require_digits
 
 PROVIDER_NAME = "AniList"
 BASE_URL = "https://graphql.anilist.co"
@@ -65,10 +59,6 @@ query ($id: Int!) {
 }
 """
 
-# What a body can raise when it is not JSON, not UTF-8, not the shape the parser reads
-# (ValidationError is a ValueError), or nested too deep.
-_UNREADABLE = (ValueError, RecursionError)
-
 
 class AniListClient:
     def __init__(self, factory: HttpClientFactory) -> None:
@@ -76,15 +66,15 @@ class AniListClient:
 
     async def search(self, query: str, *, limit: int = 10) -> list[SeriesCandidate]:
         response = await self._post(_SEARCH, {"search": query, "perPage": limit})
-        return _read(response, parse_search)
+        return read_response(PROVIDER_NAME, response, parse_search)
 
     async def get_series(self, provider_id: str) -> SeriesCandidate:
         response = await self._post(_SERIES, {"id": _media_id(provider_id)})
-        return _read(response, parse_series)
+        return read_response(PROVIDER_NAME, response, parse_series)
 
     async def get_character_names(self, provider_id: str) -> list[CharacterName]:
         response = await self._post(_CHARACTERS, {"id": _media_id(provider_id)})
-        return _read(response, parse_character_names)
+        return read_response(PROVIDER_NAME, response, parse_character_names)
 
     async def _post(self, query: str, variables: dict[str, str | int]) -> httpx2.Response:
         async with self._factory.client(POLICY, base_url=BASE_URL) as client:
@@ -92,24 +82,5 @@ class AniListClient:
 
 
 def _media_id(provider_id: str) -> int:
-    if not (provider_id.isascii() and provider_id.isdigit()):
-        raise ValueError("An AniList series ID is made of digits only.")
+    require_digits(PROVIDER_NAME, provider_id)
     return int(provider_id)
-
-
-def _read[T](response: httpx2.Response, parse: Callable[[object], T]) -> T:
-    if response.status_code != 200:
-        raise ProviderError(PROVIDER_NAME, response.status_code)
-    try:
-        return parse(response.json())
-    except ValidationError as error:
-        # Only where and what kind: the input values are the provider's body.
-        problems = ", ".join(
-            f"{'.'.join(str(part) for part in detail['loc'])} ({detail['type']})"
-            for detail in error.errors()
-        )
-        logger.warning("%s sent a body Tomarr does not recognize: %s.", PROVIDER_NAME, problems)
-        raise ProviderError(PROVIDER_NAME, response.status_code) from None
-    except _UNREADABLE as error:
-        logger.warning("%s sent a body that is not JSON (%s).", PROVIDER_NAME, type(error).__name__)
-        raise ProviderError(PROVIDER_NAME, response.status_code) from None
