@@ -247,6 +247,201 @@ async def test_repeated_headers_replay_as_separate_values(
     assert replayed.headers.get_list("x-multi") == ["a", "b"]
 
 
+class Verdicts:
+    """An `accept` callable that records each body it was shown and answers with `verdict`."""
+
+    def __init__(self, verdict: bool = True) -> None:
+        self.verdict = verdict
+        self.bodies: list[str] = []
+
+    def __call__(self, response: httpx2.Response) -> bool:
+        self.bodies.append(response.text)
+        return self.verdict
+
+
+MAINTENANCE_PAGE = "<html>Down for maintenance</html>"
+
+
+async def test_refused_response_reaches_the_caller_but_is_not_stored(
+    factory: HttpClientFactory, server: Server, database: Database
+) -> None:
+    answers = [httpx2.Response(200, text=MAINTENANCE_PAGE), httpx2.Response(200, json={"ok": 1})]
+    server.respond = lambda _request: answers.pop(0)
+
+    def accept(response: httpx2.Response) -> bool:
+        return response.headers["content-type"].startswith("application/json")
+
+    async with factory.client(CACHED, base_url=BASE_URL, accept=accept) as client:
+        first = await client.get("/v1/items")
+        assert await cache_rows(database) == []
+        second = await client.get("/v1/items")
+        third = await client.get("/v1/items")
+
+    assert first.text == MAINTENANCE_PAGE
+    assert second.json() == third.json() == {"ok": 1}
+    assert len(server.requests) == 2
+    [row] = await cache_rows(database)
+    assert row.body == b'{"ok":1}'
+
+
+async def test_accepted_response_is_stored_and_served_from_the_cache(
+    factory: HttpClientFactory, server: Server
+) -> None:
+    accept = Verdicts(True)
+
+    async with factory.client(CACHED, base_url=BASE_URL, accept=accept) as client:
+        first = await client.get("/v1/items")
+        second = await client.get("/v1/items")
+
+    assert first.json() == second.json() == {"ok": True}
+    assert len(server.requests) == 1
+    assert len(accept.bodies) == 1
+
+
+async def test_accept_sees_a_decoded_body_and_the_stored_row_stays_compressed(
+    factory: HttpClientFactory, server: Server, database: Database
+) -> None:
+    compressed = gzip.compress(b'{"ok": true}')
+    server.respond = lambda _request: httpx2.Response(
+        200,
+        headers={"content-encoding": "gzip", "content-type": "application/json"},
+        stream=httpx2.ByteStream(compressed),
+    )
+    seen: list[object] = []
+
+    def accept(response: httpx2.Response) -> bool:
+        seen.append(response.json())
+        return True
+
+    async with factory.client(CACHED, base_url=BASE_URL, accept=accept) as client:
+        live = await client.get("/v1/items")
+
+    assert seen == [{"ok": True}]
+    assert live.json() == {"ok": True}
+    [row] = await cache_rows(database)
+    assert row.body == compressed
+
+
+async def test_undecodable_body_skips_accept_and_is_not_stored(
+    factory: HttpClientFactory, server: Server, database: Database
+) -> None:
+    server.respond = lambda _request: httpx2.Response(
+        200,
+        headers={"content-encoding": "gzip"},
+        stream=httpx2.ByteStream(b"this is not gzip"),
+    )
+    accept = Verdicts(True)
+
+    async with factory.client(CACHED, base_url=BASE_URL, accept=accept) as client:
+        with pytest.raises(httpx2.DecodingError):
+            await client.get("/v1/items")
+
+    assert accept.bodies == []
+    assert await cache_rows(database) == []
+
+
+async def test_explicit_accept_none_stores_every_200(
+    factory: HttpClientFactory, server: Server, database: Database
+) -> None:
+    server.respond = lambda _request: httpx2.Response(200, text=MAINTENANCE_PAGE)
+
+    async with factory.client(CACHED, base_url=BASE_URL, accept=None) as client:
+        await client.get("/v1/items")
+        second = await client.get("/v1/items")
+
+    assert second.text == MAINTENANCE_PAGE
+    assert len(server.requests) == 1
+    assert len(await cache_rows(database)) == 1
+
+
+@pytest.mark.parametrize(
+    ("policy", "method", "status"),
+    [(CACHED, "GET", 404), (CACHED, "POST", 200), (UNCACHED, "GET", 200)],
+)
+async def test_accept_is_not_called_for_a_response_that_would_not_be_cached(
+    factory: HttpClientFactory, server: Server, policy: HttpPolicy, method: str, status: int
+) -> None:
+    server.respond = lambda _request: httpx2.Response(status, json={"ok": True})
+    accept = Verdicts(False)
+
+    async with factory.client(policy, base_url=BASE_URL, accept=accept) as client:
+        response = await client.request(method, "/v1/items")
+
+    assert response.status_code == status
+    assert accept.bodies == []
+
+
+async def test_accept_raising_reaches_the_caller_and_nothing_is_stored(
+    factory: HttpClientFactory, database: Database
+) -> None:
+    def accept(_response: httpx2.Response) -> bool:
+        raise RuntimeError("accept blew up")
+
+    async with factory.client(CACHED, base_url=BASE_URL, accept=accept) as client:
+        with pytest.raises(RuntimeError, match="accept blew up"):
+            await client.get("/v1/items")
+
+    assert await cache_rows(database) == []
+
+
+async def test_a_streaming_caller_gets_the_raw_bytes_of_an_undecodable_body(
+    factory: HttpClientFactory, server: Server, database: Database
+) -> None:
+    server.respond = lambda _request: httpx2.Response(
+        200,
+        headers={"content-encoding": "gzip"},
+        stream=httpx2.ByteStream(b"this is not gzip"),
+    )
+    accept = Verdicts(True)
+
+    async with (
+        factory.client(CACHED, base_url=BASE_URL, accept=accept) as client,
+        client.stream("GET", "/v1/items") as response,
+    ):
+        raw = b"".join([chunk async for chunk in response.aiter_raw()])
+
+    assert raw == b"this is not gzip"
+    assert accept.bodies == []
+    assert await cache_rows(database) == []
+
+
+async def test_a_streaming_caller_reads_the_raw_body_after_accept_has_read_it(
+    factory: HttpClientFactory, server: Server
+) -> None:
+    accept = Verdicts(True)
+
+    # aiter_raw, because a response that accept already read still yields its body through
+    # aiter_bytes and aread, but raises StreamConsumed here.
+    async with (
+        factory.client(CACHED, base_url=BASE_URL, accept=accept) as client,
+        client.stream("GET", "/v1/items") as response,
+    ):
+        raw = b"".join([chunk async for chunk in response.aiter_raw()])
+
+    assert accept.bodies == ['{"ok":true}']
+    assert raw == b'{"ok":true}'
+
+
+async def test_accept_can_read_the_status_headers_and_body(
+    factory: HttpClientFactory, server: Server
+) -> None:
+    server.respond = lambda _request: httpx2.Response(
+        200, headers={"x-version": "2"}, json={"ok": True}
+    )
+    seen: list[tuple[int, str, str, object]] = []
+
+    def accept(response: httpx2.Response) -> bool:
+        seen.append(
+            (response.status_code, response.headers["x-version"], response.text, response.json())
+        )
+        return True
+
+    async with factory.client(CACHED, base_url=BASE_URL, accept=accept) as client:
+        await client.get("/v1/items")
+
+    assert seen == [(200, "2", '{"ok":true}', {"ok": True})]
+
+
 class BrokenStream(httpx2.AsyncByteStream):
     """A body that drops partway through, like a connection lost mid-read."""
 
