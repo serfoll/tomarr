@@ -134,6 +134,74 @@ def test_an_english_title_that_is_blank_falls_back_to_romaji(series_body: Payloa
     assert "" not in candidate.aliases
 
 
+def test_a_null_romaji_title_with_an_english_one_keeps_the_page(search_body: Payload) -> None:
+    body = copy.deepcopy(search_body)
+    frieren = search_media(body)[0]
+    frieren["title"] = {**cast(Payload, frieren["title"]), "romaji": None}
+
+    candidates = parse_search(body)
+
+    assert len(candidates) == 3
+    assert candidates[0].title == "Frieren: Beyond Journey\u2019s End"
+    assert "Sousou no Frieren" not in candidates[0].aliases
+
+
+@pytest.mark.parametrize(
+    ("title", "expected"),
+    [
+        pytest.param(
+            {"english": "Frieren", "romaji": "Sousou no Frieren", "native": "葬送"},
+            "Frieren",
+            id="english",
+        ),
+        pytest.param(
+            {"english": None, "romaji": "Sousou no Frieren", "native": "葬送"},
+            "Sousou no Frieren",
+            id="romaji",
+        ),
+        pytest.param({"english": None, "romaji": None, "native": "葬送"}, "葬送", id="native"),
+        pytest.param({"english": " ", "romaji": "\t", "native": " 葬送 "}, "葬送", id="blanks"),
+        pytest.param(
+            {"english": "  Frieren  ", "romaji": None, "native": None}, "Frieren", id="stripped"
+        ),
+    ],
+)
+def test_the_title_is_the_first_usable_of_english_romaji_and_native(
+    series_body: Payload, title: Payload, expected: str
+) -> None:
+    candidate = parse_series(changed(series_body, title=title))
+
+    assert candidate.title == expected
+    assert expected not in candidate.aliases
+
+
+@pytest.mark.parametrize(
+    "title",
+    [
+        pytest.param({"english": None, "romaji": None, "native": None}, id="null"),
+        pytest.param({"english": "", "romaji": " ", "native": "\n"}, id="blank"),
+    ],
+)
+def test_a_series_with_no_usable_title_is_refused(series_body: Payload, title: Payload) -> None:
+    with pytest.raises(ValidationError, match="title"):
+        parse_series(changed(series_body, title=title))
+
+
+def test_blank_titles_and_synonyms_are_not_aliases_and_kept_ones_are_stripped(
+    series_body: Payload,
+) -> None:
+    body = changed(
+        series_body,
+        title={"english": "  ", "romaji": "Sousou no Frieren", "native": " 葬送のフリーレン "},
+        synonyms=["   ", "\t", " Frieren at the Funeral ", "Sousou no Frieren "],
+    )
+
+    candidate = parse_series(body)
+
+    assert candidate.title == "Sousou no Frieren"
+    assert candidate.aliases == ("葬送のフリーレン", "Frieren at the Funeral")
+
+
 def test_get_series_maps_the_same_series_as_search(
     search_body: Payload, series_body: Payload
 ) -> None:
@@ -347,10 +415,6 @@ def test_a_character_with_null_parts_maps_without_error() -> None:
                                 }
                             },
                         },
-                        {
-                            "role": "MAIN",
-                            "node": {"name": {"full": None, "native": "名", "alternative": []}},
-                        },
                     ]
                 }
             }
@@ -361,6 +425,41 @@ def test_a_character_with_null_parts_maps_without_error() -> None:
 
     assert (first.full, first.native, first.alternatives) == ("A", None, ())
     assert (second.full, second.native, second.alternatives) == ("B", None, ("Bee",))
+
+
+def characters_with(*names: Payload) -> Payload:
+    edges = [{"role": "MAIN", "node": {"name": name}} for name in names]
+    return {"data": {"Media": {"characters": {"edges": edges}}}}
+
+
+def test_a_character_with_only_a_native_name_keeps_it_as_its_name() -> None:
+    body = characters_with({"full": None, "native": "フリーレン", "alternative": ["Frieren"]})
+
+    (name,) = parse_character_names(body)
+
+    assert (name.full, name.native, name.alternatives) == ("フリーレン", "フリーレン", ("Frieren",))
+
+
+def test_a_character_with_no_usable_name_is_dropped() -> None:
+    body = characters_with(
+        {"full": None, "native": None, "alternative": ["Nameless"]},
+        {"full": " ", "native": "\t", "alternative": []},
+        {"full": "Fern", "native": None, "alternative": []},
+    )
+
+    assert [name.full for name in parse_character_names(body)] == ["Fern"]
+
+
+def test_character_names_are_stripped_and_blank_ones_are_dropped() -> None:
+    body = characters_with(
+        {"full": "  Fern ", "native": "  ", "alternative": [" ", " Fern-chan ", "\n"]},
+        {"full": " ", "native": " フリーレン ", "alternative": None},
+    )
+
+    fern, frieren = parse_character_names(body)
+
+    assert (fern.full, fern.native, fern.alternatives) == ("Fern", None, ("Fern-chan",))
+    assert (frieren.full, frieren.native) == ("フリーレン", "フリーレン")
 
 
 def test_a_series_with_no_characters_gives_an_empty_list() -> None:

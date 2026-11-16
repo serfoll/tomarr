@@ -1,6 +1,7 @@
 from decimal import Decimal
+from typing import Annotated, Self
 
-from pydantic import BaseModel
+from pydantic import AfterValidator, BaseModel, model_validator
 
 from tomarr.domain.external_id import Provider
 from tomarr.domain.series import Format
@@ -17,6 +18,16 @@ _COUNTRY_FORMATS = {
 }
 
 
+def _usable(name: str | None) -> str | None:
+    if name is None:
+        return None
+    return name.strip() or None
+
+
+# A name that is blank once stripped is absent, wherever AniList sends one.
+type _Name = Annotated[str | None, AfterValidator(_usable)]
+
+
 # GraphQL reports a failure in `errors`, even on a 200. Typing it as None makes any entry a
 # validation error, so a partial answer is refused like any other unreadable body.
 class _Response(BaseModel):
@@ -24,9 +35,16 @@ class _Response(BaseModel):
 
 
 class _Title(BaseModel):
-    romaji: str
-    english: str | None
-    native: str | None
+    romaji: _Name
+    english: _Name
+    native: _Name
+
+    # Any one of the three can be null, but a series with none of them cannot be shown.
+    @model_validator(mode="after")
+    def _has_a_title(self) -> Self:
+        if self.english is None and self.romaji is None and self.native is None:
+            raise ValueError("The series has no title.")
+        return self
 
 
 class _CoverImage(BaseModel):
@@ -48,7 +66,7 @@ class _Media(BaseModel):
     volumes: int | None
     countryOfOrigin: str | None
     coverImage: _CoverImage | None
-    synonyms: list[str | None] | None
+    synonyms: list[_Name] | None
     tags: list[_Tag] | None
 
 
@@ -73,9 +91,9 @@ class _SeriesResponse(_Response):
 
 
 class _CharacterName(BaseModel):
-    full: str | None
-    native: str | None
-    alternative: list[str | None] | None
+    full: _Name
+    native: _Name
+    alternative: list[_Name] | None
 
 
 class _CharacterNode(BaseModel):
@@ -114,25 +132,28 @@ def parse_series(payload: object) -> SeriesCandidate:
 
 def parse_character_names(payload: object) -> list[CharacterName]:
     edges = _CharactersResponse.model_validate(payload).data.Media.characters.edges
+    # The glossary holds names in every script, so a character known only by its native name stays.
     return [
         CharacterName(
-            full=name.full,
-            native=name.native or None,
+            full=full,
+            native=name.native,
             alternatives=tuple(_present(name.alternative or ())),
         )
         for name in (edge.node.name for edge in edges)
-        if name.full
+        if (full := name.full or name.native)
     ]
 
 
 def _to_candidate(media: _Media) -> SeriesCandidate:
-    title = media.title.english or media.title.romaji
-    others = (media.title.english, media.title.romaji, media.title.native, *(media.synonyms or ()))
+    # The first name is the title: English, else romaji, else native. _Title makes sure one exists.
+    title, *aliases = _present(
+        (media.title.english, media.title.romaji, media.title.native, *(media.synonyms or ()))
+    )
     return SeriesCandidate(
         provider=Provider.ANILIST,
         provider_id=str(media.id),
         title=title,
-        aliases=tuple(alias for alias in _present(others) if alias != title),
+        aliases=tuple(aliases),
         format=_format(media),
         status=media.status,
         total_volumes=None if media.volumes is None else Decimal(media.volumes),
@@ -143,7 +164,7 @@ def _to_candidate(media: _Media) -> SeriesCandidate:
 
 
 def _present(names: tuple[str | None, ...] | list[str | None]) -> list[str]:
-    return list(dict.fromkeys(name for name in names if name))
+    return list(dict.fromkeys(name for name in names if name is not None))
 
 
 def _cover(cover: _CoverImage | None) -> str | None:
