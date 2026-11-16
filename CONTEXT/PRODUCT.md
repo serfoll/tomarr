@@ -1,6 +1,6 @@
 # Tomarr
 
-Tomarr does for manga, manhwa and webtoons what Sonarr does for TV: it knows every volume and chapter of a series, watches for new releases, grabs them through your indexers and download client, and files them into your reading library with correct metadata.
+Tomarr does for manga, manhwa, manhua and webtoons what Sonarr does for TV: it knows every volume and chapter of a series, watches for new releases, grabs them through your indexers and download client, and files them into your reading library with correct metadata.
 
 ## Problem
 
@@ -13,7 +13,7 @@ Self-hosters who read manga and webtoons manage their libraries by hand. The *ar
 
 ## Audience
 
-Self-hosters already running Prowlarr, a download client and Kavita, who read manga, manhwa or webtoons and want the same automation they have for video. Comfortable with Docker and with pasting an API key.
+Self-hosters already running Prowlarr, a download client and Kavita, who read manga, manhwa, manhua or webtoons and want the same automation they have for video. Comfortable with Docker and with pasting an API key.
 
 ## Core loop
 

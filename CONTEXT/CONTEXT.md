@@ -1,6 +1,6 @@
 # Tomarr
 
-Tomarr tracks manga, manhwa and webtoon series down to volumes and chapters, grabs releases through Prowlarr, and imports them into a Kavita library.
+Tomarr tracks manga, manhwa, manhua and webtoon series down to volumes and chapters, grabs releases through Prowlarr, and imports them into a Kavita library.
 
 ## Language
 
