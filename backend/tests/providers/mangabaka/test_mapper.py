@@ -96,7 +96,13 @@ def test_the_title_is_not_listed_as_its_own_alias(search_body: Payload) -> None:
 
 @pytest.mark.parametrize(
     ("series_type", "expected"),
-    [("manga", Format.MANGA), ("manhwa", Format.MANHWA), ("novel", None), ("oel", None)],
+    [
+        ("manga", Format.MANGA),
+        ("manhwa", Format.MANHWA),
+        ("manhua", Format.MANHUA),
+        ("novel", None),
+        ("oel", None),
+    ],
 )
 def test_type_maps_to_format(
     search_body: Payload, series_type: str, expected: Format | None
