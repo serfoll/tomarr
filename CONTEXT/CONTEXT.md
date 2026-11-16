@@ -1,6 +1,6 @@
 # Tomarr
 
-Tomarr tracks manga, manhwa and webtoon series down to volumes and chapters, grabs releases through Prowlarr, and imports them into a Kavita library.
+Tomarr tracks manga, manhwa, manhua and webtoon series down to volumes and chapters, grabs releases through Prowlarr, and imports them into a Kavita library.
 
 ## Language
 
@@ -9,7 +9,7 @@ One work as readers know it, independent of language or publisher. Has a Format,
 _Avoid_: title, manga, book
 
 **Format**:
-What kind of series it is: `manga`, `manhwa`, `webtoon` in MVP; `manhua`, `comic`, `light_novel`, `ebook` later. Decides which units apply (volumes and chapters, or episodes).
+What kind of series it is: `manga`, `manhwa`, `webtoon`, `manhua` in MVP; `comic`, `light_novel`, `ebook` later. Decides which units apply (volumes and chapters, or episodes).
 _Avoid_: type, category
 
 **Edition**:

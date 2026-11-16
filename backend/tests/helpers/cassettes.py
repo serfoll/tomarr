@@ -18,6 +18,7 @@ PARAM_NAMES = [
     "apiKey",
     "refreshToken",
     "client_secret",
+    "access_token",
 ]
 PLACEHOLDER = "REDACTED"
 

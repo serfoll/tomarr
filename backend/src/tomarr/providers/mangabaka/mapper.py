@@ -6,7 +6,7 @@ from tomarr.domain.external_id import Provider
 from tomarr.domain.series import Format
 from tomarr.providers.base import SeriesCandidate
 
-_FORMATS = {"manga": Format.MANGA, "manhwa": Format.MANHWA}
+_FORMATS = {"manga": Format.MANGA, "manhwa": Format.MANHWA, "manhua": Format.MANHUA}
 
 
 class _SourceEntry(BaseModel):

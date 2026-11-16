@@ -10,6 +10,7 @@ class Format(StrEnum):
     MANGA = "manga"
     MANHWA = "manhwa"
     WEBTOON = "webtoon"
+    MANHUA = "manhua"
 
 
 class ReadingDirection(StrEnum):
