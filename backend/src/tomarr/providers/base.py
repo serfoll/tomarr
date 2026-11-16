@@ -22,6 +22,16 @@ class SeriesCandidate:
     total_volumes: Decimal | None
     total_chapters: Decimal | None
     external_ids: Mapping[Provider, str]
+    cover_url: str | None = None
+
+
+@dataclass(frozen=True)
+class CharacterName:
+    """One character's names as a Provider gives them."""
+
+    full: str
+    native: str | None
+    alternatives: tuple[str, ...]
 
 
 @runtime_checkable
@@ -32,3 +42,8 @@ class SeriesSearch(Protocol):
 @runtime_checkable
 class SeriesLookup(Protocol):
     async def get_series(self, provider_id: str) -> SeriesCandidate: ...
+
+
+@runtime_checkable
+class SeriesCharacters(Protocol):
+    async def get_character_names(self, provider_id: str) -> list[CharacterName]: ...

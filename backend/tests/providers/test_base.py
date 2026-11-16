@@ -1,11 +1,17 @@
-from dataclasses import FrozenInstanceError
+from dataclasses import FrozenInstanceError, replace
 from decimal import Decimal
 
 import pytest
 
 from tomarr.domain.external_id import Provider
 from tomarr.domain.series import Format
-from tomarr.providers.base import SeriesCandidate, SeriesLookup, SeriesSearch
+from tomarr.providers.base import (
+    CharacterName,
+    SeriesCandidate,
+    SeriesCharacters,
+    SeriesLookup,
+    SeriesSearch,
+)
 
 
 def make_candidate() -> SeriesCandidate:
@@ -32,6 +38,11 @@ class SearchAndLookupAdapter(SearchOnlyAdapter):
         return make_candidate()
 
 
+class CharactersOnlyAdapter:
+    async def get_character_names(self, provider_id: str) -> list[CharacterName]:
+        return []
+
+
 def test_candidate_is_immutable() -> None:
     candidate = make_candidate()
 
@@ -51,3 +62,42 @@ def test_adapter_with_both_methods_satisfies_both() -> None:
 
     assert isinstance(adapter, SeriesSearch)
     assert isinstance(adapter, SeriesLookup)
+
+
+def test_candidate_has_no_cover_by_default() -> None:
+    assert make_candidate().cover_url is None
+
+
+def test_candidate_holds_the_cover_it_is_given() -> None:
+    candidate = replace(make_candidate(), cover_url="https://example.test/cover.jpg")
+
+    assert candidate.cover_url == "https://example.test/cover.jpg"
+
+
+def test_character_name_holds_its_names() -> None:
+    name = CharacterName(full="Frieren", native="フリーレン", alternatives=("Frie", "Elf"))
+
+    assert (name.full, name.native, name.alternatives) == (
+        "Frieren",
+        "フリーレン",
+        ("Frie", "Elf"),
+    )
+
+
+def test_character_name_is_immutable() -> None:
+    name = CharacterName(full="Frieren", native=None, alternatives=())
+
+    with pytest.raises(FrozenInstanceError):
+        name.full = "Fern"  # pyright: ignore[reportAttributeAccessIssue]
+
+
+def test_characters_adapter_satisfies_characters_only() -> None:
+    adapter = CharactersOnlyAdapter()
+
+    assert isinstance(adapter, SeriesCharacters)
+    assert not isinstance(adapter, SeriesSearch)
+    assert not isinstance(adapter, SeriesLookup)
+
+
+def test_search_adapter_does_not_satisfy_characters() -> None:
+    assert not isinstance(SearchOnlyAdapter(), SeriesCharacters)
