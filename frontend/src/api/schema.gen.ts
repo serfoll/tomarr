@@ -186,7 +186,7 @@ export interface components {
          * ErrorCode
          * @enum {string}
          */
-        ErrorCode: "validation_failed" | "not_authenticated" | "invalid_credentials" | "setup_already_done" | "not_found" | "method_not_allowed" | "http_error" | "internal_error" | "rate_limited";
+        ErrorCode: "validation_failed" | "not_authenticated" | "invalid_credentials" | "setup_already_done" | "not_found" | "method_not_allowed" | "http_error" | "internal_error" | "rate_limited" | "provider_error";
         /** ErrorResponse */
         ErrorResponse: {
             code: components["schemas"]["ErrorCode"];

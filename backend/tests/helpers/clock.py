@@ -1,5 +1,7 @@
 import asyncio
 
+WALL_START = 1_700_000_000.0
+
 
 class FakeClock:
     """A monotonic clock whose sleep advances it, so tests never really wait. Sleeps overlap like

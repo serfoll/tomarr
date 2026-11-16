@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from tomarr.api.errors import ERRORS
 from tomarr.app import create_app
-from tomarr.core.errors import DomainError, ErrorCode, RateLimited
+from tomarr.core.errors import DomainError, ErrorCode, ProviderError, RateLimited
 
 API = "/api/v1"
 SETUP = f"{API}/auth/setup"
@@ -37,6 +37,16 @@ def rate_limited_app() -> FastAPI:
     @app.get(f"{API}/limited/{{service}}")
     def limited(service: str) -> None:
         raise RateLimited(service, retry_after=30)
+
+    return app
+
+
+def provider_error_app() -> FastAPI:
+    app = create_app()
+
+    @app.get(f"{API}/provider/{{provider}}/{{upstream_status}}")
+    def failing(provider: str, upstream_status: int) -> None:
+        raise ProviderError(provider, upstream_status)
 
     return app
 
@@ -88,6 +98,18 @@ def test_rate_limited_body_has_no_delay_and_no_retry_after_header() -> None:
     assert "retry-after" not in response.headers
 
 
+def test_provider_error_is_502_and_names_the_provider_and_the_status() -> None:
+    with TestClient(provider_error_app()) as client:
+        response = client.get(f"{API}/provider/MangaBaka/500")
+
+    assert response.status_code == 502
+    assert response.json() == {
+        "code": "provider_error",
+        "message": "MangaBaka sent a response Tomarr cannot use (status 500). Try again later.",
+        "request_id": response.headers["x-request-id"],
+    }
+
+
 def domain_error_app(error: type[DomainError]) -> FastAPI:
     app = create_app()
 
@@ -100,7 +122,8 @@ def domain_error_app(error: type[DomainError]) -> FastAPI:
 
 # The 404, 405, other HTTP, validation and 500 messages are checked in their own tests here.
 @pytest.mark.parametrize(
-    "error", [error for error in DomainError.__subclasses__() if error is not RateLimited]
+    "error",
+    [error for error in DomainError.__subclasses__() if error not in (RateLimited, ProviderError)],
 )
 def test_the_other_domain_errors_send_their_table_message_unchanged(
     error: type[DomainError],

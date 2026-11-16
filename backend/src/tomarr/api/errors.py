@@ -9,7 +9,7 @@ from pydantic import BaseModel
 from starlette.exceptions import HTTPException
 
 from tomarr.api.request_id import REQUEST_ID_HEADER
-from tomarr.core.errors import DomainError, ErrorCode, RateLimited
+from tomarr.core.errors import DomainError, ErrorCode, ProviderError, RateLimited
 
 logger = logging.getLogger(__name__)
 
@@ -44,9 +44,14 @@ ERRORS: dict[ErrorCode, ErrorKind] = {
         status.HTTP_500_INTERNAL_SERVER_ERROR,
         "Something went wrong on the server. The log has the details under this request ID.",
     ),
-    # The one template: the service name comes from adapter code, never from a request.
+    # The two templates: the names and the status come from adapter code, never from a request
+    # or a response body.
     ErrorCode.RATE_LIMITED: ErrorKind(
         status.HTTP_503_SERVICE_UNAVAILABLE, "{service} is rate limiting Tomarr. Try again later."
+    ),
+    ErrorCode.PROVIDER_ERROR: ErrorKind(
+        status.HTTP_502_BAD_GATEWAY,
+        "{provider} sent a response Tomarr cannot use (status {status}). Try again later.",
     ),
 }
 _HTTP_CODES = {
@@ -93,11 +98,11 @@ def _request_id(request: Request) -> str:
 
 
 async def _handle_domain_error(request: Request, exc: DomainError) -> JSONResponse:
-    message = (
-        ERRORS[exc.code].message.format(service=exc.service)
-        if isinstance(exc, RateLimited)
-        else None
-    )
+    message = None
+    if isinstance(exc, RateLimited):
+        message = ERRORS[exc.code].message.format(service=exc.service)
+    elif isinstance(exc, ProviderError):
+        message = ERRORS[exc.code].message.format(provider=exc.provider, status=exc.status)
     return _error_response(request, exc.code, headers=_HEADERS.get(exc.code), message=message)
 
 

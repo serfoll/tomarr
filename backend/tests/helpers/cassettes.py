@@ -1,3 +1,4 @@
+import gzip
 import json
 import re
 from collections.abc import Iterator
@@ -41,6 +42,13 @@ def redact_response_headers(response: Response) -> Response:
         if name.lower() in RESPONSE_HEADER_NAMES:
             headers[name] = [PLACEHOLDER] * len(value) if isinstance(value, list) else PLACEHOLDER
     return response
+
+
+def recorded_response_body(cassette: Path) -> object:
+    """The first interaction's response body as parsed JSON, decompressed if the service gzipped
+    it."""
+    raw = yaml.safe_load(cassette.read_text())["interactions"][0]["response"]["body"]["string"]
+    return json.loads(gzip.decompress(raw) if raw[:2] == b"\x1f\x8b" else raw)
 
 
 def scan_cassettes(directory: Path) -> list[str]:
