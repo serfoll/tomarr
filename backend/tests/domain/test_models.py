@@ -89,11 +89,23 @@ async def test_series_stores_its_enums_as_plain_strings(session: AsyncSession) -
     assert (stored.format, stored.reading_direction) == (Format.WEBTOON, ReadingDirection.VERTICAL)
     raw = (await session.execute(text("SELECT format, reading_direction FROM series"))).one()
     assert tuple(raw) == ("webtoon", "vertical")
-    assert [f.value for f in Format] == ["manga", "manhwa", "webtoon"]
+    assert [f.value for f in Format] == ["manga", "manhwa", "webtoon", "manhua"]
     assert [d.value for d in ReadingDirection] == ["rtl", "ltr", "vertical"]
     table_sql = await session.scalar(text("SELECT sql FROM sqlite_master WHERE name = 'series'"))
     assert table_sql is not None
     assert "CHECK" not in table_sql
+
+
+async def test_manhua_series_round_trips(session: AsyncSession) -> None:
+    session.add(
+        Series(title="Soul Land", format=Format.MANHUA, reading_direction=ReadingDirection.LTR)
+    )
+    await session.commit()
+
+    stored = await session.scalar(select(Series))
+    assert stored is not None
+    assert stored.format is Format.MANHUA
+    assert (await session.execute(text("SELECT format FROM series"))).scalar_one() == "manhua"
 
 
 async def test_webtoon_series_works_without_volumes(session: AsyncSession) -> None:

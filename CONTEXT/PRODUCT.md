@@ -29,7 +29,7 @@ Self-hosters already running Prowlarr, a download client and Kavita, who read ma
 
 | In | Detail |
 |---|---|
-| Formats | Manga, manhwa, webtoons |
+| Formats | Manga, manhwa, webtoons, manhua |
 | Indexers | Pulled from Prowlarr and filtered by Prowlarr tag, per-indexer categories (default Books/Comics 7030 and Books 7000), plus direct Torznab and Newznab |
 | Chapter source | Suwayomi, optional fallback for Chapters indexers don't have. The user runs Suwayomi and chooses its extensions (for example the Keiyoushi extension store) |
 | Download clients | qBittorrent, SABnzbd |
@@ -77,7 +77,6 @@ None for MVP. Open source under AGPL-3.0. AGPL keeps hosted, modified versions o
 
 - Default port (must not collide with Sonarr 8989, Radarr 7878, Lidarr 8686, Readarr 8787, Prowlarr 9696, Kavita 5000).
 - Whether Aladin's Open API is usable for Korean print volumes of manhwa.
-- Manhua: treat as manga with English and Japanese metadata only, or leave out of MVP entirely.
 - Default fallback delay before a wanted Chapter goes to Suwayomi (for example 24 hours), and whether it's set per Series.
 - Which Suwayomi auth modes to support in MVP (none, basic, or the JWT login used in multi-user mode).
 

@@ -9,7 +9,7 @@ One work as readers know it, independent of language or publisher. Has a Format,
 _Avoid_: title, manga, book
 
 **Format**:
-What kind of series it is: `manga`, `manhwa`, `webtoon` in MVP; `manhua`, `comic`, `light_novel`, `ebook` later. Decides which units apply (volumes and chapters, or episodes).
+What kind of series it is: `manga`, `manhwa`, `webtoon`, `manhua` in MVP; `comic`, `light_novel`, `ebook` later. Decides which units apply (volumes and chapters, or episodes).
 _Avoid_: type, category
 
 **Edition**:
