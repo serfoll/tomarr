@@ -74,6 +74,7 @@ class HttpClientFactory:
         base_url: str = "",
         auth: httpx2.Auth | tuple[str, str] | None = None,
         headers: Mapping[str, str] | None = None,
+        accept: Callable[[httpx2.Response], bool] | None = None,
     ) -> httpx2.AsyncClient:
         if "@" in urlsplit(base_url).netloc:
             raise ValueError(
@@ -89,7 +90,7 @@ class HttpClientFactory:
                 "same name."
             )
         inner = self._transport or httpx2.AsyncHTTPTransport()
-        transport = _PolicyTransport(inner, policy, limiter, self._cache, self._now)
+        transport = _PolicyTransport(inner, policy, limiter, self._cache, self._now, accept)
         return httpx2.AsyncClient(
             base_url=base_url, auth=auth, headers=headers, transport=transport
         )
@@ -103,12 +104,14 @@ class _PolicyTransport(httpx2.AsyncBaseTransport):
         limiter: RateLimiter,
         cache: ResponseCache,
         now: Callable[[], float],
+        accept: Callable[[httpx2.Response], bool] | None,
     ) -> None:
         self._inner = inner
         self._policy = policy
         self._limiter = limiter
         self._cache = cache
         self._now = now
+        self._accept = accept
 
     async def handle_async_request(self, request: httpx2.Request) -> httpx2.Response:
         name = self._policy.name
@@ -145,8 +148,20 @@ class _PolicyTransport(httpx2.AsyncBaseTransport):
             (key.decode("latin-1"), value.decode("latin-1")) for key, value in response.headers.raw
         ]
         stored = CachedResponse(response.status_code, headers, body)
+        if self._accept is not None and not await self._is_accepted(stored, self._accept):
+            return _replay(stored)
         await self._cache.put(name, request.method, url, stored, self._policy.cache_ttl)
         return _replay(stored)
+
+    async def _is_accepted(
+        self, stored: CachedResponse, accept: Callable[[httpx2.Response], bool]
+    ) -> bool:
+        probe = _replay(stored)
+        try:
+            await probe.aread()
+        except httpx2.DecodingError:
+            return False
+        return accept(probe)
 
     async def aclose(self) -> None:
         await self._inner.aclose()
