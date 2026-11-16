@@ -108,6 +108,21 @@ def test_a_query_value_is_an_offence(tmp_path: Path, name: str) -> None:
     assert f"query parameter {name}" in offences[0]
 
 
+# The OAuth names AniList's docs list. Public reads send none of them.
+@pytest.mark.parametrize("name", ["client_secret", "access_token"])
+def test_a_providers_oauth_secret_name_is_an_offence_in_a_query_a_form_and_a_json_body(
+    tmp_path: Path, name: str
+) -> None:
+    write_cassette(
+        tmp_path,
+        interaction(uri=f"https://api.example.test/v1?{name}={SECRET}"),
+        interaction(method="POST", body=f"{name}={SECRET}"),
+        interaction(method="POST", body=json.dumps({"variables": {name: SECRET}})),
+    )
+
+    assert len(scan_cassettes(tmp_path)) == 3
+
+
 @pytest.mark.parametrize("name", PARAM_NAMES)
 def test_a_form_value_is_an_offence(tmp_path: Path, name: str) -> None:
     write_cassette(tmp_path, interaction(method="POST", body=f"remember=1&{name}={SECRET}"))
