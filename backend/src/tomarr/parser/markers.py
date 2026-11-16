@@ -38,17 +38,16 @@ _DIGITS = "0-9\uff10-\uff19"
 # The trailing lookahead keeps a marker out of "v2026.03.26" and "3abc". A part
 # letter ("10a") is left for the normalizer.
 _NUMBER = rf"[{_DIGITS}]+(?:[.\uff0e][{_DIGITS}]+)?(?:[a-i](?![0-9a-z]))?(?![0-9a-z]|\.[{_DIGITS}])"
-# Whitespace and repetition are bounded so a failed attempt costs a fixed amount
-# at any start position, which keeps a whole scan linear in the name length.
+# Whitespace is bounded so a failed attempt costs a fixed amount at any start
+# position, which keeps a whole scan linear in the name length.
 _SPACE = r"\s{0,3}"
-_MAX_PIECES = 20
 _RANGE_JOIN = rf"{_SPACE}[-\uff0d]{_SPACE}"
 _LIST_JOIN = rf"{_SPACE}[,\uff0c+]{_SPACE}"
 
 _VOLUME_WORD = rf"(?:volumes?|vol\.?){_SPACE}#?{_SPACE}|v#?"
 _CHAPTER_WORD = rf"(?:chapters?|ch\.?){_SPACE}#?{_SPACE}|c#?"
-_VOLUME_SUFFIX = "[巻卷册권]"
-_CHAPTER_SUFFIX = "[話话화]"
+_VOLUME_SUFFIXES = "巻卷册권"
+_CHAPTER_SUFFIXES = "話话화"
 # After the first number, "v000-v105" and "c000-c256" repeat the marker. Up to
 # three ends are matched so that "1-2-3" reaches parse_number_list, which
 # refuses it, instead of being cut to "1-2". A longer chain is cut at three
@@ -56,23 +55,26 @@ _CHAPTER_SUFFIX = "[話话화]"
 _END_WORD = re.compile(rf"(?:{_VOLUME_WORD}|{_CHAPTER_WORD})(?=[{_DIGITS}])", re.IGNORECASE)
 
 
-def _marker(kind: _Kind, before: str, after: str, end_word: str) -> tuple[_Kind, re.Pattern[str]]:
+def _marker(
+    kind: _Kind, before: str, suffixes: str, end_word: str
+) -> tuple[_Kind, re.Pattern[str], str]:
     item = rf"{_NUMBER}(?:{_RANGE_JOIN}(?:{end_word})?{_NUMBER}){{0,2}}"
-    rest = rf"(?:{_LIST_JOIN}{item}){{0,{_MAX_PIECES}}}"
-    pattern = rf"{before}(?P<first>{item})(?P<rest>{rest}){after}"
-    return kind, re.compile(pattern, re.IGNORECASE)
+    pattern = rf"{before}(?P<first>{item})(?P<rest>(?:{_LIST_JOIN}{item})*)"
+    return kind, re.compile(pattern, re.IGNORECASE), suffixes
 
 
-# A suffix marker may only begin at the start of a number run. Without this,
-# every digit of a long "1-1-1-..." chain is tried and fails at the end.
+# A suffix marker may only begin at the start of a number run, so a long
+# "1-1-1-..." chain is tried once and not from every digit.
 _RUN_START = rf"(?<![0-9a-z.{_DIGITS}])(?<![{_DIGITS}][-+,\uff0d\uff0c])"
-# CJK ranges never repeat a marker after the hyphen, so their end-marker slot
-# is "(?!)", a pattern that cannot match.
+# The suffix is checked after the match, not in the pattern: a list followed by
+# something else is consumed whole instead of retried from each of its numbers.
+# CJK ranges never repeat a marker after the hyphen, so their end-marker slot is
+# "(?!)", a pattern that cannot match.
 _PATTERNS = (
     _marker(_Kind.VOLUME, rf"(?<![0-9a-z])(?:{_VOLUME_WORD})", "", _VOLUME_WORD),
     _marker(_Kind.CHAPTER, rf"(?<![0-9a-z])(?:{_CHAPTER_WORD})", "", _CHAPTER_WORD),
-    _marker(_Kind.VOLUME, _RUN_START + "第?", _VOLUME_SUFFIX, "(?!)"),
-    _marker(_Kind.CHAPTER, _RUN_START + "第?", _CHAPTER_SUFFIX, "(?!)"),
+    _marker(_Kind.VOLUME, _RUN_START + "第?", _VOLUME_SUFFIXES, "(?!)"),
+    _marker(_Kind.CHAPTER, _RUN_START + "第?", _CHAPTER_SUFFIXES, "(?!)"),
 )
 # Only whitespace and a comma may sit between a Volume and the Chapter marker
 # that states its chapters.
@@ -80,11 +82,17 @@ _PAIR_GAP = re.compile(r"[\s,]*")
 
 
 def _scan(text: str) -> list[_Found]:
-    found = [
-        _Found(kind, match.start(), match.end(), match["first"], match["rest"])
-        for kind, pattern in _PATTERNS
-        for match in pattern.finditer(text)
-    ]
+    found: list[_Found] = []
+    for kind, pattern, suffixes in _PATTERNS:
+        for match in pattern.finditer(text):
+            end = match.end()
+            first, rest = match["first"], match["rest"]
+            if suffixes:
+                if end == len(text) or text[end] not in suffixes:
+                    continue
+                # The suffix names the kind of every number before it.
+                end, first, rest = end + 1, first + rest, ""
+            found.append(_Found(kind, match.start(), end, first, rest))
     found.sort(key=lambda item: item.start)
     kept: list[_Found] = []
     for item in found:

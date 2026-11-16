@@ -315,6 +315,26 @@ def test_more_than_two_range_ends_in_a_longer_chain_still_fail() -> None:
     assert read_numbers("Dandadan Ch. 1-2-3-4") == Unparseable(UnparseableReason.INVALID_NUMBER)
 
 
+@pytest.mark.parametrize("count", [25, 300])
+def test_long_chapter_list_keeps_every_number(count: int) -> None:
+    listed = ", ".join(str(number) for number in range(1, count + 1))
+    result = read(f"Dandadan Ch. {listed}")
+    assert result.chapters == tuple(chapter(str(number)) for number in range(1, count + 1))
+
+
+def test_long_volume_list_with_a_suffix_marker_keeps_every_number() -> None:
+    listed = ", ".join(str(number) for number in range(1, 26))
+    result = read(f"Dandadan {listed}\u5dfb")
+    assert result.volumes == tuple(volume(str(number)) for number in range(1, 26))
+
+
+def test_long_loose_list_after_a_volume_keeps_every_chapter() -> None:
+    listed = ", ".join(str(number) for number in range(10, 40))
+    result = read(f"Dandadan v01, {listed}")
+    assert result.volumes == (volume("1"),)
+    assert result.chapters == tuple(chapter(str(number)) for number in range(10, 40))
+
+
 LONG = 20000
 PIECES = LONG // 4
 MAX_SECONDS = 0.5
