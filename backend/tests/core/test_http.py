@@ -10,6 +10,7 @@ import pytest
 from sqlalchemy import select
 
 from tests.helpers.clock import FakeClock
+from tests.helpers.http import make_factory
 from tomarr.core.database import Database
 from tomarr.core.errors import RateLimited
 from tomarr.core.http import HttpClientFactory, HttpPolicy, safe_url, split_url_credentials
@@ -52,17 +53,6 @@ def wall() -> FakeClock:
 @pytest.fixture
 def server(clock: FakeClock) -> Server:
     return Server(clock)
-
-
-def make_factory(
-    database: Database,
-    clock: FakeClock,
-    wall: FakeClock,
-    transport: httpx2.AsyncBaseTransport | None = None,
-) -> HttpClientFactory:
-    return HttpClientFactory(
-        database.session_factory, transport=transport, clock=clock, sleep=clock.sleep, now=wall
-    )
 
 
 @pytest.fixture
