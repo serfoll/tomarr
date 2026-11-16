@@ -36,7 +36,7 @@ class MangaBakaClient:
         parse: Callable[[object], object],
         params: dict[str, str | int] | None = None,
     ) -> httpx2.Response:
-        # A 200 the parser cannot read is returned to _read, which raises, but it is not cached.
+        # A 200 the parser cannot read is not cached. It still reaches read_response, which raises.
         def accept(response: httpx2.Response) -> bool:
             try:
                 parse(response.json())

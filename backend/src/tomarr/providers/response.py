@@ -16,7 +16,7 @@ UNREADABLE = (ValueError, RecursionError)
 def require_digits(provider: str, provider_id: str) -> None:
     # The ID goes into a path or a query variable, so anything but digits could reach another one.
     if not (provider_id.isascii() and provider_id.isdigit()):
-        raise ValueError(f"A {provider} series ID is made of digits only.")
+        raise ValueError(f"{provider} series IDs are made of digits only.")
 
 
 def read_response[T](provider: str, response: httpx2.Response, parse: Callable[[object], T]) -> T:

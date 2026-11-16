@@ -4,7 +4,7 @@ import httpx2
 import pytest
 
 from tomarr.core.errors import ProviderError
-from tomarr.providers.response import read_response
+from tomarr.providers.response import read_response, require_digits
 
 SECRET_TEXT = "s3cr3t body text"
 
@@ -32,3 +32,11 @@ async def test_an_unreadable_body_is_logged_by_kind_without_its_text(
     assert SECRET_TEXT not in str(raised.value)
     assert raised.value.provider == "Example"
     assert raised.value.status == 200
+
+
+@pytest.mark.parametrize("provider", ["AniList", "MangaBaka"])
+def test_an_id_that_is_not_digits_is_refused_with_the_providers_name(provider: str) -> None:
+    with pytest.raises(ValueError) as raised:
+        require_digits(provider, "12x")
+
+    assert str(raised.value) == f"{provider} series IDs are made of digits only."
