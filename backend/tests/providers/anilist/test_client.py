@@ -7,6 +7,7 @@ from typing import cast
 
 import httpx2
 import pytest
+from vcr.errors import CannotOverwriteExistingCassetteException
 
 from tests.helpers.cassettes import recorded_response_body
 from tests.helpers.clock import FakeClock
@@ -119,6 +120,30 @@ async def test_get_character_names_returns_main_characters_first(
     assert 0 < len(names) <= 25
     assert names[0].full == "Frieren"
     assert names[0].native == "フリーレン"
+
+
+# Only the Frieren lookup is recorded here. record_mode none keeps a future --record-mode=once
+# run from sending the unmatched request to AniList.
+@pytest.mark.vcr("test_get_series_returns_the_series_by_its_id.yaml", record_mode="none")
+@pytest.mark.parametrize(
+    "call",
+    [
+        pytest.param(lambda client: client.get_series(TOWER_OF_GOD_ID), id="other-id"),
+        pytest.param(lambda client: client.get_character_names(FRIEREN_ID), id="other-query"),
+    ],
+)
+async def test_a_request_with_another_body_is_not_served_the_recorded_answer(
+    database: Database,
+    clock: FakeClock,
+    wall: FakeClock,
+    call: Callable[[AniListClient], Awaitable[object]],
+) -> None:
+    client = AniListClient(make_factory(database, clock, wall))
+
+    with pytest.raises(CannotOverwriteExistingCassetteException) as raised:
+        await call(client)
+
+    assert raised.value.reason == "no_match"
 
 
 def test_client_satisfies_the_three_provider_protocols(database: Database) -> None:
