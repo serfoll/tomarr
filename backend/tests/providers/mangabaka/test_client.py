@@ -1,6 +1,8 @@
+import logging
 from collections.abc import Callable
 from decimal import Decimal
 from pathlib import Path
+from typing import cast
 
 import httpx2
 import pytest
@@ -25,18 +27,6 @@ RECORDED_SERIES = (
     / "test_get_series_returns_the_series_by_its_id.yaml"
 )
 FRIEREN_IDS = {Provider.ANILIST: "118586", Provider.MANGAUPDATES: "ugf5dzu"}
-
-
-@pytest.fixture
-def clock() -> FakeClock:
-    return FakeClock()
-
-
-@pytest.fixture
-def wall() -> FakeClock:
-    wall = FakeClock()
-    wall.now = 1_700_000_000.0
-    return wall
 
 
 def stubbed_client(
@@ -111,6 +101,8 @@ async def test_a_429_raises_rate_limited_with_the_retry_after(
         (httpx2.Response(404, json={"status": 404}), 404),
         (httpx2.Response(200, json={"data": "not a list"}), 200),
         (httpx2.Response(200, content=b"<html>maintenance</html>"), 200),
+        (httpx2.Response(200, content=b"\xff\xfe\x00"), 200),
+        (httpx2.Response(200, content=b"[" * 200_000), 200),
     ],
 )
 async def test_an_unusable_response_raises_provider_error_without_the_url(
@@ -130,16 +122,78 @@ async def test_an_unusable_response_raises_provider_error_without_the_url(
         assert "frieren" not in str(error)
 
 
+@pytest.mark.parametrize("status", [503, 404, 301])
 async def test_a_non_200_status_is_refused_even_when_the_body_has_the_right_shape(
-    database: Database, clock: FakeClock, wall: FakeClock
+    database: Database, clock: FakeClock, wall: FakeClock, status: int
 ) -> None:
     body = recorded_response_body(RECORDED_SERIES)
-    client = stubbed_client(database, clock, wall, lambda _r: httpx2.Response(503, json=body))
+    client = stubbed_client(database, clock, wall, lambda _r: httpx2.Response(status, json=body))
 
     with pytest.raises(ProviderError) as raised:
         await client.get_series("1995")
 
-    assert raised.value.status == 503
+    assert raised.value.status == status
+
+
+async def test_a_body_that_does_not_match_the_shape_logs_where_without_the_body(
+    database: Database, clock: FakeClock, wall: FakeClock, caplog: pytest.LogCaptureFixture
+) -> None:
+    client = stubbed_client(
+        database, clock, wall, lambda _r: httpx2.Response(200, json={"data": "s3cr3t body"})
+    )
+
+    with caplog.at_level(logging.WARNING), pytest.raises(ProviderError):
+        await client.search("frieren")
+
+    logged = [record for record in caplog.records if record.name.startswith("tomarr.providers")]
+    assert [record.levelno for record in logged] == [logging.WARNING]
+    message = logged[0].getMessage()
+    assert "MangaBaka" in message
+    assert "data" in message
+    assert "list_type" in message
+    assert "s3cr3t" not in message
+    assert "frieren" not in message
+    assert "mangabaka.org" not in message
+
+
+@pytest.mark.parametrize("provider_id", ["1995?limit=1", "1995/../news", "../search", "", "\u0661"])
+async def test_get_series_refuses_an_id_that_is_not_digits_without_sending_it(
+    database: Database, clock: FakeClock, wall: FakeClock, provider_id: str
+) -> None:
+    seen: list[httpx2.Request] = []
+
+    def respond(request: httpx2.Request) -> httpx2.Response:
+        seen.append(request)
+        return httpx2.Response(500)
+
+    client = stubbed_client(database, clock, wall, respond)
+
+    with pytest.raises(ValueError, match="digits") as raised:
+        await client.get_series(provider_id)
+
+    assert seen == []
+    if provider_id:
+        assert provider_id not in str(raised.value)
+
+
+async def test_a_repeated_search_is_answered_from_the_cache(
+    database: Database, clock: FakeClock, wall: FakeClock
+) -> None:
+    series = cast(dict[str, object], recorded_response_body(RECORDED_SERIES))["data"]
+    calls: list[httpx2.Request] = []
+
+    def respond(request: httpx2.Request) -> httpx2.Response:
+        calls.append(request)
+        return httpx2.Response(200, json={"status": 200, "data": [series]})
+
+    client = stubbed_client(database, clock, wall, respond)
+
+    first = await client.search("frieren")
+    wall.now += 60
+    second = await client.search("frieren")
+
+    assert first == second
+    assert len(calls) == 1
 
 
 async def test_requests_go_to_the_v1_endpoints_with_the_query_and_limit(
