@@ -1,4 +1,5 @@
 from decimal import Decimal
+from time import perf_counter
 
 import pytest
 
@@ -302,3 +303,35 @@ def test_real_names(
     result = read(text)
     assert result.volumes == volumes
     assert result.chapters == chapters
+
+
+def test_comma_list_after_a_single_volume_reads_the_rest_as_chapters() -> None:
+    result = read("Dandadan Vol. 1, 3, 5")
+    assert result.volumes == (volume("1"),)
+    assert result.chapters == (chapter("3"), chapter("5"))
+
+
+def test_more_than_two_range_ends_in_a_longer_chain_still_fail() -> None:
+    assert read_numbers("Dandadan Ch. 1-2-3-4") == Unparseable(UnparseableReason.INVALID_NUMBER)
+
+
+LONG = 20000
+PIECES = LONG // 4
+MAX_SECONDS = 0.5
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        pytest.param(" , ".join(["1"] * PIECES) + " x", id="spaced comma chain"),
+        pytest.param(" - ".join(["1"] * PIECES) + " x", id="spaced hyphen chain"),
+        pytest.param("v1 + " + " + ".join(["1"] * PIECES) + " x", id="chain after a marker"),
+        pytest.param("Vol" + " " * LONG + "x", id="spaces after a marker word"),
+        pytest.param("1" * LONG + "x", id="long digit run"),
+        pytest.param("1 , " * PIECES + "12\u5dfb", id="chain ending in a suffix marker"),
+    ],
+)
+def test_pathological_names_are_read_in_linear_time(text: str) -> None:
+    started = perf_counter()
+    read_numbers(text)
+    assert perf_counter() - started < MAX_SECONDS
