@@ -9,7 +9,7 @@ import httpx2
 import pytest
 from sqlalchemy import select
 
-from tests.helpers.clock import FakeClock
+from tests.helpers.clock import WALL_START, FakeClock
 from tests.helpers.http import make_factory
 from tomarr.core.database import Database
 from tomarr.core.errors import RateLimited
@@ -19,7 +19,6 @@ from tomarr.domain.http_cache import HttpCacheEntry
 BASE_URL = "https://api.example.test"
 CACHED = HttpPolicy("MangaBaka", requests=10, interval=1, cache_ttl=60)
 UNCACHED = HttpPolicy("Prowlarr", requests=10, interval=1)
-WALL_START = 1_700_000_000.0
 
 
 class Server:
@@ -36,18 +35,6 @@ class Server:
         self.requests.append(request)
         self.arrivals.append((request.url.path, self.clock.now))
         return self.respond(request)
-
-
-@pytest.fixture
-def clock() -> FakeClock:
-    return FakeClock()
-
-
-@pytest.fixture
-def wall() -> FakeClock:
-    wall = FakeClock()
-    wall.now = WALL_START
-    return wall
 
 
 @pytest.fixture

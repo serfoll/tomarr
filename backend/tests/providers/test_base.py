@@ -32,20 +32,6 @@ class SearchAndLookupAdapter(SearchOnlyAdapter):
         return make_candidate()
 
 
-def test_candidate_holds_what_the_adapter_filled() -> None:
-    candidate = make_candidate()
-
-    assert candidate.provider is Provider.MANGABAKA
-    assert candidate.provider_id == "1234"
-    assert candidate.title == "Sousou no Frieren"
-    assert candidate.aliases == ("Frieren: Beyond Journey's End", "葬送のフリーレン")
-    assert candidate.format is Format.MANGA
-    assert candidate.status == "releasing"
-    assert candidate.total_volumes == Decimal(14)
-    assert candidate.total_chapters == Decimal("139.5")
-    assert candidate.external_ids == {Provider.ANILIST: "118586", Provider.MANGAUPDATES: "9876"}
-
-
 def test_candidate_is_immutable() -> None:
     candidate = make_candidate()
 

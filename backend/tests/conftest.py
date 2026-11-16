@@ -12,6 +12,7 @@ from tests.helpers.cassettes import (
     REQUEST_HEADER_NAMES,
     redact_response_headers,
 )
+from tests.helpers.clock import WALL_START, FakeClock
 from tomarr.app import create_app
 from tomarr.core.config import load_settings
 from tomarr.core.database import Database, create_database
@@ -78,6 +79,18 @@ async def database(db_path: Path) -> AsyncIterator[Database]:
     db = create_database(db_path)
     yield db
     await db.dispose()
+
+
+@pytest.fixture
+def clock() -> FakeClock:
+    return FakeClock()
+
+
+@pytest.fixture
+def wall() -> FakeClock:
+    wall = FakeClock()
+    wall.now = WALL_START
+    return wall
 
 
 @pytest.fixture(scope="module")
