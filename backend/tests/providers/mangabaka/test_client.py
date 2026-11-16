@@ -1,5 +1,5 @@
 import logging
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from decimal import Decimal
 from pathlib import Path
 from typing import cast
@@ -235,3 +235,89 @@ async def test_the_policy_allows_five_requests_per_ten_seconds(
             await client.get_series(str(index))
 
     assert arrivals == [0, 0, 0, 0, 0, 10]
+
+
+SERIES_BODY = cast(dict[str, object], recorded_response_body(RECORDED_SERIES))
+SEARCH_BODY = {"status": 200, "data": [SERIES_BODY["data"]]}
+# Each call with a body it reads, and bodies of the other call's shape and of no shape it reads.
+SEARCH_CALL = (lambda client: client.search("frieren"), SEARCH_BODY, SERIES_BODY)
+SERIES_CALL = (lambda client: client.get_series("1995"), SERIES_BODY, SEARCH_BODY)
+CALLS = [pytest.param(*SEARCH_CALL, id="search"), pytest.param(*SERIES_CALL, id="get_series")]
+
+
+def sequenced_client(
+    database: Database, clock: FakeClock, wall: FakeClock, responses: list[httpx2.Response]
+) -> tuple[MangaBakaClient, list[httpx2.Request]]:
+    seen: list[httpx2.Request] = []
+
+    def respond(request: httpx2.Request) -> httpx2.Response:
+        seen.append(request)
+        return responses[len(seen) - 1]
+
+    return stubbed_client(database, clock, wall, respond), seen
+
+
+@pytest.mark.parametrize(("call", "good", "other_shape"), CALLS)
+@pytest.mark.parametrize(
+    "unusable",
+    [
+        lambda _other: httpx2.Response(200, content=b"<html>maintenance</html>"),
+        lambda _other: httpx2.Response(200, content=b"\xff\xfe\x00"),
+        lambda _other: httpx2.Response(200, content=b"[" * 200_000),
+        lambda _other: httpx2.Response(200, json={"data": "not a list or a series"}),
+        lambda other: httpx2.Response(200, json=other),
+    ],
+    ids=["html", "not-utf8", "too-deep", "wrong-shape", "other-calls-shape"],
+)
+async def test_an_unusable_200_is_not_cached_so_the_next_call_reaches_the_service(
+    database: Database,
+    clock: FakeClock,
+    wall: FakeClock,
+    call: Callable[[MangaBakaClient], Awaitable[object]],
+    good: object,
+    other_shape: object,
+    unusable: Callable[[object], httpx2.Response],
+) -> None:
+    client, seen = sequenced_client(
+        database, clock, wall, [unusable(other_shape), httpx2.Response(200, json=good)]
+    )
+
+    with pytest.raises(ProviderError) as raised:
+        await call(client)
+    result = await call(client)
+
+    assert raised.value.status == 200
+    assert result
+    assert len(seen) == 2
+
+
+@pytest.mark.parametrize(("call", "good", "other_shape"), CALLS)
+async def test_a_usable_200_is_cached_for_the_next_call(
+    database: Database,
+    clock: FakeClock,
+    wall: FakeClock,
+    call: Callable[[MangaBakaClient], Awaitable[object]],
+    good: object,
+    other_shape: object,
+) -> None:
+    client, seen = sequenced_client(database, clock, wall, [httpx2.Response(200, json=good)])
+
+    first = await call(client)
+    second = await call(client)
+
+    assert first == second
+    assert len(seen) == 1
+
+
+async def test_a_refused_200_logs_once(
+    database: Database, clock: FakeClock, wall: FakeClock, caplog: pytest.LogCaptureFixture
+) -> None:
+    client, _seen = sequenced_client(
+        database, clock, wall, [httpx2.Response(200, json={"data": "not a list"})]
+    )
+
+    with caplog.at_level(logging.WARNING), pytest.raises(ProviderError):
+        await client.search("frieren")
+
+    logged = [record for record in caplog.records if record.name.startswith("tomarr.providers")]
+    assert len(logged) == 1
