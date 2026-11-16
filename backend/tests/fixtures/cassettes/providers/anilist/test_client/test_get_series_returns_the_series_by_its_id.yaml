@@ -1,0 +1,92 @@
+interactions:
+- request:
+    body: '{"query": "\nquery ($id: Int!) {\n  Media(id: $id, type: MANGA) { ...MediaFields
+      }\n}\n\nfragment MediaFields on Media {\n  id\n  title { romaji english native
+      }\n  format\n  status\n  chapters\n  volumes\n  countryOfOrigin\n  isAdult\n  coverImage
+      { extraLarge large }\n  synonyms\n  tags { name rank isMediaSpoiler }\n}\n",
+      "variables": {"id": 118586}}'
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      content-length:
+      - '350'
+      content-type:
+      - application/json
+      host:
+      - graphql.anilist.co
+      user-agent:
+      - python-httpx2/2.16.0
+    method: POST
+    uri: https://graphql.anilist.co/
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAA/61WTXPbNhD9KxieHYukSIrSTaml1Im/KjlJZ8ocYHJJwQYBFh+KNR7/9y4gR+Sk
+        00iHXharh30L7OIB4ktQUUOD2UtwDRXzDquCWRTlaZ6dBYYZDg5UsqWPLJgFa2m1tERIslQMFIjg
+        LADRcKY3OPuGzch72ElRkY/SKgG7wsZhNNVkISoMF9SwLWYNCpsnWVnYaRhGhR2HGThbpc4CdbYu
+        ve9tPQ5ez4JaqpYaJF/Pbz7MMZs21FiNwGpxtZivL28+IFhuaGdAISws52fBVnLbwuFnKa0wandb
+        3yrWMIHkj3fIYnpeWY7Ja8o1uLAtqMuWNr4F8GwUvaLK/Qo2xnR6VoyKkU7OqWBYvzkvZTGqGYdi
+        9IaUlShGrWssDlQ0OPicxYi7PMXo4Xnf6Xe//fmp+cqe3i//aNbnj12Du+H/01IOtO2v1sK26p2Q
+        Ytdih/76cYiEGmI2QJZWgKIcd1TYckLxdMqIRs5Pc1LYKg2Twj5MKR7SQx6WGHdQwS03CginZMkE
+        kAo4+cJo0zDpk4XgmCGMx87GlbNR7hGPx1OPhB6Jve+RZNz78cTPRj0S7ZHUR/psYd5nCH1knO6R
+        gYZ/FA2EomqVoBUlHVWUSDLnGB3CtB2EeUWPyQ0tN1hX65TtClRkBUyDL2+o7UmWY0l5PMUt5uPc
+        2QRgkG9eo1xJEdxjwzFXEQzbuIJWUGE0kbU/kQvAnRmo+phz8pk8KdCWVEo2rJ9w3upysVrczMi1
+        LyPShPJ9RZE/kpoJP24ZfdzvPEyi2tnEtT4Zg7fxwE+8zbzdxzz4+NL7lbe5R3xMUhM3xEmfNM0G
+        C6R72rDkL1AR5VopNAHs7aBV78jdZr/9jmh0ooeQGFbYCMpUELOfEk3wDZ8v2jhFv+CT07qrdE0b
+        5gSqqHgKZtPMXXn/7q07iZdJvd3817MD417RLfCekh6nLHjdxyfH4+82jEstu82up4XHaUtoKQdy
+        pyRWKQU+AQd6PjmhMNYCWT+xrmedsNfPQsHflqH2yBW+LgfuZPpvrlF2SF0L+V2XtPs16ecFL6CV
+        QveU8XHK5Y7qDXsC1rPi4yw3C1vaH/XkhDP4ZC3e+b6i7ISKfge86VLDsx0sluUnSbGBqhdJNjna
+        80XHtKwGks9OUMa6A6o6TgcrnXBRllJWPeEU/VKmduQeNXygpSd04cKKBqQ4cJLsRK1f4x9lZzl+
+        ewzY4+M9XG/wYwF6SvyftX17fX39B7j+JoVQCQAA
+    headers:
+      access-control-allow-headers:
+      - Authorization,Accept,DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Content-Range,Range
+      access-control-allow-methods:
+      - GET, POST, OPTIONS
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, Content-Length,
+        Content-Range
+      cache-control:
+      - no-cache, private
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a5b728cbda942985-ARN
+      connection:
+      - keep-alive
+      content-encoding:
+      - gzip
+      content-type:
+      - application/json
+      date:
+      - Mon, 16 Nov 2026 14:24:27 GMT
+      nel:
+      - '{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'
+      report-to:
+      - '{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=6RJ5NnOJ18C%2BIyGuycUZ1LHu101MzUODs7n0IB%2FSUJDP1xKbmna8puL6%2FWyc4rNAhg9cj8l6CnCm7U%2B8Md6Ap6CpmLkGu9VpHgjHUOHflQEoZEl8zs3%2BDdQ9DYvbrKDRX0FEzg%3D%3D"}]}'
+      server:
+      - cloudflare
+      set-cookie:
+      - REDACTED
+      transfer-encoding:
+      - chunked
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - SAMEORIGIN
+      x-ratelimit-limit:
+      - '30'
+      x-ratelimit-remaining:
+      - '28'
+      x-xss-protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+version: 1

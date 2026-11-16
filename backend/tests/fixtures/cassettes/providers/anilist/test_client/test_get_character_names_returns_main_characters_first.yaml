@@ -1,0 +1,85 @@
+interactions:
+- request:
+    body: '{"query": "\nquery ($id: Int!) {\n  Media(id: $id, type: MANGA) {\n    characters(sort:
+      ROLE, perPage: 25) {\n      edges { role node { name { full native alternative
+      } } }\n    }\n  }\n}\n", "variables": {"id": 118586}}'
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      content-length:
+      - '216'
+      content-type:
+      - application/json
+      host:
+      - graphql.anilist.co
+      user-agent:
+      - python-httpx2/2.16.0
+    method: POST
+    uri: https://graphql.anilist.co/
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAA/62WS3PaMBDHv4rGp3YmB/OG3DLlkQyQ0pCcQg9raQUejNURUjrTDN+9epAxRaal
+        Hh8Q9ti7P+9q9699jxgoiG7fozmy1F3QDUigCuXe3iFbo7l4fY+kyDC6jeZ3D4/RTZQLhvZ5Djv3
+        z3WWmadjmaLE3L4AKn2zBivdilnHrgh25dRdu5W3zJuQGdjH66/fD4fDzbU0Y1eOgp6DJDVAlgrk
+        9pySeP+OlfCCBfwfrOXLYvH16fnhcXKZeI+pcXCOpA4D7QLJaQCLvggp9Q9FFmYj9iqqAE93O8yC
+        rDZ9Jl2kDR9vDZGO0n1YLNA8CfS6MrmGtcQ0QCXdAlUCiSYCFGL1ZN5pCRfCc2QchMwh5EpoBinJ
+        BbEOyKeV7naArfSg3zRrp8Vja9zF0N1n48/ZqA2SiU6zTKg0xwqfPpXAVfDtvtQHRaPRfg1bM87A
+        FN0F0RicVl6YrmcbqERQZA5rJEdXVcrDbHJQH/REsZx6QR3xzlFt7JMzmm8s2i+YtFcDbYI56CAy
+        VzbUx9StgTIDzcNe9rsHcK7MtXT0Sscxo0moVtgtUsgGF9QqerGW/08dYr4NA6W9okyTRm0hzuCn
+        bd/SrHInW9A6KRdWA3IKeUiEpAivFsoc6CaQF4bFQVciLN6ICE5GGRkKCUxU2L9vGrJyXTsmtHHS
+        8yVlM9Ybr81TzMmT0Fae+41ObEW60/sQ5j5F02H9OG5YSR5lDCVZWoEyX388o1Nhq2j6BrJCFCMW
+        lj38oRy1HdIz22ecrvNwJvGaeByD4kJRyiaTmXYeKvDTPFTm01mSJrUp80SCsSb3sNX7jVkC2YyL
+        /vOhWrlu86YpoF6z1SkZIcw5SrzbKqeSEpn69bfp0x8Xfvqk7dIU2N/hN4DJiq3qCwAA
+    headers:
+      access-control-allow-headers:
+      - Authorization,Accept,DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Content-Range,Range
+      access-control-allow-methods:
+      - GET, POST, OPTIONS
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, Content-Length,
+        Content-Range
+      cache-control:
+      - no-cache, private
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a5b72910eb2308f8-ARN
+      connection:
+      - keep-alive
+      content-encoding:
+      - gzip
+      content-type:
+      - application/json
+      date:
+      - Mon, 16 Nov 2026 14:24:38 GMT
+      nel:
+      - '{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'
+      report-to:
+      - '{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=1gCNn0W2C7i2XsT8akbWRprAo0Ly2sV757WEzYhmHiW7z%2FU3HPYuI06WoGw9HHdfRA0ZjyS0QuZJWOFolnFqiDbvx63JkaeKCZaoT9lzJF1zwNzUSu9mnT1VJhTJqxfXukfxMg%3D%3D"}]}'
+      server:
+      - cloudflare
+      set-cookie:
+      - REDACTED
+      transfer-encoding:
+      - chunked
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - SAMEORIGIN
+      x-ratelimit-limit:
+      - '30'
+      x-ratelimit-remaining:
+      - '27'
+      x-xss-protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+version: 1

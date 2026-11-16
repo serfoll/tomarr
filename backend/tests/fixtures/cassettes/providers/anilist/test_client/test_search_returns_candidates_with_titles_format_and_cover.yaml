@@ -1,0 +1,98 @@
+interactions:
+- request:
+    body: '{"query": "\nquery ($search: String!, $perPage: Int!) {\n  Page(perPage:
+      $perPage) {\n    media(search: $search, type: MANGA) { ...MediaFields }\n  }\n}\n\nfragment
+      MediaFields on Media {\n  id\n  title { romaji english native }\n  format\n  status\n  chapters\n  volumes\n  countryOfOrigin\n  isAdult\n  coverImage
+      { extraLarge large }\n  synonyms\n  tags { name rank isMediaSpoiler }\n}\n",
+      "variables": {"search": "frieren", "perPage": 3}}'
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      content-length:
+      - '436'
+      content-type:
+      - application/json
+      host:
+      - graphql.anilist.co
+      user-agent:
+      - python-httpx2/2.16.0
+    method: POST
+    uri: https://graphql.anilist.co/
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAA/8xXX3ObOBD/Khqekxgw2NhvbmO3bmPHF6dp50ofZFiwGpA4gdz4Ms1nv5WcGNJr
+        YnJ/ZvqyWlb7W2lXu9Jya8W0otbw1lrQFPSYQ8xQ8PnWYrE1dJzAD3pHVsWqzExLkdOvzBpaS6FK
+        oQgXZCIZSODWkQU8zVi5xtl72ZC8gq3gMXknlOSwDZVrO4OSjHmM6pxWbINWrVAFXi8K1cC2nVB1
+        7R5oGvuaAtU0iQxvaNK1vh9ZiZA5rRA8G83fjNBaWdFKlSi4GJ+NR8vp/A0KozUtKpAo5irLjqyN
+        yFQO+89IKF7J7XlyLlnKOILfLRDFylGsMjSe0KwErbYBOc3vIwQ3laRnVOova11VRTkMO2Gn9E4o
+        Z+h/dRKJsJOwDMLOvSSKedgxkcWB8hQHYzPsZNpO2Fnd7CJ9/PrT+/Qju341+S1dnnwtUtxN9h8t
+        pYUqf24tDGu55YJvc4zQ54dDJLQi1RrIRHGQNMMdhSrqUzydyKGO5v2AhCr2bS9UqwHFQ1oFdoR6
+        +yw4zyoJJKNkwjiQGDJyxWiaMmGM2aCRNnS7mrqxpk5gJEbuDozENhLX8EbidWve7ZtZp5Y4O4lv
+        NI01O6gt2EbT9XeSRg4/OA2EYtZKTmNKCiopEWSUobYNg7yhZjK6S+Y0WqNfuc5s7aAkF8BKMO41
+        c7vfC9ClwB3gFoNuoKkH0LA3SjBdSWhdYsDRVmg1w3gBOae8KolIzImcAu6sgrjWOSEfyLWEUpFY
+        ipTVE5q7mI4vxvMhmRk3nJLQbOeRY44kYdyMG0a/7nZue06iqadD73XBULfBe4b2DN3prIx+ZPjY
+        0MBIjI6XED24Xm3U7zUW8HewpstXEBOpQ8lLAhjbRqiOyWK9235BSmSclU0qFioHIp+TajfFU+sL
+        Xl80Lc2dxmmuS2lGU6YTVFJ+bQ0HPV3yM10zy0JgMcn7yv9+tEdcSrqBrIb4hyHjLKn1vcP6izXL
+        RCmK9baG2YdhE8hpBmQhBXopOF4Be3jQb+EYy4Esr1lRo1rsdcnFtzKiBexR/cFh1Acu4Q/FMGPJ
+        Gd5Jz2IrqZrQU8gFL2tE9/Bq0y0t1+waWI1yD6P0LGxofdT9FmfwXims+dqhXotgvAWsdFHCjWos
+        1gta5FXBShE38rfXb5W/KcTbZzE/hHxZAJVFRhugFoUyESKuAW3ylzK5JZeYw3uY3yIKp4qnIPge
+        4/Va5voMH8pCZdh7NNDdFuFYY7MANcR90rcvGmW6p36369ituicy4tVaZCLdNvuoXZfyj/skogfq
+        7j40XcVm2tBV8HwbNZnOp8u349NHXZTfaKGcX6t/MrE+nn78JC4le/1ntSn+v/7pibV+6J+eP+TD
+        LfIjdeQ1a141bEkenvWfPG5NVPu7+fGT6Nove9/a6M+eeqbcf/fKtYI3b6VWlTsI/J9XLl4DJVTY
+        Yf39eO9+xzZFqFAliQ8v/B8idwsJGT4jd4//jPzIxh4soDQiLy1/TW17txs05HpY9/7AS+7316z+
+        +fnV+Oxg9eu7bF/+7i9W/vrA/gIAAP//0q0qSgwr9UvPNolw9kTO/gAAAAD//6Jy9sduF47uE/4u
+        ghUwTYMztQkw8oEWoDRwcbfUE3OA0iC9oDQD7EdhKQeQ8ycxbTqMdoWFMTnNJSLKGqIbc7FAWFsL
+        AAAA//8DAIKvO6KlEAAA
+    headers:
+      access-control-allow-headers:
+      - Authorization,Accept,DNT,X-CustomHeader,Keep-Alive,User-Agent,X-Requested-With,If-Modified-Since,Cache-Control,Content-Type,Content-Range,Range
+      access-control-allow-methods:
+      - GET, POST, OPTIONS
+      access-control-allow-origin:
+      - '*'
+      access-control-expose-headers:
+      - X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset, Content-Length,
+        Content-Range
+      cache-control:
+      - no-cache, private
+      cf-cache-status:
+      - DYNAMIC
+      cf-ray:
+      - a5b727e00e6c30b4-ARN
+      connection:
+      - keep-alive
+      content-encoding:
+      - gzip
+      content-type:
+      - application/json
+      date:
+      - Mon, 16 Nov 2026 14:23:49 GMT
+      nel:
+      - '{"report_to":"cf-nel","success_fraction":0.0,"max_age":604800}'
+      report-to:
+      - '{"group":"cf-nel","max_age":604800,"endpoints":[{"url":"https://a.nel.cloudflare.com/report/v4?s=IDC6XIaS4pO7i9BIM01E4wIKfLXiZcT%2FV93wnSmiLtBg%2BNSGXQkB%2BjJcsLmAKf7fUx%2B9ogxU2%2B42ckR9ofNzyP542bpXJWpiHEmPQQUGFVvPJ%2Bp60kNmQ4SeeQUNPyD1LZEIrQ%3D%3D"}]}'
+      server:
+      - cloudflare
+      set-cookie:
+      - REDACTED
+      transfer-encoding:
+      - chunked
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - SAMEORIGIN
+      x-ratelimit-limit:
+      - '30'
+      x-ratelimit-remaining:
+      - '29'
+      x-xss-protection:
+      - 1; mode=block
+    status:
+      code: 200
+      message: OK
+version: 1
