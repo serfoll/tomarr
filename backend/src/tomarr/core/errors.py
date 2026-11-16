@@ -11,6 +11,7 @@ class ErrorCode(StrEnum):
     HTTP_ERROR = "http_error"
     INTERNAL_ERROR = "internal_error"
     RATE_LIMITED = "rate_limited"
+    PROVIDER_ERROR = "provider_error"
 
 
 class DomainError(Exception):
@@ -36,3 +37,12 @@ class RateLimited(DomainError):
         super().__init__(service, retry_after)
         self.service = service
         self.retry_after = retry_after
+
+
+class ProviderError(DomainError):
+    code = ErrorCode.PROVIDER_ERROR
+
+    def __init__(self, provider: str, status: int) -> None:
+        super().__init__(f"{provider} sent a response Tomarr cannot use (status {status})")
+        self.provider = provider
+        self.status = status
