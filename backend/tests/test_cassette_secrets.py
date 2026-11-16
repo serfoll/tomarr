@@ -108,6 +108,15 @@ def test_a_query_value_is_an_offence(tmp_path: Path, name: str) -> None:
     assert f"query parameter {name}" in offences[0]
 
 
+# AniList's docs name access_token as its OAuth token. The cases above read PARAM_NAMES, so
+# this one names it outright.
+def test_an_anilist_access_token_is_an_offence(tmp_path: Path) -> None:
+    write_cassette(tmp_path, interaction(uri=f"https://api.example.test/v1?access_token={SECRET}"))
+
+    assert "access_token" in PARAM_NAMES
+    assert len(scan_cassettes(tmp_path)) == 1
+
+
 @pytest.mark.parametrize("name", PARAM_NAMES)
 def test_a_form_value_is_an_offence(tmp_path: Path, name: str) -> None:
     write_cassette(tmp_path, interaction(method="POST", body=f"remember=1&{name}={SECRET}"))
