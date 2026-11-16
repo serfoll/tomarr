@@ -43,6 +43,54 @@ VIDEO_NAMES = [
     "[Fansly] Octokuro Seiko Ayase Cosplay DANDADAN (2026)[720p][x264][xFans].mp4",
 ]
 
+# One marker per name, so removing any single token or pair from the matcher fails a case.
+# The titles are synthetic; the markers are spelled as they appear in real names.
+SINGLE_VIDEO_MARKERS = [
+    "S02E03",
+    "s01e31-45",
+    "S1E5",
+    "480p",
+    "720p",
+    "1080P",
+    "2160p",
+    "960p",
+    "1280x720",
+    "1920x1080",
+    "4K",
+    "x264",
+    "x265",
+    "H264",
+    "H265",
+    "H.264",
+    "H.265",
+    "H 264",
+    "HEVC",
+    "AV1",
+    "AVC",
+    "XviD",
+    "DivX",
+    "WEBDL",
+    "WEB-DL",
+    "WEB DL",
+    "WEBRip",
+    "BDRip",
+    "BDRemux",
+    "BD-Remux",
+    "Remux",
+    "BDMV",
+    "BluRay",
+    "Blu-Ray",
+    "DVDRip",
+    "HDTV",
+    "MKV",
+    "MP4",
+    "Dual Audio",
+    "Dual-Audio",
+    "Multi-Audio",
+    "Multi-Subs",
+    "Soft Subs",
+]
+
 AUDIOBOOK_NAMES = [
     "Omniscient Reader's Viewpoint, Vol. 1 by singNsong [ENG / M4B]",
     "Doctor Who: Short Trips - Blue Boxes by Erin Horakova [ENG / MP3]",
@@ -78,6 +126,11 @@ NOT_WHOLE_TOKENS = [
 @pytest.mark.parametrize("name", VIDEO_NAMES)
 def test_video_name_is_rejected_as_video(name: str) -> None:
     assert rejection_reason(name) == VIDEO
+
+
+@pytest.mark.parametrize("marker", SINGLE_VIDEO_MARKERS)
+def test_a_single_video_marker_is_enough_to_reject(marker: str) -> None:
+    assert rejection_reason(f"Some Title Vol. 3 [{marker}]") == VIDEO
 
 
 @pytest.mark.parametrize("name", AUDIOBOOK_NAMES)
