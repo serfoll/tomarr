@@ -27,7 +27,7 @@ class _AltTitle(BaseModel):
 class _Series(BaseModel):
     id: int
     title: str
-    titles: list[_AltTitle]
+    titles: list[_AltTitle] | None = None
     type: str
     status: str
     final_volume: Decimal | None
@@ -52,14 +52,14 @@ def parse_series(payload: object) -> SeriesCandidate:
 
 
 def _to_candidate(series: _Series) -> SeriesCandidate:
-    aliases = dict.fromkeys(alt.title for alt in series.titles if alt.title != series.title)
+    aliases = dict.fromkeys(alt.title for alt in series.titles or () if alt.title != series.title)
     external_ids = {
         provider: str(entry.id)
         for provider, entry in (
             (Provider.ANILIST, series.source.anilist),
             (Provider.MANGAUPDATES, series.source.manga_updates),
         )
-        if entry.id is not None
+        if entry.id is not None and str(entry.id).strip()
     }
     return SeriesCandidate(
         provider=Provider.MANGABAKA,

@@ -138,3 +138,31 @@ def test_a_series_that_does_not_match_the_shape_is_refused(
 ) -> None:
     with pytest.raises(ValidationError):
         parse_series({**series_body, "data": data})
+
+
+def test_null_titles_mean_no_aliases_and_keep_the_rest_of_the_page(search_body: Payload) -> None:
+    body = with_changes(search_body, 1, titles=None)
+
+    candidates = parse_search(body)
+
+    assert [candidate.provider_id for candidate in candidates] == ["1995", "100730", "64805"]
+    assert candidates[1].aliases == ()
+    assert candidates[0].aliases != ()
+
+
+def test_a_series_without_a_titles_key_has_no_aliases(series_body: Payload) -> None:
+    series = dict(cast(Payload, series_body["data"]))
+    del series["titles"]
+
+    assert parse_series({**series_body, "data": series}).aliases == ()
+
+
+@pytest.mark.parametrize("blank", ["", "   "])
+def test_a_blank_source_id_is_skipped(series_body: Payload, blank: str) -> None:
+    series = cast(Payload, series_body["data"])
+    source = cast(Payload, series["source"])
+    changed = {**source, "manga_updates": {"id": blank, "rating": None}}
+
+    candidate = parse_series({**series_body, "data": {**series, "source": changed}})
+
+    assert candidate.external_ids == {Provider.ANILIST: "118586"}

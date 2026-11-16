@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from dataclasses import dataclass
 from decimal import Decimal
 from typing import Protocol, runtime_checkable
@@ -20,7 +21,7 @@ class SeriesCandidate:
     status: str | None
     total_volumes: Decimal | None
     total_chapters: Decimal | None
-    external_ids: dict[Provider, str]
+    external_ids: Mapping[Provider, str]
 
 
 @runtime_checkable
