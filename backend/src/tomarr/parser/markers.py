@@ -48,17 +48,16 @@ _VOLUME_WORD = rf"(?:volumes?|vol\.?){_SPACE}#?{_SPACE}|v#?"
 _CHAPTER_WORD = rf"(?:chapters?|ch\.?){_SPACE}#?{_SPACE}|c#?"
 _VOLUME_SUFFIXES = "巻卷册권"
 _CHAPTER_SUFFIXES = "話话화"
-# After the first number, "v000-v105" and "c000-c256" repeat the marker. Up to
-# three ends are matched so that "1-2-3" reaches parse_number_list, which
-# refuses it, instead of being cut to "1-2". A longer chain is cut at three
-# ends, which is refused the same way.
+# After the first number, "v000-v105" and "c000-c256" repeat the marker. Any
+# number of ends is matched so that "1-2-3-4" reaches parse_number_list, which
+# refuses it, instead of being cut short and losing the tail.
 _END_WORD = re.compile(rf"(?:{_VOLUME_WORD}|{_CHAPTER_WORD})(?=[{_DIGITS}])", re.IGNORECASE)
 
 
 def _marker(
     kind: _Kind, before: str, suffixes: str, end_word: str
 ) -> tuple[_Kind, re.Pattern[str], str]:
-    item = rf"{_NUMBER}(?:{_RANGE_JOIN}(?:{end_word})?{_NUMBER}){{0,2}}"
+    item = rf"{_NUMBER}(?:{_RANGE_JOIN}(?:{end_word})?{_NUMBER})*"
     pattern = rf"{before}(?P<first>{item})(?P<rest>(?:{_LIST_JOIN}{item})*)"
     return kind, re.compile(pattern, re.IGNORECASE), suffixes
 
@@ -110,7 +109,8 @@ def read_numbers(text: str) -> Markers | Unparseable:
 
     A number with no marker (`One Piece 1190`) is not read. A Volume marker
     followed by a comma list gives its first item as the Volume and the unmarked
-    items after it as Chapters (`v01-05,041-124`). A single Volume straight
+    items after it as Chapters (`v01-05,041-124`). A CJK suffix (`1, 2, 3巻`)
+    makes the whole list before it one kind. A single Volume straight
     before a Chapter marker is that Chapter's `volume` and is not also reported
     as a Volume. A number the normalizer refuses comes back as `Unparseable`
     with its reason.

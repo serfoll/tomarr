@@ -335,6 +335,33 @@ def test_long_loose_list_after_a_volume_keeps_every_chapter() -> None:
     assert result.chapters == tuple(chapter(str(number)) for number in range(10, 40))
 
 
+@pytest.mark.parametrize("suffix", ["\u5dfb", "\u8a71", "\uad8c", "\ud654", "\u5377", "\u8bdd"])
+@pytest.mark.parametrize("numbers", ["1-2-3", "1-2-3-4", "1-2-3-4-5", "\u7b2c1-2-3-4"])
+def test_range_with_too_many_ends_before_a_suffix_marker_is_refused(
+    numbers: str, suffix: str
+) -> None:
+    assert read_numbers(f"Dandadan {numbers}{suffix}") == Unparseable(
+        UnparseableReason.INVALID_NUMBER
+    )
+
+
+def test_range_with_too_many_ends_after_a_marker_word_is_refused() -> None:
+    assert read_numbers("Dandadan Ch. 1-2-3-4-5") == Unparseable(UnparseableReason.INVALID_NUMBER)
+
+
+@pytest.mark.parametrize("text", ["Dandadan 1, 2, 3\u5dfb", "Dandadan \u7b2c1,2,3\u5dfb"])
+def test_list_before_a_suffix_marker_is_all_volumes(text: str) -> None:
+    result = read(text)
+    assert result.volumes == (volume("1"), volume("2"), volume("3"))
+    assert result.chapters == ()
+
+
+def test_list_before_a_chapter_suffix_is_all_chapters() -> None:
+    result = read("Dandadan 1, 2, 3\u8a71")
+    assert result.chapters == (chapter("1"), chapter("2"), chapter("3"))
+    assert result.volumes == ()
+
+
 LONG = 20000
 PIECES = LONG // 4
 MAX_SECONDS = 0.5
