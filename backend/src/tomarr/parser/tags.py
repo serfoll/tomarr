@@ -38,7 +38,7 @@ _LANGUAGES = {
 }
 _FORMATS = {format.value: format for format in FileFormat}
 # Seen next to a language in a tag, but not a format Tomarr imports.
-_OTHER_FORMATS = frozenset({"mobi", "jpg", "azwn"})
+_OTHER_FORMATS = frozenset({"mobi", "jpg", "azw3"})
 # Words that say something about the release but name neither group nor hint.
 _NOT_A_GROUP = frozenset(
     {"hq", "manga", "novel", "light novel", "complete", "ongoing", "scanlated", "upscaled"}

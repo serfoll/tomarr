@@ -251,6 +251,20 @@ def test_language_is_read_from_explicit_tags_only(name: str, language: str | Non
     assert parsed(name).language == language
 
 
+def test_leading_tag_with_an_ebook_format_list_is_not_a_group() -> None:
+    release = parsed("[ENG / AZW3 EPUB MOBI] Solo Leveling Vol. 6")
+    assert release.group is None
+    assert release.language == "eng"
+    assert release.file_format is FileFormat.EPUB
+
+
+def test_ebook_format_list_in_a_real_name() -> None:
+    release = parsed("Solo Leveling, Vol. 6 (light Novel) by Chugong [ENG / AZW3 EPUB MOBI]")
+    assert release.language == "eng"
+    assert release.file_format is FileFormat.EPUB
+    assert release.volumes == (volume("6"),)
+
+
 def test_a_name_that_says_nothing_has_every_field_empty() -> None:
     release = parsed("Dandadan Vol. 3")
     assert release.group is None

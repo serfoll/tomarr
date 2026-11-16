@@ -46,6 +46,12 @@ def test_tag_holding_a_bad_number_stays_in_the_text() -> None:
         pytest.param("Monster - Naoki Urasawa [CBZ ITA]", "ita", FileFormat.CBZ, id="CBZ ITA"),
         pytest.param("Solo Leveling [ENG / EPUB JPG]", "eng", FileFormat.EPUB, id="two formats"),
         pytest.param("Fullmetal Alchemist [ENG / MOBI]", "eng", None, id="format we do not read"),
+        pytest.param(
+            "Solo Leveling, Vol. 6 (light Novel) by Chugong [ENG / AZW3 EPUB MOBI]",
+            "eng",
+            FileFormat.EPUB,
+            id="AZW3 EPUB MOBI",
+        ),
         pytest.param("One Piece 1190 [JP]", "jpn", None, id="JP"),
         pytest.param("Jujutsu Kaisen [Korean]", "kor", None, id="Korean"),
         pytest.param("[ENG] One Piece - Vol. 5", "eng", None, id="leading ENG"),
