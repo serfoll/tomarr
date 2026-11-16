@@ -237,11 +237,21 @@ async def test_the_policy_allows_five_requests_per_ten_seconds(
     assert arrivals == [0, 0, 0, 0, 0, 10]
 
 
+type Call = Callable[[MangaBakaClient], Awaitable[object]]
+
 SERIES_BODY = cast(dict[str, object], recorded_response_body(RECORDED_SERIES))
 SEARCH_BODY = {"status": 200, "data": [SERIES_BODY["data"]]}
-# Each call with a body it reads, and bodies of the other call's shape and of no shape it reads.
-SEARCH_CALL = (lambda client: client.search("frieren"), SEARCH_BODY, SERIES_BODY)
-SERIES_CALL = (lambda client: client.get_series("1995"), SERIES_BODY, SEARCH_BODY)
+# Each call, a body it reads, and the other call's body, which it does not.
+SEARCH_CALL: tuple[Call, object, object] = (
+    lambda client: client.search("frieren"),
+    SEARCH_BODY,
+    SERIES_BODY,
+)
+SERIES_CALL: tuple[Call, object, object] = (
+    lambda client: client.get_series("1995"),
+    SERIES_BODY,
+    SEARCH_BODY,
+)
 CALLS = [pytest.param(*SEARCH_CALL, id="search"), pytest.param(*SERIES_CALL, id="get_series")]
 
 
@@ -273,7 +283,7 @@ async def test_an_unusable_200_is_not_cached_so_the_next_call_reaches_the_servic
     database: Database,
     clock: FakeClock,
     wall: FakeClock,
-    call: Callable[[MangaBakaClient], Awaitable[object]],
+    call: Call,
     good: object,
     other_shape: object,
     unusable: Callable[[object], httpx2.Response],
@@ -296,7 +306,7 @@ async def test_a_usable_200_is_cached_for_the_next_call(
     database: Database,
     clock: FakeClock,
     wall: FakeClock,
-    call: Callable[[MangaBakaClient], Awaitable[object]],
+    call: Call,
     good: object,
     other_shape: object,
 ) -> None:
@@ -309,15 +319,22 @@ async def test_a_usable_200_is_cached_for_the_next_call(
     assert len(seen) == 1
 
 
+@pytest.mark.parametrize(("call", "good", "other_shape"), CALLS)
 async def test_a_refused_200_logs_once(
-    database: Database, clock: FakeClock, wall: FakeClock, caplog: pytest.LogCaptureFixture
+    database: Database,
+    clock: FakeClock,
+    wall: FakeClock,
+    caplog: pytest.LogCaptureFixture,
+    call: Call,
+    good: object,
+    other_shape: object,
 ) -> None:
     client, _seen = sequenced_client(
-        database, clock, wall, [httpx2.Response(200, json={"data": "not a list"})]
+        database, clock, wall, [httpx2.Response(200, json=other_shape)]
     )
 
     with caplog.at_level(logging.WARNING), pytest.raises(ProviderError):
-        await client.search("frieren")
+        await call(client)
 
     logged = [record for record in caplog.records if record.name.startswith("tomarr.providers")]
     assert len(logged) == 1
