@@ -76,11 +76,11 @@
   group: "1r0n"
   warnings: [mixed_pack]
 
-# The `&` pack. "V1 Batch" has the shape of a Volume marker and the parser
-# reports every marker it sees, so Volume 1 is listed beside 0-105.
+# The `&` pack. "V1 Batch" is the batch's version, not a Volume, so it stays in
+# the title.
 - name: "One Piece - Digital Colored Comics+Cover Stories V1 Batch (v000-v105 & ch0035-1078)"
-  title: "One Piece - Digital Colored Comics+Cover Stories"
-  volumes: [1, "0-105"]
+  title: "One Piece - Digital Colored Comics+Cover Stories V1 Batch"
+  volumes: ["0-105"]
   chapters: ["35-1078"]
   hints: [colored]
   warnings: [mixed_pack]

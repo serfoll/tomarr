@@ -122,11 +122,11 @@ def test_volume_range_and_loose_chapters_is_a_mixed_pack() -> None:
 def test_ampersand_pack_inside_parentheses_is_a_mixed_pack() -> None:
     name = "One Piece - Digital Colored Comics+Cover Stories V1 Batch (v000-v105 & ch0035-1078)"
     release = parsed(name)
-    # The name says both `V1 Batch` and `v000-v105`; the parser reports each marker.
-    assert release.volumes == (volume("1"), volume("0", "105"))
+    # `V1 Batch` is the batch's version, so only `v000-v105` is a Volume range.
+    assert release.volumes == (volume("0", "105"),)
     assert release.chapters == (chapter("35", "1078"),)
     assert release.warnings == frozenset({ReleaseWarning.MIXED_PACK})
-    assert release.title == "One Piece - Digital Colored Comics+Cover Stories"
+    assert release.title == "One Piece - Digital Colored Comics+Cover Stories V1 Batch"
     assert release.group is None
 
 

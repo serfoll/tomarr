@@ -91,6 +91,12 @@ def test_ampersand_pack_gives_a_volume_range_and_a_chapter_range() -> None:
     assert result.chapters == (chapter("35", "1078"),)
 
 
+def test_version_before_batch_is_not_a_volume() -> None:
+    result = read("Dandadan v2 batch")
+    assert result.volumes == ()
+    assert result.title_end == len("Dandadan v2 batch")
+
+
 def test_volume_stating_its_chapters_gives_a_chapter_range_in_that_volume() -> None:
     result = read("Dandadan Vol. 3 Ch. 12-20")
     assert result.chapters == (chapter("12", "20", in_volume="3"),)
@@ -255,9 +261,9 @@ def test_number_error_comes_back_with_the_normalizer_reason(
         ),
         pytest.param(
             "One Piece - Digital Colored Comics+Cover Stories V1 Batch (v000-v105 & ch0035-1078)",
-            (volume("1"), volume("0", "105")),
+            (volume("0", "105"),),
             (chapter("35", "1078"),),
-            id="One Piece batch keeps V1 and the paren pack",
+            id="One Piece batch version is not a volume",
         ),
         pytest.param(
             "Jujutsu Kaisen v00-30+Epilogue (Viz+TCB+innit)",
