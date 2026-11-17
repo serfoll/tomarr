@@ -130,3 +130,10 @@
   volumes: [1, 2, 3]
   source: digital
   group: "Nyaa"
+
+# A Volume number past the five integer digits of Numeric(8, 3). No real name
+# in raw/ has one, so this is the case that pins `number_reason` in the corpus.
+- name: "Dandadan Vol. 100000 (Digital) (LuCaZ)"
+  synthetic: true
+  unparseable: invalid_number
+  number_reason: too_large
