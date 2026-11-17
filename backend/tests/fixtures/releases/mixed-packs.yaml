@@ -1,0 +1,97 @@
+# Packs that join a Volume range with loose Chapters. The parser reports both
+# and warns mixed_pack, since a tag like (Digital) then covers only part of it.
+# Format: see tests/parser/test_release_corpus.py.
+
+# The four LuCaZ packs, each `v01-NN,MMM-PPP`.
+- name: "Dandadan v01-05,041-124 (2022-2023) (Digital) (LuCaZ)"
+  title: "Dandadan"
+  volumes: ["1-5"]
+  chapters: ["41-124"]
+  source: digital
+  group: "LuCaZ"
+  warnings: [mixed_pack]
+- name: "Ao no Hako / Blue Box v01-20,181-240 (2022-2026) (Digital) (LuCaZ)"
+  title: "Ao no Hako / Blue Box"
+  volumes: ["1-20"]
+  chapters: ["181-240"]
+  source: digital
+  group: "LuCaZ"
+  warnings: [mixed_pack]
+- name: "Kagurabachi v01-07,066-120 (2024-2026) (Digital) (LuCaZ)"
+  title: "Kagurabachi"
+  volumes: ["1-7"]
+  chapters: ["66-120"]
+  source: digital
+  group: "LuCaZ"
+  warnings: [mixed_pack]
+- name: "Tongari Boushi no Atelier / Witch Hat Atelier v01-14,082-095 (2019-2026) (Digital) (LuCaZ)"
+  title: "Tongari Boushi no Atelier / Witch Hat Atelier"
+  volumes: ["1-14"]
+  chapters: ["82-95"]
+  source: digital
+  group: "LuCaZ"
+  warnings: [mixed_pack]
+
+# The 1r0n packs join the two parts with `+`.
+- name: "Ao no Hako | Blue Box v01-19 + 172-228 (2022-2025) (Digital) (1r0n)"
+  title: "Ao no Hako | Blue Box"
+  volumes: ["1-19"]
+  chapters: ["172-228"]
+  source: digital
+  group: "1r0n"
+  warnings: [mixed_pack]
+- name: "Dandadan v01-17 + 148-224 (2022-2026) (Digital) (1r0n)"
+  title: "Dandadan"
+  volumes: ["1-17"]
+  chapters: ["148-224"]
+  source: digital
+  group: "1r0n"
+  warnings: [mixed_pack]
+- name: "Kagurabachi v01 + 009-056 (2023-2024) (Digital) (1r0n)"
+  title: "Kagurabachi"
+  volumes: [1]
+  chapters: ["9-56"]
+  source: digital
+  group: "1r0n"
+  warnings: [mixed_pack]
+- name: "Kagurabachi v01-02 + 019-066 (2023-2025) (Digital) (1r0n)"
+  title: "Kagurabachi"
+  volumes: ["1-2"]
+  chapters: ["19-66"]
+  source: digital
+  group: "1r0n"
+  warnings: [mixed_pack]
+- name: "Kagurabachi v01-06 + 057-110 (2023-2026) (Digital) (1r0n)"
+  title: "Kagurabachi"
+  volumes: ["1-6"]
+  chapters: ["57-110"]
+  source: digital
+  group: "1r0n"
+  warnings: [mixed_pack]
+- name: "One Piece v001-111 + 1134-1176 (2003-2026) (Digital) (1r0n)"
+  title: "One Piece"
+  volumes: ["1-111"]
+  chapters: ["1134-1176"]
+  source: digital
+  group: "1r0n"
+  warnings: [mixed_pack]
+
+# The `&` pack. "V1 Batch" is the batch's version, not a Volume, so it stays in
+# the title.
+- name: "One Piece - Digital Colored Comics+Cover Stories V1 Batch (v000-v105 & ch0035-1078)"
+  title: "One Piece - Digital Colored Comics+Cover Stories V1 Batch"
+  volumes: ["0-105"]
+  chapters: ["35-1078"]
+  hints: [colored]
+  warnings: [mixed_pack]
+
+# Volumes 1-23 complete, then the colour side chapters 140-205, "equivalent to
+# volumes 16 to 23". Those volumes are inside 1-23, so the Volumes are 1-23
+# alone. The leading tag is the author's name, read as the group like any
+# leading tag.
+- name: "[吾峠呼世晴] 鬼滅の刃 Kimetsu no Yaiba 第1-23巻完 外伝 140-205話カラー版16巻から23巻相当"
+  title: "鬼滅の刃 Kimetsu no Yaiba"
+  volumes: ["1-23"]
+  chapters: ["140-205"]
+  group: "吾峠呼世晴"
+  warnings: [mixed_pack]
