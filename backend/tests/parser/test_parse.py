@@ -1,3 +1,4 @@
+import decimal
 from decimal import Decimal
 from time import perf_counter
 
@@ -180,6 +181,111 @@ def test_bare_number_stays_in_the_title_with_the_no_numbers_warning() -> None:
     assert release.chapters == ()
     assert release.warnings == frozenset({ReleaseWarning.NO_NUMBERS})
     assert release.source is Source.DIGITAL
+
+
+@pytest.mark.parametrize(
+    ("name", "volumes", "chapters"),
+    [
+        pytest.param("Dandadan Vol. 01 ~ 05", ("1-5",), (), id="tilde"),
+        pytest.param("Dandadan Ch. 1 \u2013 5", (), ("1-5",), id="en dash"),
+        pytest.param("Dandadan Ch. 12\u201113", (), ("12-13",), id="U+2011"),
+        pytest.param("Dandadan v01 \u2013 v05", ("1-5",), (), id="v on both ends"),
+        pytest.param("Naruto 3\u8a71-5\u8a71", (), ("3-5",), id="wa on both ends"),
+        pytest.param("Naruto 3\uff5e5\u5dfb", ("3-5",), (), id="full-width tilde"),
+    ],
+)
+def test_range_joined_by_a_dash_or_tilde_is_read_whole_and_clean(
+    name: str, volumes: tuple[str, ...], chapters: tuple[str, ...]
+) -> None:
+    release = parsed(name)
+    assert release.volumes == tuple(volume(*item.split("-")) for item in volumes)
+    assert release.chapters == tuple(chapter(*item.split("-")) for item in chapters)
+    assert release.title in {"Dandadan", "Naruto"}
+    assert release.clean
+
+
+@pytest.mark.parametrize(
+    ("name", "volumes", "chapters"),
+    [
+        pytest.param("Naruto c1 & 2", (), (chapter("1"),), id="ampersand"),
+        pytest.param("Naruto c1 and 2", (), (chapter("1"),), id="and"),
+        pytest.param("Naruto c1 to 2", (), (chapter("1"),), id="to"),
+        pytest.param("Naruto c1/2", (), (chapter("1"),), id="slash"),
+        pytest.param("Dandadan Vol. 1 & 2", (volume("1"),), (), id="volume and"),
+        pytest.param("Naruto v01 - 2000", (volume("1"),), (), id="year"),
+        pytest.param("Dandadan Vol 3 - 2021 edition", (volume("3"),), (), id="year edition"),
+        pytest.param("Dandadan Ch.10a-12", (), (chapter("10.1", "12"),), id="part letter"),
+        pytest.param("Dandadan Ch. 10 Part 2", (), (chapter("10.2"),), id="Part 2"),
+        pytest.param("Naruto c10 part 2", (), (chapter("10.2"),), id="part 2"),
+        pytest.param("Dandadan Ch. 10 Special", (), (chapter("10"),), id="Special"),
+        pytest.param("Dandadan Vol.0 Special", (volume("0"),), (), id="Vol.0 Special"),
+        pytest.param("Bleach c1,000", (), (chapter("1000"),), id="thousands"),
+        pytest.param("Bleach c1,100-1,120", (), (chapter("1100", "1120"),), id="thousands range"),
+        pytest.param("Bleach c10,5", (), (chapter("10"), chapter("5")), id="descending pair"),
+        pytest.param("Naruto v01 (v2)", (volume("1"),), (), id="revision in parentheses"),
+        pytest.param("Naruto v01 [v2]", (volume("1"),), (), id="revision in brackets"),
+        pytest.param("Dandadan v03 (Digital) (v2)", (volume("3"),), (), id="revision last"),
+        pytest.param("Naruto c010 (v2)", (), (chapter("10"),), id="revision on a chapter"),
+    ],
+)
+def test_number_read_by_a_guess_gives_the_ambiguous_number_warning(
+    name: str, volumes: tuple[NumberRange, ...], chapters: tuple[ChapterRange, ...]
+) -> None:
+    release = parsed(name)
+    assert (release.volumes, release.chapters) == (volumes, chapters)
+    assert release.warnings == frozenset({ReleaseWarning.AMBIGUOUS_NUMBER})
+    assert not release.clean
+    assert release.group is None
+
+
+@pytest.mark.parametrize(
+    ("name", "title"),
+    [
+        pytest.param("Dandadan Ch. Special", "Dandadan Ch. Special", id="Ch. Special"),
+        pytest.param("Dandadan one shot", "Dandadan one shot", id="one shot"),
+        pytest.param("Dandadan Omake", "Dandadan Omake", id="Omake"),
+    ],
+)
+def test_special_word_with_no_number_keeps_the_name_with_the_no_numbers_warning(
+    name: str, title: str
+) -> None:
+    release = parsed(name)
+    assert release.title == title
+    assert release.warnings == frozenset({ReleaseWarning.NO_NUMBERS})
+
+
+def test_cover_to_cover_tag_is_neither_a_chapter_nor_a_group() -> None:
+    release = parsed("Dandadan v01 (c2c)")
+    assert release.volumes == (volume("1"),)
+    assert release.chapters == ()
+    assert release.group is None
+    assert release.clean
+
+
+def test_spaces_around_the_name_are_ignored() -> None:
+    release = parsed("  Naruto v01.cbz ")
+    assert release.file_format is FileFormat.CBZ
+    assert release.title == "Naruto"
+
+
+def test_multi_in_the_title_is_not_a_language() -> None:
+    assert parsed("MULTi Man v01").language is None
+
+
+def test_first_language_tag_wins() -> None:
+    assert parsed("Dandadan v01 [ENG / JPN]").language == "eng"
+
+
+def test_first_leading_bracket_tag_is_the_group() -> None:
+    assert parsed("[Glitter] [Kamizye] Dandadan v01").group == "Glitter"
+
+
+def test_numbers_are_read_the_same_under_a_low_precision_decimal_context() -> None:
+    with decimal.localcontext() as context:
+        context.prec = 5
+        context.traps[decimal.Inexact] = True
+        release = parsed("One Piece c1000-1190.500")
+    assert release.chapters == (chapter("1000", "1190.5"),)
 
 
 @pytest.mark.parametrize(

@@ -37,14 +37,25 @@ OTHER_FORMATS = frozenset({"mobi", "jpg", "azw3", "txt"})
 _NUMBERS_ONLY = re.compile(r"(?:seasons? )?[\d\s.\-]*")
 _EDITION = re.compile(r"\b(?:edition|anniversary)\b")
 _SERIES_POSITION = re.compile(r"(?:#|\bn\. ?)\d+\Z")
-_FILE_SIZE = re.compile(r"\d+(?:\.\d+)?\s?[kmgt]i?b")
+# `1,5 Go` reaches here as `5 go`: the comma splits tag items.
+_FILE_SIZE = re.compile(r"\d+(?:\.\d+)?\s?[kmgt](?:i?b|o)")
+_PAGE_COUNT = re.compile(r"\d+ pages?")
+# "Cover to cover", a scan note. It reads like Chapter 2.3.
+COVER_TO_COVER = "c2c"
 _NOT_A_GROUP = frozenset(
     {
+        COVER_TO_COVER,
         "hq",
+        "raw",
+        "web",
+        "fixed",
         "manga",
         "novel",
         "light novel",
         "complete",
+        "completed",
+        "done",
+        "final",
         "ongoing",
         "scanlated",
         "upscaled",
@@ -63,6 +74,7 @@ def names_no_group(item: str) -> bool:
     return bool(
         _NUMBERS_ONLY.fullmatch(item)
         or _FILE_SIZE.fullmatch(item)
+        or _PAGE_COUNT.fullmatch(item)
         or item in _NOT_A_GROUP
         or _EDITION.search(item)
     )

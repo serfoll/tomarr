@@ -60,6 +60,8 @@ SINGLE_VIDEO_MARKERS = [
     "4K",
     "x264",
     "x265",
+    "x.264",
+    "x.265",
     "H264",
     "H265",
     "H.264",
@@ -75,6 +77,7 @@ SINGLE_VIDEO_MARKERS = [
     "WEB DL",
     "WEBRip",
     "BDRip",
+    "BRRip",
     "BDRemux",
     "BD-Remux",
     "Remux",
@@ -85,6 +88,7 @@ SINGLE_VIDEO_MARKERS = [
     "HDTV",
     "MKV",
     "MP4",
+    "M2TS",
     "Dual Audio",
     "Dual-Audio",
     "Multi-Audio",
@@ -108,7 +112,7 @@ AUDIOBOOK_NAMES = [
 ]
 
 # Music is refused with the audiobook reason: it is audio, and MP3 already covers both.
-SINGLE_AUDIO_MARKERS = ["M4B", "MP3", "Audiobook", "FLAC", "OST", "Original Soundtrack"]
+SINGLE_AUDIO_MARKERS = ["M4B", "M4A", "MP3", "Audiobook", "FLAC", "OST", "Original Soundtrack"]
 
 SINGLE_GAME_MARKERS = ["DLC", "DLCs", "REPACK"]
 
@@ -185,3 +189,13 @@ def test_marker_inside_a_longer_word_does_not_reject(name: str) -> None:
 
 def test_video_marker_wins_over_audio_marker() -> None:
     assert rejection_reason("Blue Box S01E01 1080p FLAC [Audiobook]") == VIDEO
+
+
+@pytest.mark.parametrize("name", ["Naruto - 12.avi", "Naruto - 12.AVI", "Naruto - 12. avi "])
+def test_avi_file_extension_is_video(name: str) -> None:
+    assert rejection_reason(name) == VIDEO
+
+
+@pytest.mark.parametrize("name", ["Avi Vol. 2", "Naruto avi Vol. 2", "Naruto.avi Vol. 2"])
+def test_avi_anywhere_but_the_end_is_not_video(name: str) -> None:
+    assert rejection_reason(name) is None

@@ -1,6 +1,6 @@
 import re
 import unicodedata
-from decimal import Decimal
+from decimal import ROUND_HALF_EVEN, Context, Decimal, InvalidOperation, localcontext
 from enum import StrEnum
 
 # These mirror Numeric(8, 3) on Chapter.number and Volume.number: three places
@@ -9,6 +9,12 @@ DECIMAL_PLACES = 3
 INTEGER_DIGITS = 5
 _QUANTUM = Decimal(1).scaleb(-DECIMAL_PLACES)
 _LIMIT = Decimal(10) ** INTEGER_DIGITS
+# Quantizing follows the caller's decimal context unless it is pinned, so a low
+# `prec` or an `Inexact` trap there would raise from a valid number. The extra
+# digit holds 99999.9995, which rounds up to 100000.000 before it is refused.
+_CONTEXT = Context(
+    prec=INTEGER_DIGITS + DECIMAL_PLACES + 1, rounding=ROUND_HALF_EVEN, traps=[InvalidOperation]
+)
 
 _ECHOED_TEXT_LIMIT = 80
 
@@ -104,7 +110,8 @@ def normalize_chapter_number(text: str) -> Decimal:
     # decimal context, and 100000.0001 is more usefully "too large".
     if value >= _LIMIT:
         raise InvalidChapterNumber(text, ChapterNumberReason.TOO_LARGE)
-    quantized = value.quantize(_QUANTUM)
+    with localcontext(_CONTEXT):
+        quantized = value.quantize(_QUANTUM)
     if quantized != value:
         raise InvalidChapterNumber(text, ChapterNumberReason.TOO_MANY_DECIMALS)
     return quantized

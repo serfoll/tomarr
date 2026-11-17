@@ -91,7 +91,6 @@ def test_tag_holding_a_bad_number_stays_in_the_text() -> None:
         pytest.param("Jujutsu Kaisen [Korean]", "kor", None, id="Korean"),
         pytest.param("[ENG] One Piece - Vol. 5", "eng", None, id="leading ENG"),
         pytest.param("Fullmetal Alchemist Brotherhood [Multi]", "mul", None, id="Multi tag"),
-        pytest.param("Dandadan v01 MULTi", "mul", None, id="MULTi word"),
         pytest.param("One Piece vN [VF]", "fre", None, id="VF"),
         pytest.param("[Bejee] One Piece - Volume CHOPPER [Eng.]", "eng", None, id="Eng."),
         pytest.param("Demon Slayer (2019) [Manga FR]", "fre", None, id="Manga FR"),
@@ -172,6 +171,11 @@ def test_source_is_read_from_a_tag_standing_on_its_own(name: str, source: Source
         ),
         pytest.param("One Piece - Chapter 5 (Colored Council)", set[EditionHint](), id="group"),
         pytest.param("Omniscient Reader (LINE Webtoon)", set[EditionHint](), id="LINE Webtoon"),
+        pytest.param("Solo v01 [Full Color]", {EditionHint.COLORED}, id="Full Color"),
+        pytest.param("Solo v01 [Colour]", {EditionHint.COLORED}, id="Colour"),
+        pytest.param("Solo v01 (Colored Edition)", {EditionHint.COLORED}, id="Colored Edition"),
+        pytest.param("Solo v01 (Colored Comics Team)", set[EditionHint](), id="Comics Team"),
+        pytest.param("[Colored Comics Scans] Solo v01", set[EditionHint](), id="Comics Scans"),
         pytest.param("Solo Leveling Webtoon Ch1-5", set[EditionHint](), id="Webtoon in the title"),
         pytest.param("The Colored Man Vol. 2", set[EditionHint](), id="Colored in the title"),
         pytest.param(
@@ -233,6 +237,8 @@ def test_hints_come_from_a_tag_standing_on_its_own(name: str, hints: set[Edition
             "ImFilippo",
             id="last of brackets and parentheses",
         ),
+        pytest.param("Solo v01 (Colored Comics Team)", "Colored Comics Team", id="Comics Team"),
+        pytest.param("[Colored Comics Scans] Solo v01", "Colored Comics Scans", id="Comics Scans"),
     ],
 )
 def test_group_is_the_leading_bracket_tag_or_the_last_trailing_tag(name: str, group: str) -> None:
@@ -271,10 +277,53 @@ def test_group_is_the_leading_bracket_tag_or_the_last_trailing_tag(name: str, gr
         pytest.param("One Piece, Vol. 106 (Colored) (Kobo Optimised)", id="Kobo Optimised"),
         pytest.param("The Beginning After The End - Webtoon (Season 1-5)", id="season numbers"),
         pytest.param("One Piece - Vol. 3 (v1-v2)", id="marker tag"),
+        pytest.param("Solo Leveling v01 [Completed]", id="Completed"),
+        pytest.param("Solo Leveling v01 [Done]", id="Done"),
+        pytest.param("Solo Leveling v01 [Fixed]", id="Fixed"),
+        pytest.param("Solo Leveling v01 [Raw]", id="Raw"),
+        pytest.param("Solo Leveling v01 [WEB]", id="WEB"),
+        pytest.param("Bleach Vol. 1 (Final)", id="Final"),
+        pytest.param("Solo Leveling v01 [12 pages]", id="page count"),
+        pytest.param("Solo Leveling v01 [1,5 Go]", id="size in French"),
+        pytest.param("Solo Leveling v01 (Full Color)", id="Full Color"),
+        pytest.param("Solo Leveling v01 (Colored Edition)", id="Colored Edition"),
+        pytest.param("Naruto v01 (v2)", id="revision"),
+        pytest.param("Naruto v01 (c2c)", id="cover to cover"),
     ],
 )
 def test_group_is_none_when_no_tag_is_one(name: str) -> None:
     assert read_tags(name).group is None
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        pytest.param("Naruto v01 (v2)", id="parentheses"),
+        pytest.param("Naruto v01 [V2]", id="brackets"),
+        pytest.param("Naruto v01 ( v3 )", id="spaces"),
+    ],
+)
+def test_revision_tag_is_taken_out_and_marks_the_numbers_ambiguous(name: str) -> None:
+    tags = read_tags(name)
+    assert " ".join(tags.text.split()) == "Naruto v01"
+    assert tags.ambiguous
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        pytest.param("Naruto v01 (Digital)", id="no revision"),
+        pytest.param("Naruto (v01-v02)", id="marker tag"),
+        pytest.param("Naruto {v2}", id="curly"),
+        pytest.param("Naruto (v01)", id="padded volume"),
+    ],
+)
+def test_tags_without_a_revision_are_not_ambiguous(name: str) -> None:
+    assert not read_tags(name).ambiguous
+
+
+def test_cover_to_cover_tag_is_taken_out_of_the_text() -> None:
+    assert without_tags("Naruto v01 (c2c)") == "Naruto v01"
 
 
 def test_tags_hold_nothing_back_from_a_name_without_any() -> None:

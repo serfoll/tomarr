@@ -5,6 +5,7 @@ from tomarr.parser.formats import take_extension, take_format_words
 from tomarr.parser.markers import read_numbers
 from tomarr.parser.release import EditionHint, FileFormat, Source, Unparseable
 from tomarr.parser.vocabulary import (
+    COVER_TO_COVER,
     FORMATS,
     LANGUAGES,
     OTHER_FORMATS,
@@ -18,9 +19,14 @@ _TAG = re.compile(r"\[[^\[\]]*\]|\([^()]*\)|\{[^{}]*\}")
 _ITEM_BREAK = re.compile(r"[,/+]")
 # `Digital-1920` gives the scan width.
 _DIGITAL = re.compile(r"digital(?: [sh]d|-\d+)?")
-_COLORED = re.compile(r"colou?red")
-_COLORED_COMICS = re.compile(r"colou?red comics")
-_MULTI_WORD = re.compile(r"\bMULTi\b")
+_COLORED = re.compile(r"(?:full )?colou?r(?:ed)?(?: edition)?")
+# The phrase ends an item (`FULL COLOR Digital Colored Comics`), so a group such
+# as `Colored Comics Scans` is not read as a hint.
+_COLORED_COMICS_ITEM = re.compile(r"(?:.+ )?colou?red comics")
+_COLORED_COMICS = re.compile(r"\bcolou?red comics\b")
+# A bare `(v2)` numbers the upload's revision as often as a Volume. A padded
+# `(v01)` or a longer number is left to the marker reader.
+_REVISION = re.compile(r"\s*v[1-9]\s*", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -30,7 +36,8 @@ class Tags:
     A `(...)` or `[...]` tag that holds a Volume or Chapter marker
     (`(v000-v105 & ch0035-1078)`, `[Kagurabachi vol 01-05]`) is not removed:
     its brackets are dropped and its text stays in `text`, so the numbers are
-    read with the rest of the name.
+    read with the rest of the name. A bare revision tag (`(v2)`, `[v2]`) is
+    removed instead and makes `ambiguous` true.
     """
 
     text: str
@@ -39,6 +46,7 @@ class Tags:
     language: str | None
     hints: frozenset[EditionHint]
     file_format: FileFormat | None
+    ambiguous: bool = False
 
 
 @dataclass
@@ -50,16 +58,16 @@ class _Facts:
 
     def read_item(self, item: str) -> bool:
         """Take in one comma, slash or plus separated item. False when it is none we know."""
-        if names_no_group(item):
-            return True
         if _DIGITAL.fullmatch(item):
             self._set_source(Source.DIGITAL)
         elif item in {"scan", "scans"}:
             self._set_source(Source.SCAN)
-        elif _COLORED.fullmatch(item) or _COLORED_COMICS.search(item):
+        elif _COLORED.fullmatch(item) or _COLORED_COMICS_ITEM.fullmatch(item):
             self.hints.add(EditionHint.COLORED)
         elif item == "webtoon":
             self.hints.add(EditionHint.WEBTOON)
+        elif names_no_group(item):
+            return True
         else:
             # A language may be abbreviated with a dot (`[Eng.]`).
             return self._read_language_and_format([w.rstrip(".") for w in item.split()])
@@ -95,9 +103,10 @@ def read_tags(name: str) -> Tags:
     [LuCaZ]` gives LuCaZ). A `{...}` tag is never a group. A hint or source
     comes from an item standing on its own in a tag, so `(Colored Council)` is a
     group and not a colored edition; only the phrase `Colored Comics` also
-    counts in the title. A file extension ending the name (`.zip`) or a format
-    word standing alone (`by Chugong EPUB`) is read as the file format and taken
-    off the text; the extension, then a tag, take precedence over the word.
+    counts when it ends an item or sits in the text outside the tags. A file
+    extension ending the name (`.zip`) or a format word standing alone (`by
+    Chugong EPUB`) is read as the file format and taken off the text; the
+    extension, then a tag, take precedence over the word.
     """
     name, extension = take_extension(name)
     facts = _Facts(file_format=extension)
@@ -105,19 +114,26 @@ def read_tags(name: str) -> Tags:
     leading_group: str | None = None
     trailing_group: str | None = None
     leading = True
+    ambiguous = False
     position = 0
     for tag in _TAG.finditer(name):
         pieces.append(name[position : tag.start()])
         leading = leading and not name[position : tag.start()].strip()
         position = tag.end()
         inner = tag[0][1:-1]
+        if tag[0][0] != "{" and _REVISION.fullmatch(inner):
+            pieces.append(" ")
+            ambiguous = True
+            continue
         # A {...} tag holds extras, an arc or a release version (`{v1.0}`), never
         # the numbers of the release.
-        if tag[0][0] != "{" and _holds_marker(inner):
+        if tag[0][0] != "{" and inner.strip().lower() != COVER_TO_COVER and _holds_marker(inner):
             pieces.append(f" {inner} ")
             continue
         pieces.append(" ")
         items = [item.strip() for item in _ITEM_BREAK.split(inner.lower())]
+        # A list, not a generator: every item's facts are read even after one
+        # that is unknown.
         if all([facts.read_item(item) for item in items]) or any(
             is_series_position(item) for item in items
         ):
@@ -130,10 +146,8 @@ def read_tags(name: str) -> Tags:
     pieces.append(name[position:])
     text, format_word = take_format_words("".join(pieces))
     facts.file_format = facts.file_format or format_word
-    if _COLORED_COMICS.search(name.lower()):
+    if _COLORED_COMICS.search(text.lower()):
         facts.hints.add(EditionHint.COLORED)
-    if _MULTI_WORD.search(text) and facts.language is None:
-        facts.language = LANGUAGES["multi"]
     return Tags(
         text,
         leading_group or trailing_group,
@@ -141,4 +155,5 @@ def read_tags(name: str) -> Tags:
         facts.language,
         frozenset(facts.hints),
         facts.file_format,
+        ambiguous,
     )
