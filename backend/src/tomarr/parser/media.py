@@ -17,14 +17,18 @@ _VIDEO_TOKENS = frozenset(
         "bdrip",
         "bluray",
         "divx",
+        "dub",
+        "dubbed",
         "dvdrip",
         "h264",
         "h265",
         "hdtv",
         "hevc",
+        "lektor",
         "mkv",
         "mp4",
         "remux",
+        "subs",
         "webdl",
         "webrip",
         "x264",
@@ -42,8 +46,6 @@ _VIDEO_PAIRS = frozenset(
         ("h", "265"),
         ("dual", "audio"),
         ("multi", "audio"),
-        ("multi", "subs"),
-        ("soft", "subs"),
     }
 )
 

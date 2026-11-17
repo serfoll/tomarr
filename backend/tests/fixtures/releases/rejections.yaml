@@ -83,7 +83,13 @@
 - {name: "[shincaps] Tongari Boushi no Atelier - 13 (AT-X 1440x1080 MPEG2 AAC).ts", unparseable: video}
 
 # Video: dubs, subtitles and voice-over with no codec or resolution
+- {name: "台配 - 咒术回战 (Jujutsu Kaisen) (S3) (Mandarin Chinese Dub) [國語][国语][中文配音][中配版] (咒術迴戰)", unparseable: video}
+- {name: "台配 - 咒术回战 死灭回游 (Jujutsu Kaisen: Shimetsu Kaiyuu) (Season 3) (Mandarin Chinese Dub) [國語][国语][中文配音][中配版] (咒術迴戰) (死滅迴游)", unparseable: video}
 - {name: "[Furretar] 台配 - 我独自升级 (Solo Leveling) (Season 1-2) (Mandarin Chinese Dub) (Matching Soft Subs) [國語][国语][中文配音][中配版] (我獨自升級) (Ore dake Level Up na Ken)", unparseable: video}
+- {name: "[Cine+] Fullmetal Alchemist the Movie: Conqueror of Shamballa GREEK SUBS", unparseable: video}
+- {name: "Fullmetal Alchemist Brotherhood [Lektor PL]", unparseable: video}
+- {name: "[KOTEX] Dan Da Dan (DanDaDan) Subs+Fonts for ReinForce [BD].zip", unparseable: video}
+- {name: "[KOTEX] Dan Da Dan S01 (DanDaDan) Subs+Fonts for ReinForce [BD].zip", unparseable: video}
 
 # Audiobooks
 - {name: "Rebirth: The Blue Box Heretic by T Carter [ENG / M4B]", unparseable: audiobook}

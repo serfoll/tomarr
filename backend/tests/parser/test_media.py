@@ -89,6 +89,10 @@ SINGLE_VIDEO_MARKERS = [
     "Multi-Audio",
     "Multi-Subs",
     "Soft Subs",
+    "Dub",
+    "DUBBED",
+    "SUBS",
+    "Lektor",
 ]
 
 AUDIOBOOK_NAMES = [
@@ -106,6 +110,8 @@ COMIC_NAMES = [
     "Monster: The Perfect Edition, Vol. 01-09 (2014-2016) (Scan) (HQ) by Naoki Urasawa [ENG / CBZ]",
     "ONE PIECE magazine Vol.1-17",
     "ONE PIECE カラー版 105巻 ONE PIECE Volume 105 Colour",
+    "Solo Leveling, Vol.1 - Vol.13 by DUBU [ENG / CBZ]",
+    "Solo Leveling #151-179 (Webtoon, 2021-2022) by Dubo [ENG / CBZ]",
 ]
 
 NOT_WHOLE_TOKENS = [
@@ -119,6 +125,8 @@ NOT_WHOLE_TOKENS = [
     "Hevcast Chapter 9",
     "Fort1920x1080 Vol. 2",
     "Mydual Audio Vol. 2",
+    "Dubai Detective Vol. 2",
+    "Subspace Chapter 4",
     "Blue Box, Vol. 5 by Kouji Miura [ENG / CBZ]",
 ]
 
