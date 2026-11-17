@@ -17,14 +17,18 @@ _VIDEO_TOKENS = frozenset(
         "bdrip",
         "bluray",
         "divx",
+        "dub",
+        "dubbed",
         "dvdrip",
         "h264",
         "h265",
         "hdtv",
         "hevc",
+        "lektor",
         "mkv",
         "mp4",
         "remux",
+        "subs",
         "webdl",
         "webrip",
         "x264",
@@ -42,12 +46,17 @@ _VIDEO_PAIRS = frozenset(
         ("h", "265"),
         ("dual", "audio"),
         ("multi", "audio"),
-        ("multi", "subs"),
-        ("soft", "subs"),
+        ("sub", "eng"),
+        ("music", "video"),
+        ("audio", "description"),
+        ("full", "animation"),
     }
 )
 
-_AUDIO_TOKENS = frozenset({"audiobook", "m4b", "mp3"})
+# Music shares the audiobook reason: it is audio too, and MP3 names either.
+_AUDIO_TOKENS = frozenset({"audiobook", "m4b", "mp3", "flac", "ost", "soundtrack"})
+
+_GAME_TOKENS = frozenset({"dlc", "dlcs", "repack"})
 
 
 def rejection_reason(name: str) -> UnparseableReason | None:
@@ -58,6 +67,8 @@ def rejection_reason(name: str) -> UnparseableReason | None:
         return UnparseableReason.VIDEO
     if any(token in _AUDIO_TOKENS for token in tokens):
         return UnparseableReason.AUDIOBOOK
+    if any(token in _GAME_TOKENS for token in tokens):
+        return UnparseableReason.GAME
     return None
 
 

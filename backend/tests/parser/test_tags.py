@@ -20,6 +20,41 @@ def test_curly_tags_are_taken_out_of_the_text() -> None:
     assert without_tags(name) == "One Piece vN"
 
 
+def test_curly_tag_is_taken_out_even_when_it_looks_like_a_marker() -> None:
+    name = "One Piece v012-023 (Colored) (Digital) (VLT) {Alabasta} {v1.0}"
+    assert without_tags(name) == "One Piece v012-023"
+
+
+@pytest.mark.parametrize(
+    ("name", "text", "file_format"),
+    [
+        pytest.param(
+            "[AnimeRG] Tower of God 210 [NR].pdf", "Tower of God 210", FileFormat.PDF, id="pdf"
+        ),
+        pytest.param("[Love-Saber] Solo Leveling.zip", "Solo Leveling", FileFormat.ZIP, id="zip"),
+        pytest.param(
+            "(\u540c\u4eba\u8a8c) [kkan] Shoko (Jujutsu Kaisen). zip",
+            "Shoko",
+            FileFormat.ZIP,
+            id="space after the dot",
+        ),
+        pytest.param("Dandadan v01.CBZ", "Dandadan v01", FileFormat.CBZ, id="upper case"),
+        pytest.param(
+            "Art by Black Box.pdf by sing N song",
+            "Art by Black Box.pdf by sing N song",
+            None,
+            id="not at the end",
+        ),
+        pytest.param("Solo Leveling.mobi", "Solo Leveling.mobi", None, id="format we do not read"),
+    ],
+)
+def test_file_extension_ending_the_name_is_the_file_format(
+    name: str, text: str, file_format: FileFormat | None
+) -> None:
+    assert without_tags(name) == text
+    assert read_tags(name).file_format is file_format
+
+
 def test_tag_holding_a_marker_stays_in_the_text() -> None:
     name = "Fullmetal Alchemist (v01-v27) (2005-2011) (Digital) (LostNerevarine-Empire)"
     assert without_tags(name) == "Fullmetal Alchemist v01-v27"
@@ -58,6 +93,8 @@ def test_tag_holding_a_bad_number_stays_in_the_text() -> None:
         pytest.param("Fullmetal Alchemist Brotherhood [Multi]", "mul", None, id="Multi tag"),
         pytest.param("Dandadan v01 MULTi", "mul", None, id="MULTi word"),
         pytest.param("One Piece vN [VF]", "fre", None, id="VF"),
+        pytest.param("[Bejee] One Piece - Volume CHOPPER [Eng.]", "eng", None, id="Eng."),
+        pytest.param("Demon Slayer (2019) [Manga FR]", "fre", None, id="Manga FR"),
     ],
 )
 def test_language_and_format_are_read_from_tags(
@@ -91,6 +128,7 @@ def test_language_is_none_when_no_tag_says_it(name: str) -> None:
         pytest.param("Dandadan v01 (Digital SD) (KG Manga)", Source.DIGITAL, id="Digital SD"),
         pytest.param("Dandadan v01 [Digital] [Korean]", Source.DIGITAL, id="bracketed Digital"),
         pytest.param("Dandadan v01 (Webtoon, Digital)", Source.DIGITAL, id="among other items"),
+        pytest.param("Demon Slayer (01-23) [Digital-1920]", Source.DIGITAL, id="Digital-1920"),
         pytest.param("Monster, Vol. 01-09 (Scan) (HQ)", Source.SCAN, id="Scan"),
         pytest.param("Monster, Vol. 01-09 (Scans)", Source.SCAN, id="Scans"),
         pytest.param("Monster, Vol. 01-09 (Scan) (Digital)", Source.SCAN, id="first tag wins"),
@@ -185,11 +223,19 @@ def test_hints_come_from_a_tag_standing_on_its_own(name: str, hints: set[Edition
             "Suego (Suzuhiro)",
             id="nested parentheses",
         ),
+        pytest.param("Dandadan v01 [Group]", "Group", id="trailing bracket tag"),
+        pytest.param("[DB] Dandadan v01", "DB", id="two letter leading tag"),
+        pytest.param(
+            "Dandadan v01 [Yen Press][Stick]", "Stick", id="trailing bracket tags in a row"
+        ),
+        pytest.param(
+            "Monster - Naoki Urasawa (1995-2001) [CBZ ITA] [1,85GB] [ImFilippo]",
+            "ImFilippo",
+            id="last of brackets and parentheses",
+        ),
     ],
 )
-def test_group_is_the_leading_bracket_tag_or_the_last_parenthesis_tag(
-    name: str, group: str
-) -> None:
+def test_group_is_the_leading_bracket_tag_or_the_last_trailing_tag(name: str, group: str) -> None:
     assert read_tags(name).group == group
 
 
@@ -205,8 +251,25 @@ def test_group_is_the_leading_bracket_tag_or_the_last_parenthesis_tag(
         pytest.param("Solo Leveling (Webtoon, Complete, 2020-2023) by Chugong", id="status words"),
         pytest.param("Jujutsu Kaisen (Manga)", id="Manga"),
         pytest.param("One Piece (Digital) (Upscaled) [Chapter 5]", id="Upscaled"),
-        pytest.param("Dandadan v01 [Group]", id="trailing bracket tag"),
-        pytest.param("Dandadan v01 [Yen Press][Stick]", id="trailing bracket tags in a row"),
+        pytest.param("Dandadan 242 (2026) [reupload]", id="reupload"),
+        pytest.param("Jujutsu Kaisen (Manga) [Updated]", id="Updated"),
+        pytest.param("One Piece v012-023 (Colored) {Alabasta}", id="curly tag"),
+        pytest.param("Fullmetal Alchemist (Fullmetal Edition) Volume 01", id="edition"),
+        pytest.param("Monster v01 [CBZ ITA] [1,85GB]", id="file size"),
+        pytest.param("A Tale of Two Demon Slayers (Demon Slayer #3) by Angie Fox", id="series #"),
+        pytest.param("Our Last Hope (The Demon Slayer, n. 1) by Michael Arches", id="series n."),
+        pytest.param("One Piece - Dive to Grand World (15th anniversary book)", id="anniversary"),
+        pytest.param("Solo Leveling | I Alone Level-Up (Novel) (Full) (Scanlated)", id="Full"),
+        pytest.param(
+            "Omniscient Reader's Viewpoint - English TL (Fan-TL) (Web-Novel)", id="Fan-TL"
+        ),
+        pytest.param("Tower of God 210 [NR].pdf", id="two letter status tag"),
+        pytest.param("Fullmetal Alchemist Brotherhood [Multi] [BR]", id="two letter source tag"),
+        pytest.param(
+            "Demon Slayers 02 [PDF + TXT] by Angie Fox [ENG / PDF]", id="format list with a plus"
+        ),
+        pytest.param("One Piece, Vol. 106 (Colored) (Kobo Optimised)", id="Kobo Optimised"),
+        pytest.param("The Beginning After The End - Webtoon (Season 1-5)", id="season numbers"),
         pytest.param("One Piece - Vol. 3 (v1-v2)", id="marker tag"),
     ],
 )

@@ -8,6 +8,7 @@ from tomarr.parser.chapter_number import ChapterNumberReason
 class UnparseableReason(StrEnum):
     VIDEO = "video"
     AUDIOBOOK = "audiobook"
+    GAME = "game"
     NO_TITLE = "no_title"
     INVALID_NUMBER = "invalid_number"
     TOO_LONG = "too_long"

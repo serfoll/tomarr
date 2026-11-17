@@ -122,11 +122,11 @@ def test_volume_range_and_loose_chapters_is_a_mixed_pack() -> None:
 def test_ampersand_pack_inside_parentheses_is_a_mixed_pack() -> None:
     name = "One Piece - Digital Colored Comics+Cover Stories V1 Batch (v000-v105 & ch0035-1078)"
     release = parsed(name)
-    # The name says both `V1 Batch` and `v000-v105`; the parser reports each marker.
-    assert release.volumes == (volume("1"), volume("0", "105"))
+    # `V1 Batch` is the batch's version, so only `v000-v105` is a Volume range.
+    assert release.volumes == (volume("0", "105"),)
     assert release.chapters == (chapter("35", "1078"),)
     assert release.warnings == frozenset({ReleaseWarning.MIXED_PACK})
-    assert release.title == "One Piece - Digital Colored Comics+Cover Stories"
+    assert release.title == "One Piece - Digital Colored Comics+Cover Stories V1 Batch"
     assert release.group is None
 
 
@@ -210,6 +210,11 @@ def test_audiobook_name_is_unparseable() -> None:
     assert parse_release(name) == Unparseable(UnparseableReason.AUDIOBOOK)
 
 
+def test_game_name_is_unparseable() -> None:
+    name = "Demon Slayer -Kimetsu no Yaiba- The Hinokami Chronicles (v1.83 & All DLCs) (Hype"
+    assert parse_release(name) == Unparseable(UnparseableReason.GAME)
+
+
 def test_rejected_name_reaches_no_other_code(monkeypatch: MonkeyPatch) -> None:
     def fail(*_: object) -> None:
         raise AssertionError("reached")
@@ -226,11 +231,7 @@ def test_number_error_comes_back_with_the_normalizer_reason() -> None:
 
 
 def test_number_error_inside_a_tag_is_not_dropped() -> None:
-    name = (
-        "Demon Slayer -Kimetsu no Yaiba- Sweep the Board! "
-        "(v16933346 & All DLCs) (Hypervisor|DenuvOwO)"
-    )
-    assert parse_release(name) == Unparseable(
+    assert parse_release("Dandadan Extras (v16933346 & more) (LuCaZ)") == Unparseable(
         UnparseableReason.INVALID_NUMBER, ChapterNumberReason.TOO_LARGE
     )
 

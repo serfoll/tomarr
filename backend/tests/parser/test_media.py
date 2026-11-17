@@ -7,6 +7,7 @@ from tomarr.parser.release import UnparseableReason
 
 VIDEO = UnparseableReason.VIDEO
 AUDIOBOOK = UnparseableReason.AUDIOBOOK
+GAME = UnparseableReason.GAME
 
 VIDEO_NAMES = [
     # SxxExx, with and without a range
@@ -89,6 +90,14 @@ SINGLE_VIDEO_MARKERS = [
     "Multi-Audio",
     "Multi-Subs",
     "Soft Subs",
+    "Dub",
+    "DUBBED",
+    "SUBS",
+    "Lektor",
+    "sub eng",
+    "Music Video",
+    "Audio Description",
+    "Full Animation",
 ]
 
 AUDIOBOOK_NAMES = [
@@ -98,6 +107,11 @@ AUDIOBOOK_NAMES = [
     "The Beginning After The End, Book 12 - Apotheosis (Audiobook) [Troglodyte]",
 ]
 
+# Music is refused with the audiobook reason: it is audio, and MP3 already covers both.
+SINGLE_AUDIO_MARKERS = ["M4B", "MP3", "Audiobook", "FLAC", "OST", "Original Soundtrack"]
+
+SINGLE_GAME_MARKERS = ["DLC", "DLCs", "REPACK"]
+
 COMIC_NAMES = [
     "Jujutsu Kaisen, Vol. 27 by Viz Media, Gege Akutami [ENG / CBZ]",
     "One Piece 1190 (Digital)",
@@ -106,6 +120,8 @@ COMIC_NAMES = [
     "Monster: The Perfect Edition, Vol. 01-09 (2014-2016) (Scan) (HQ) by Naoki Urasawa [ENG / CBZ]",
     "ONE PIECE magazine Vol.1-17",
     "ONE PIECE カラー版 105巻 ONE PIECE Volume 105 Colour",
+    "Solo Leveling, Vol.1 - Vol.13 by DUBU [ENG / CBZ]",
+    "Solo Leveling #151-179 (Webtoon, 2021-2022) by Dubo [ENG / CBZ]",
 ]
 
 NOT_WHOLE_TOKENS = [
@@ -119,6 +135,11 @@ NOT_WHOLE_TOKENS = [
     "Hevcast Chapter 9",
     "Fort1920x1080 Vol. 2",
     "Mydual Audio Vol. 2",
+    "Dubai Detective Vol. 2",
+    "Subspace Chapter 4",
+    "Ghost Hunt Vol. 3",
+    "Flacco Chapter 2",
+    "Repackaged Hearts Vol. 2",
     "Blue Box, Vol. 5 by Kouji Miura [ENG / CBZ]",
 ]
 
@@ -136,6 +157,20 @@ def test_a_single_video_marker_is_enough_to_reject(marker: str) -> None:
 @pytest.mark.parametrize("name", AUDIOBOOK_NAMES)
 def test_audiobook_name_is_rejected_as_audiobook(name: str) -> None:
     assert rejection_reason(name) == AUDIOBOOK
+
+
+@pytest.mark.parametrize("marker", SINGLE_AUDIO_MARKERS)
+def test_a_single_audio_marker_is_enough_to_reject(marker: str) -> None:
+    assert rejection_reason(f"Some Title Vol. 3 [{marker}]") == AUDIOBOOK
+
+
+@pytest.mark.parametrize("marker", SINGLE_GAME_MARKERS)
+def test_a_single_game_marker_is_enough_to_reject(marker: str) -> None:
+    assert rejection_reason(f"Some Title (v1.83 & {marker})") == GAME
+
+
+def test_audio_marker_wins_over_game_marker() -> None:
+    assert rejection_reason("Some Title OST (All DLCs)") == AUDIOBOOK
 
 
 @pytest.mark.parametrize("name", COMIC_NAMES)

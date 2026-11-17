@@ -1,0 +1,599 @@
+# Names with a title and no Volume or Chapter marker: whole-series releases,
+# books and art books, and names whose numbers carry no marker. These parse
+# with the no_numbers warning. A bare number (`One Piece 1190`), a hash
+# number, `T01`, `Том 24` and `tomo 2` are not markers, so they stay in the
+# title. The title keeps everything outside the tags, `by <author>` included.
+# Format: see tests/parser/test_release_corpus.py.
+
+# Bare chapter numbers
+- name: "One Piece 1157"
+  title: "One Piece 1157"
+  warnings: [no_numbers]
+- name: "One Piece 1179 (Digital)"
+  title: "One Piece 1179"
+  source: digital
+  warnings: [no_numbers]
+- name: "One Piece 1190 (Digital)"
+  title: "One Piece 1190"
+  source: digital
+  warnings: [no_numbers]
+- name: "One Piece 1191 [JP]"
+  title: "One Piece 1191"
+  language: jpn
+  warnings: [no_numbers]
+- name: "One Piece 1197 [JP]"
+  title: "One Piece 1197"
+  language: jpn
+  warnings: [no_numbers]
+- name: "One Piece 1197"
+  title: "One Piece 1197"
+  warnings: [no_numbers]
+- name: "One Piece 0001-0100 East Blue Saga by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece 0001-0100 East Blue Saga by Eiichiro Oda"
+  language: eng
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "One Piece 0303-0441 Water 7 Saga by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece 0303-0441 Water 7 Saga by Eiichiro Oda"
+  language: eng
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "One Piece 0654-0801 Dressrosa Saga by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece 0654-0801 Dressrosa Saga by Eiichiro Oda"
+  language: eng
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "ワンピース ONE PIECE 1044-1124 2024年08月26日更新"
+  title: "ワンピース ONE PIECE 1044-1124 2024年08月26日更新"
+  warnings: [no_numbers]
+- name: "ワンピース ONE PIECE1-105カラー 106-111モノクロ 1044-1145 2025年04月07日更新"
+  title: "ワンピース ONE PIECE1-105カラー 106-111モノクロ 1044-1145 2025年04月07日更新"
+  warnings: [no_numbers]
+- name: "ワンピース ONE PIECE1-105カラー 106-111モノクロ 1044-1173 2026年02月09日更新."
+  title: "ワンピース ONE PIECE1-105カラー 106-111モノクロ 1044-1173 2026年02月09日更新."
+  warnings: [no_numbers]
+- name: "Dandadan 211 (2025)"
+  title: "Dandadan 211"
+  warnings: [no_numbers]
+- name: "Dandadan 230 (2026)"
+  title: "Dandadan 230"
+  warnings: [no_numbers]
+- name: "Dandadan 242 (2026) [reupload]"
+  title: "Dandadan 242"
+  warnings: [no_numbers]
+- name: "Dandadan 245.1 (2026) Omake"
+  title: "Dandadan 245.1 Omake"
+  warnings: [no_numbers]
+- name: "Dandadan 193.1 Bonus Chapter"
+  title: "Dandadan 193.1 Bonus Chapter"
+  warnings: [no_numbers]
+- name: "Dandadan 251"
+  title: "Dandadan 251"
+  warnings: [no_numbers]
+- name: "[AHIJKNORSTUY] Jujutsu Kaisen -254"
+  title: "Jujutsu Kaisen -254"
+  group: "AHIJKNORSTUY"
+  warnings: [no_numbers]
+- name: "[Rillant] Jujutsu Kaisen Modulo 1-25 (2025, Mangaplus)"
+  title: "Jujutsu Kaisen Modulo 1-25"
+  group: "Rillant"
+  warnings: [no_numbers]
+- name: "The Beginning After the End 001-154 (2018-2022) (Digital) (repressedrage)"
+  title: "The Beginning After the End 001-154"
+  source: digital
+  group: "repressedrage"
+  warnings: [no_numbers]
+- name: "Omniscient Reader’s Viewpoint 000-216 (Scanlated) (Flame Comics) (Void) | Ongoing"
+  title: "Omniscient Reader’s Viewpoint 000-216 | Ongoing"
+  group: "Void"
+  warnings: [no_numbers]
+- name: "Omniscient Reader’s Viewpoint 217-252 (Scanlated) (Flame Comics) (Void) | Ongoing"
+  title: "Omniscient Reader’s Viewpoint 217-252 | Ongoing"
+  group: "Void"
+  warnings: [no_numbers]
+- name: "Solo Leveling #151-179 (Webtoon, 2021-2022) by Dubo [ENG / CBZ]"
+  title: "Solo Leveling #151-179 by Dubo"
+  hints: [webtoon]
+  language: eng
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "Solo Leveling 13 by Chugong, h-goon, Melina Honnef [GER / CBZ]"
+  title: "Solo Leveling 13 by Chugong, h-goon, Melina Honnef"
+  language: ger
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "Witch Hat Atelier 1 by Kamome Shirahama [ENG / CBZ]"
+  title: "Witch Hat Atelier 1 by Kamome Shirahama"
+  language: eng
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "Witch Hat Atelier Kitchen 1-5 by Kamome Shirahama, Hiromi Sato [ENG / CBZ]"
+  title: "Witch Hat Atelier Kitchen 1-5 by Kamome Shirahama, Hiromi Sato"
+  language: eng
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "[AnimeRG] Tower of God 210 [NR].pdf"
+  title: "Tower of God 210"
+  group: "AnimeRG"
+  file_format: pdf
+  warnings: [no_numbers]
+- name: "[AnimeRG] Tower of God 214 [NR].zip"
+  title: "Tower of God 214"
+  group: "AnimeRG"
+  file_format: zip
+  warnings: [no_numbers]
+
+# Volume words the parser does not read: French T01, Russian Том, Spanish tomo
+- name: "Dandadan T01 by Yukinobu Tatsu [FRE / CBZ]"
+  title: "Dandadan T01 by Yukinobu Tatsu"
+  language: fre
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "Dandadan T02 by Yukinobu Tatsu [FRE / CBZ]"
+  title: "Dandadan T02 by Yukinobu Tatsu"
+  language: fre
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "Дандадан. Dandadan. Том 24 by Yukinobu Tatsu [RUS / CBZ]"
+  title: "Дандадан. Dandadan. Том 24 by Yukinobu Tatsu"
+  language: rus
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "Дандадан. Dandadan. Тома 01-23 by Yukinobu Tatsu [RUS / CBZ]"
+  title: "Дандадан. Dandadan. Тома 01-23 by Yukinobu Tatsu"
+  language: rus
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "Поднятие уровня в одиночку. Solo Leveling. Том 1 by Чхугон [RUS / PDF]"
+  title: "Поднятие уровня в одиночку. Solo Leveling. Том 1 by Чхугон"
+  language: rus
+  file_format: pdf
+  warnings: [no_numbers]
+- name: "Поднятие уровня в одиночку. Solo Leveling. Том 15 by Чхугон [RUS / PDF]"
+  title: "Поднятие уровня в одиночку. Solo Leveling. Том 15 by Чхугон"
+  language: rus
+  file_format: pdf
+  warnings: [no_numbers]
+- name: "Поднятие уровня в одиночку. Solo Leveling. Книга 3 by Чхугон [RUS / EPUB]"
+  title: "Поднятие уровня в одиночку. Solo Leveling. Книга 3 by Чхугон"
+  language: rus
+  file_format: epub
+  warnings: [no_numbers]
+- name: "manga fullmetal alchemist tomo 2 en espanol"
+  title: "manga fullmetal alchemist tomo 2 en espanol"
+  warnings: [no_numbers]
+
+# Whole series and complete packs
+- name: "One Piece (Digital) (1r0n)"
+  title: "One Piece"
+  source: digital
+  group: "1r0n"
+  warnings: [no_numbers]
+- name: "One Piece - Ace's Story - The Manga (2024) (Digital) (1r0n)"
+  title: "One Piece - Ace's Story - The Manga"
+  source: digital
+  group: "1r0n"
+  warnings: [no_numbers]
+- name: "Wanted! Eiichiro Oda Before One Piece (2024) (Digital) (1r0n)"
+  title: "Wanted! Eiichiro Oda Before One Piece"
+  source: digital
+  group: "1r0n"
+  warnings: [no_numbers]
+- name: "One Piece - Law’s Story [VIZ Media] [Stick]"
+  title: "One Piece - Law’s Story"
+  group: "Stick"
+  warnings: [no_numbers]
+- name: "[Bejee] One Piece Box Set Extras [Viz]"
+  title: "One Piece Box Set Extras"
+  group: "Bejee"
+  warnings: [no_numbers]
+- name: "One Piece: Ace's Story by Eiichiro Oda, Sho Hinata, Stephen Paul [ENG / CBZ]"
+  title: "One Piece: Ace's Story by Eiichiro Oda, Sho Hinata, Stephen Paul"
+  language: eng
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "One-Piece Knits: Essential Designs in Multiple Sizes and Gauges for Sweaters Knit Top Down, Side Over, and Back to Front by Margaret Hubert [ENG / EPUB MOBI]"
+  title: "One-Piece Knits: Essential Designs in Multiple Sizes and Gauges for Sweaters Knit Top Down, Side Over, and Back to Front by Margaret Hubert"
+  language: eng
+  file_format: epub
+  warnings: [no_numbers]
+- name: "One Piece Mini Magazine"
+  title: "One Piece Mini Magazine"
+  warnings: [no_numbers]
+- name: "One Piece - Dive to Grand World (15th anniversary book)"
+  title: "One Piece - Dive to Grand World"
+  warnings: [no_numbers]
+- name: "ONE PIECE Collection of rare items"
+  title: "ONE PIECE Collection of rare items"
+  warnings: [no_numbers]
+- name: "Demon Slayer: Kimetsu no Yaiba"
+  title: "Demon Slayer: Kimetsu no Yaiba"
+  warnings: [no_numbers]
+- name: "Demon Slayer: Kimetsu no Yaiba by Koyoharu Gotouge [ENG / CBZ]"
+  title: "Demon Slayer: Kimetsu no Yaiba by Koyoharu Gotouge"
+  language: eng
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "Demon Slayer - Kimetsu no Yaiba (2018-2021) (Digital) (danke-Empire)"
+  title: "Demon Slayer - Kimetsu no Yaiba"
+  source: digital
+  group: "danke-Empire"
+  warnings: [no_numbers]
+- name: "Demon Slayer - Kimetsu no Yaiba Complete (2020) (Digital) by Koyoharu Gotouge [ENG / CBZ]"
+  title: "Demon Slayer - Kimetsu no Yaiba Complete by Koyoharu Gotouge"
+  source: digital
+  language: eng
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "Demon Slayer: Kimetsu no Yaiba - Stories of Water and Flame by Koyoharu Gotouge, Ryoji Hirano [ENG / CBZ]"
+  title: "Demon Slayer: Kimetsu no Yaiba - Stories of Water and Flame by Koyoharu Gotouge, Ryoji Hirano"
+  language: eng
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "Demon Slayer Kimetsu no Yaiba - Signs From the Wind (2023) (Digital) (LuCaZ)"
+  title: "Demon Slayer Kimetsu no Yaiba - Signs From the Wind"
+  source: digital
+  group: "LuCaZ"
+  warnings: [no_numbers]
+- name: "Demon Slayer Kimetsu no Yaiba - Signs From the Wind [VIZ Media] [LuCaZ]"
+  title: "Demon Slayer Kimetsu no Yaiba - Signs From the Wind"
+  group: "LuCaZ"
+  warnings: [no_numbers]
+- name: "Demon Slayer Kimetsu no Yaiba - The Flower of Happiness (2022) (Digital) (LuCaZ)"
+  title: "Demon Slayer Kimetsu no Yaiba - The Flower of Happiness"
+  source: digital
+  group: "LuCaZ"
+  warnings: [no_numbers]
+- name: "Demon Slayer Kimetsu no Yaiba - The Flower of Happiness [VIZ Media] [LuCaZ]"
+  title: "Demon Slayer Kimetsu no Yaiba - The Flower of Happiness"
+  group: "LuCaZ"
+  warnings: [no_numbers]
+- name: "Kimetsu no Yaiba Illustration Collection 2 (Collector's Edition).zip"
+  title: "Kimetsu no Yaiba Illustration Collection 2"
+  file_format: zip
+  warnings: [no_numbers]
+- name: "Angie Fox - Demon Slayers 02 - The Dangerous Book for Demon Slayers [PDF + TXT] by Angie Fox [ENG / PDF]"
+  title: "Angie Fox - Demon Slayers 02 - The Dangerous Book for Demon Slayers by Angie Fox"
+  language: eng
+  file_format: pdf
+  warnings: [no_numbers]
+# A series position in a tag (`#3`, `n. 1`) is not a group.
+- name: "A Tale of Two Demon Slayers (Demon Slayer #3) by Angie Fox (epub) by Angie Fox [ENG / EPUB]"
+  title: "A Tale of Two Demon Slayers by Angie Fox by Angie Fox"
+  language: eng
+  file_format: epub
+  warnings: [no_numbers]
+- name: "The Dangerous Book for Demon Slayers (Demon Slayer #2) by Angie Fox (mobi) by Angie Fox [ENG / MOBI]"
+  title: "The Dangerous Book for Demon Slayers by Angie Fox by Angie Fox"
+  language: eng
+  warnings: [no_numbers]
+- name: "Inside the Storm (Demon Slayer, n. 2) by Michael Arches EPUB"
+  title: "Inside the Storm by Michael Arches"
+  file_format: epub
+  warnings: [no_numbers]
+- name: "Our Last Hope (The Demon Slayer, n. 1) by Michael Arches EPUB"
+  title: "Our Last Hope by Michael Arches"
+  file_format: epub
+  warnings: [no_numbers]
+# `(01-23)` is a bare range and `(Gotoge)` the author; the last unknown tag wins.
+- name: "Demon Slayer (01-23) (Gotoge) (2019) [Digital-1920] [Manga FR] (PapriKa+)"
+  title: "Demon Slayer"
+  source: digital
+  language: fre
+  group: "PapriKa+"
+  warnings: [no_numbers]
+- name: "[Dining] uma(Kimetsu no Yaiba).zip"
+  title: "uma"
+  group: "Dining"
+  file_format: zip
+  warnings: [no_numbers]
+- name: "Demon Slayer - Class for MÖRK BORG by Theatre Macabre [ENG / PDF]"
+  title: "Demon Slayer - Class for MÖRK BORG by Theatre Macabre"
+  language: eng
+  file_format: pdf
+  warnings: [no_numbers]
+- name: "Demon Slayer by Linsey Hall [ENG / EPUB]"
+  title: "Demon Slayer by Linsey Hall"
+  language: eng
+  file_format: epub
+  warnings: [no_numbers]
+- name: "A Tale Of Two Demon Slayers by Angie Fox [ENG / PDF]"
+  title: "A Tale Of Two Demon Slayers by Angie Fox"
+  language: eng
+  file_format: pdf
+  warnings: [no_numbers]
+- name: "FullMetal Alchemist (Complete) PirateBoy SilverRG"
+  title: "FullMetal Alchemist PirateBoy SilverRG"
+  warnings: [no_numbers]
+- name: "Fullmetal Alchemist - Tales of Another, Recollections"
+  title: "Fullmetal Alchemist - Tales of Another, Recollections"
+  warnings: [no_numbers]
+- name: "Fullmetal Alchemist by Hiromu Arakawa [ENG / CBR]"
+  title: "Fullmetal Alchemist by Hiromu Arakawa"
+  language: eng
+  file_format: cbr
+  warnings: [no_numbers]
+- name: "Fullmetal Alchemist Brotherhood TV Animation Gengashuu by BONES [JPN / CBZ]"
+  title: "Fullmetal Alchemist Brotherhood TV Animation Gengashuu by BONES"
+  language: jpn
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "Fullmetal Alchemist: The Abducted Alchemist [VIZ Media] [Stick]"
+  title: "Fullmetal Alchemist: The Abducted Alchemist"
+  group: "Stick"
+  warnings: [no_numbers]
+- name: "Fullmetal Alchemist: Under the Faraway Sky [VIZ Media] [Stick]"
+  title: "Fullmetal Alchemist: Under the Faraway Sky"
+  group: "Stick"
+  warnings: [no_numbers]
+- name: "Fullmetal Alchemist: The Land of Sand by Makoto Inoue [ENG / EPUB]"
+  title: "Fullmetal Alchemist: The Land of Sand by Makoto Inoue"
+  language: eng
+  file_format: epub
+  warnings: [no_numbers]
+- name: "Hiromu Arakawa Illustrations: Fullmetal Alchemist by Hiromu Arakawa [JPN / CBZ]"
+  title: "Hiromu Arakawa Illustrations: Fullmetal Alchemist by Hiromu Arakawa"
+  language: jpn
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "[Grunbeld] Fullmetal Alchemist"
+  title: "Fullmetal Alchemist"
+  group: "Grunbeld"
+  warnings: [no_numbers]
+- name: "[荒川弘] イラスト集 鋼の錬金術師 (2017) Fullmetal Alchemist Complete Art (Digital)"
+  title: "イラスト集 鋼の錬金術師 Fullmetal Alchemist Complete Art"
+  source: digital
+  group: "荒川弘"
+  warnings: [no_numbers]
+- name: "鋼の錬金術師 20th ANNIVERSARY BOOK | Fullmetal Alchemist 20th Anniversary Book (Digital)"
+  title: "鋼の錬金術師 20th ANNIVERSARY BOOK | Fullmetal Alchemist 20th Anniversary Book"
+  source: digital
+  warnings: [no_numbers]
+- name: "Jujutsu Kaisen (2021-2026) (Digital) (1r0n, Rillant)"
+  title: "Jujutsu Kaisen"
+  source: digital
+  group: "1r0n, Rillant"
+  warnings: [no_numbers]
+- name: "Jujutsu Kaisen (Manga)"
+  title: "Jujutsu Kaisen"
+  warnings: [no_numbers]
+- name: "Jujutsu Kaisen (Manga) [Updated]"
+  title: "Jujutsu Kaisen"
+  warnings: [no_numbers]
+- name: "Jujutsu Kaisen - The Official Anime Guide - Season 1 (2023) (Digital) (LuCaZ)"
+  title: "Jujutsu Kaisen - The Official Anime Guide - Season 1"
+  source: digital
+  group: "LuCaZ"
+  warnings: [no_numbers]
+- name: "Jujutsu Kaisen - Thorny Road at Dawn (2023) (Digital) (LuCaZ)"
+  title: "Jujutsu Kaisen - Thorny Road at Dawn"
+  source: digital
+  group: "LuCaZ"
+  warnings: [no_numbers]
+- name: "Jujutsu Kaisen - Thorny Road at Dawn [VIZ Media] [LuCaZ]"
+  title: "Jujutsu Kaisen - Thorny Road at Dawn"
+  group: "LuCaZ"
+  warnings: [no_numbers]
+- name: "Jujutsu Kaisen: The Official Character Guide by Gege Akutami [ENG / CBZ]"
+  title: "Jujutsu Kaisen: The Official Character Guide by Gege Akutami"
+  language: eng
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "Look Back by Tatsuki Fujimoto [ENG / CBZ]"
+  title: "Look Back by Tatsuki Fujimoto"
+  language: eng
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "Lore Olympus: Volume One by Rachel Smythe [ENG / PDF]"
+  title: "Lore Olympus: Volume One by Rachel Smythe"
+  language: eng
+  file_format: pdf
+  warnings: [no_numbers]
+- name: "The Official Lore Olympus Cookbook by Rachel Smythe [ENG / EPUB]"
+  title: "The Official Lore Olympus Cookbook by Rachel Smythe"
+  language: eng
+  file_format: epub
+  warnings: [no_numbers]
+- name: "Monster (manga) (1994-2001) (complete) by Naoki Urasawa [ENG / CBZ]"
+  title: "Monster by Naoki Urasawa"
+  language: eng
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "Monster - Complete Series by Naoki Urasawa [ENG / CBR]"
+  title: "Monster - Complete Series by Naoki Urasawa"
+  language: eng
+  file_format: cbr
+  warnings: [no_numbers]
+- name: "Monster - Naoki Urasawa (1995-2001) [CBZ ITA] [1,85GB] [ImFilippo]"
+  title: "Monster - Naoki Urasawa"
+  group: "ImFilippo"
+  language: ita
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "Monster by Naoki Urasawa [ENG / CBR]"
+  title: "Monster by Naoki Urasawa"
+  language: eng
+  file_format: cbr
+  warnings: [no_numbers]
+- name: "Naoki Urasawa's Monster (Manga)"
+  title: "Naoki Urasawa's Monster"
+  warnings: [no_numbers]
+- name: "Omniscient Reader's Viewpoint - English TL (Fan-TL) (Web-Novel)"
+  title: "Omniscient Reader's Viewpoint - English TL"
+  warnings: [no_numbers]
+- name: "Omniscient Reader's Viewpoint by singNsong [ENG / EPUB]"
+  title: "Omniscient Reader's Viewpoint by singNsong"
+  language: eng
+  file_format: epub
+  warnings: [no_numbers]
+- name: "Omniscient Reader_s Viewpoint Side Story by sing N song, Sing Shong, Sing-Syong [ENG / EPUB]"
+  title: "Omniscient Reader_s Viewpoint Side Story by sing N song, Sing Shong, Sing-Syong"
+  language: eng
+  file_format: epub
+  warnings: [no_numbers]
+- name: "Omniscient Reader's Viewpoint - Art by Black Box.pdf by sing N song, Sing Shong, Sing-Syong [ENG / PDF]"
+  title: "Omniscient Reader's Viewpoint - Art by Black Box.pdf by sing N song, Sing Shong, Sing-Syong"
+  language: eng
+  file_format: pdf
+  warnings: [no_numbers]
+- name: "전지적 독자 시점 | 전독시 | | Omniscient Reader’s Viewpoint S1 (Scanlated) (Flame Comics) (Void) | Hiatus"
+  title: "전지적 독자 시점 | 전독시 | | Omniscient Reader’s Viewpoint S1 | Hiatus"
+  group: "Void"
+  warnings: [no_numbers]
+- name: "Chi - Chikyuu no Undou ni Tsuite | Orb - On the Movements of the Earth (2023-2024) (Digital) (1r0n)"
+  title: "Chi - Chikyuu no Undou ni Tsuite | Orb - On the Movements of the Earth"
+  source: digital
+  group: "1r0n"
+  warnings: [no_numbers]
+- name: "Chi. - Chikyuu no Undou ni Tsuite / Orb - On the Movements of the Earth (2023-2024) (Digital) (LuCaZ)"
+  title: "Chi. - Chikyuu no Undou ni Tsuite / Orb - On the Movements of the Earth"
+  source: digital
+  group: "LuCaZ"
+  warnings: [no_numbers]
+- name: "Only I Level Up / Solo Leveling [Webtoon] (2020-2023) (Digital) (LuCaZ)"
+  title: "Only I Level Up / Solo Leveling"
+  source: digital
+  hints: [webtoon]
+  group: "LuCaZ"
+  warnings: [no_numbers]
+- name: "Solo Leveling (2021-2022) (Digital) (repressedrage)"
+  title: "Solo Leveling"
+  source: digital
+  group: "repressedrage"
+  warnings: [no_numbers]
+- name: "Solo Leveling (2021-2026) (Digital) (1r0n)"
+  title: "Solo Leveling"
+  source: digital
+  group: "1r0n"
+  warnings: [no_numbers]
+- name: "Solo Leveling (Scanlated) (Flame Comics) (Void) | Completed"
+  title: "Solo Leveling | Completed"
+  group: "Void"
+  warnings: [no_numbers]
+- name: "Solo Leveling (Webtoon, Complete, 2020-2023) by Chugong, h-goon, DUBU [ENG / CBZ]"
+  title: "Solo Leveling by Chugong, h-goon, DUBU"
+  hints: [webtoon]
+  language: eng
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "Solo Leveling (Webtoon, Complete, 2020-2023) by Chugong, h-goon, DUBU, Redice Studio [ENG / CBZ]"
+  title: "Solo Leveling by Chugong, h-goon, DUBU, Redice Studio"
+  hints: [webtoon]
+  language: eng
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "Solo Leveling / Only I Level-Up"
+  title: "Solo Leveling / Only I Level-Up"
+  warnings: [no_numbers]
+# Webtoon seasons (S1, S1-S2) are neither Volumes nor Chapters.
+- name: "Solo Leveling Ragnarok (Scanlated) (Flame Comics x Reaper Scans) (Void) | S1 Completed"
+  title: "Solo Leveling Ragnarok | S1 Completed"
+  group: "Void"
+  warnings: [no_numbers]
+- name: "Solo Leveling Ragnarok S2 Complete"
+  title: "Solo Leveling Ragnarok S2 Complete"
+  warnings: [no_numbers]
+- name: "나 혼자만 레벨업 : 라그나로크 | Solo Leveling Ragnarok S1-S2 (Scanlated) (Flame Comics x Reaper Scans) (Void) | Completed"
+  title: "나 혼자만 레벨업 : 라그나로크 | Solo Leveling Ragnarok S1-S2 | Completed"
+  group: "Void"
+  warnings: [no_numbers]
+# `[01-270]` is a bare range, so it is not read.
+- name: "Solo Leveling | I Alone Level-Up (Novel) (Full) (Scanlated) [01-270]"
+  title: "Solo Leveling | I Alone Level-Up"
+  warnings: [no_numbers]
+- name: "Solo Leveling by Chu-Gong [ENG / EPUB PDF]"
+  title: "Solo Leveling by Chu-Gong"
+  language: eng
+  file_format: epub
+  warnings: [no_numbers]
+- name: "Solo Leveling by Chugong [FRE / CBZ]"
+  title: "Solo Leveling by Chugong"
+  language: fre
+  file_format: cbz
+  warnings: [no_numbers]
+- name: "Solo Leveling: Only I Level Up by Gee So-Lyung, Jang Sung-Lak, Chugong [ENG / PDF]"
+  title: "Solo Leveling: Only I Level Up by Gee So-Lyung, Jang Sung-Lak, Chugong"
+  language: eng
+  file_format: pdf
+  warnings: [no_numbers]
+- name: "Solo Leveling: Arise - Characters Items Artworks Others.zip"
+  title: "Solo Leveling: Arise - Characters Items Artworks Others"
+  file_format: zip
+  warnings: [no_numbers]
+- name: "[Love-Saber] Solo Leveling.zip"
+  title: "Solo Leveling"
+  group: "Love-Saber"
+  file_format: zip
+  warnings: [no_numbers]
+- name: "The Beginning After The End - Providence - Book 11"
+  title: "The Beginning After The End - Providence - Book 11"
+  warnings: [no_numbers]
+- name: "The Beginning After The End - Webtoon (Season 1-5) by TurtleMe, Fuyuki23 [ENG / CBZ]"
+  title: "The Beginning After The End - Webtoon by TurtleMe, Fuyuki23"
+  language: eng
+  file_format: cbz
+  warnings: [no_numbers]
+# A publisher tag is read whole as the group.
+- name: "The Beginning After the End (Aethon/Remastered) Novel Complete (1-12)"
+  title: "The Beginning After the End Novel Complete"
+  group: "Aethon/Remastered"
+  warnings: [no_numbers]
+- name: "Ascension: The Beginning After the End by TurtleMe EPUB"
+  title: "Ascension: The Beginning After the End by TurtleMe"
+  file_format: epub
+  warnings: [no_numbers]
+- name: "Beyond the Little Blue Box: The Biographical Adventures of John T Draper Notorious 'phone Phreak', Legendary Internet Pioneer and Ardent Privacy Advocate by John T Draper, C Wilson Fraser [ENG / EPUB]"
+  title: "Beyond the Little Blue Box: The Biographical Adventures of John T Draper Notorious 'phone Phreak', Legendary Internet Pioneer and Ardent Privacy Advocate by John T Draper, C Wilson Fraser"
+  language: eng
+  file_format: epub
+  warnings: [no_numbers]
+- name: "Doctor Who I, TARDIS Memoirs of an Impossible Blue Box"
+  title: "Doctor Who I, TARDIS Memoirs of an Impossible Blue Box"
+  warnings: [no_numbers]
+- name: "See With New Eyes: The True Beauty of God's Character by Ty Gibson [ENG / EPUB]"
+  title: "See With New Eyes: The True Beauty of God's Character by Ty Gibson"
+  language: eng
+  file_format: epub
+  warnings: [no_numbers]
+
+# Doujinshi: the leading tag is the circle, a trailing extension is the format.
+- name: "(同人誌) [kkan] Shoko (Jujutsu Kaisen). zip"
+  title: "Shoko"
+  group: "kkan"
+  file_format: zip
+  warnings: [no_numbers]
+- name: "[ Nuko.] Enshinryoku [Ea shinkan](Jujutsu Kaisen).zip"
+  title: "Enshinryoku"
+  group: "Nuko."
+  file_format: zip
+  warnings: [no_numbers]
+- name: "[Nonko] 10 Tsuki 25-nichi tora kugi onrī shinkan an'nai(Jujutsu Kaisen).zip"
+  title: "10 Tsuki 25-nichi tora kugi onrī shinkan an'nai"
+  group: "Nonko"
+  file_format: zip
+  warnings: [no_numbers]
+- name: "[Suego (Suzuhiro)] Oyaji ga Ite Kokuhaku Dekinai! ︱ 아버지가 계셔서 고백할 수 없어! (Jujutsu Kaisen) [Korean]. zip"
+  title: "Oyaji ga Ite Kokuhaku Dekinai! ︱ 아버지가 계셔서 고백할 수 없어!"
+  group: "Suego (Suzuhiro)"
+  language: kor
+  file_format: zip
+  warnings: [no_numbers]
+- name: "[YUBI] Together with Nami (One Piece) [English].zip"
+  title: "Together with Nami"
+  group: "YUBI"
+  language: eng
+  file_format: zip
+  warnings: [no_numbers]
+- name: "[fingerbox] Nami who marries the invisible man (One Piece) [English].zip"
+  title: "Nami who marries the invisible man"
+  group: "fingerbox"
+  language: eng
+  file_format: zip
+  warnings: [no_numbers]
+- name: "[Shimono Cable] Nami-san, Ofuro no Ato ni Oil Massage wa Ikaga？ ︱ 나미 씨, 목욕 후에 오일 마사지는 어때？ (One Piece) [Digital] [Korean].zip"
+  title: "Nami-san, Ofuro no Ato ni Oil Massage wa Ikaga？ ︱ 나미 씨, 목욕 후에 오일 마사지는 어때？"
+  group: "Shimono Cable"
+  source: digital
+  language: kor
+  file_format: zip
+  warnings: [no_numbers]

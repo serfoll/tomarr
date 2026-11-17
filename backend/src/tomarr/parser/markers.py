@@ -75,6 +75,8 @@ _PATTERNS = (
     _marker(_Kind.VOLUME, _RUN_START + "第?", _VOLUME_SUFFIXES, "(?!)"),
     _marker(_Kind.CHAPTER, _RUN_START + "第?", _CHAPTER_SUFFIXES, "(?!)"),
 )
+# "V1 Batch" numbers an upload batch, not a Volume.
+_BATCH = re.compile(r"\s{0,3}batch\b", re.IGNORECASE)
 # Only whitespace and a comma may sit between a Volume and the Chapter marker
 # that states its chapters.
 _PAIR_GAP = re.compile(r"[\s,]*")
@@ -86,6 +88,8 @@ def _scan(text: str) -> list[_Found]:
         for match in pattern.finditer(text):
             end = match.end()
             first, rest = match["first"], match["rest"]
+            if kind is _Kind.VOLUME and _BATCH.match(text, end):
+                continue
             if suffixes:
                 if end == len(text) or text[end] not in suffixes:
                     continue
