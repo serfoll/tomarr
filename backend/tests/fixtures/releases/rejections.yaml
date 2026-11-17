@@ -1,6 +1,33 @@
 # Names that are not a manga, manhwa or webtoon release, refused with a reason.
 # Music comes back as audiobook: it is audio, and MP3 already covers both.
 # Format: see tests/parser/test_release_corpus.py.
+#
+# Known gaps, not pinned. These raw names are not comics, but no small,
+# whole-token rule refuses them without also refusing real comic names, so the
+# parser reads them as releases and they are left out of the corpus:
+# - "True Beauty S01 Episode 6 (real, public trackers)": `Episode` also names
+#   webtoon chapters.
+# - "Demon Slayer Kimetsu no Yaiba Infinity Castle 2025 HD": `HD` is also in
+#   `(Digital HD)`.
+# - "... Infinity Castle (2025) Dual YG⭐", "[Raze] ... TRIAL YG⭐": no video word.
+# - "Fullmetal Alchemist Brotherhood [Multi] [BR]": `BR` is also part of
+#   language tags such as `PT-BR`.
+# - "[FMA1394] Fullmetal Alchemist (2003) 01-13", "Solo Leveling (2024)",
+#   "Fullmetal Alchemist: The Conqueror of Shamballa", "[Shalouf] Dandadan
+#   Henshū", "[Shalouf] Solo Leveling Henshū S01 - Saisons 1 & 2": only a title,
+#   a year or bare episode numbers.
+# - "Solo Leveling ARISE OVERDRIVE Update v1 1 93-RUNE" (reads as Volume 1),
+#   "Solo Leveling ARISE OVERDRIVE-RUNE", "俺だけレベルアップな件：ARISE
+#   OVERDRIVE・Solo Leveling: ARISE OVERDRIVE", "Demon Slayer -Kimetsu no Yaiba-
+#   The Hinokami Chronicles 2", "... The Hinokami Chronicles-voices38" and
+#   "... 2-voices38 ...": games and game mods with no DLC or REPACK.
+# - "Fullmetal Alchemist: Brotherhood (2009) - tv series poster JPG": `JPG` also
+#   sits in comic format tags.
+# - Photo sets, cosplay and adult video ("Tiny Asa ...", "[ANIPAI] ...",
+#   "[AsukaiArts] ...", "[VRCosplayX] ...", "[VRCosplayx] ...", "[Lemon Garden]
+#   ... [AI Generated].zip", "UltraFilms 2025 ...", "[Babes] Kayden Kross ...",
+#   "Stunning Larsa Pippen ...") and "Udemy Economics Of Recycling ...": no
+#   media word at all, and no reason exists for images.
 
 # Video: episode markers (SxxExx)
 - {name: "Blue Box S02E03 XviD-AFG", unparseable: video}
