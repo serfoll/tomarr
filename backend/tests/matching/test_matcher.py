@@ -1,8 +1,13 @@
+import pytest
 from rapidfuzz import fuzz
 
 from tomarr.matching.confidence import Confidence
 from tomarr.matching.matcher import TitleMatch, TitleMatchReason, match_title
 from tomarr.matching.thresholds import Thresholds
+
+ZERO_WIDTH_SPACE = chr(0x200B)
+RIGHT_SINGLE_QUOTE = chr(0x2019)
+LEFT_SINGLE_QUOTE = chr(0x2018)
 
 DEFAULT = Thresholds(high=95, medium=85)
 
@@ -25,6 +30,40 @@ def test_punctuation_does_not_matter() -> None:
 
     assert match.confidence is Confidence.HIGH
     assert match.matched == "Re:Zero"
+
+
+@pytest.mark.parametrize("name", ["Jojo Bizarre Adventure", "Jojos Bizarre Adventure"])
+def test_release_without_the_apostrophe_matches_the_possessive_title(name: str) -> None:
+    match = match_title(name, "Jojo's Bizarre Adventure", [], DEFAULT)
+
+    assert match.confidence is Confidence.HIGH
+    assert match.reason is None
+
+
+@pytest.mark.parametrize("apostrophe", ["'", RIGHT_SINGLE_QUOTE, LEFT_SINGLE_QUOTE])
+def test_apostrophe_is_dropped_not_turned_into_a_word(apostrophe: str) -> None:
+    match = match_title(f"Hell{apostrophe}s Paradise", "Hell Paradise", [], DEFAULT)
+
+    assert match.reason is not TitleMatchReason.EXTRA_WORDS
+    assert match.confidence is Confidence.HIGH
+
+
+def test_trailing_zero_width_space_still_matches_at_high() -> None:
+    match = match_title("Frieren" + ZERO_WIDTH_SPACE, "Frieren", [], DEFAULT)
+
+    assert match == TitleMatch(Confidence.HIGH, 100, "Frieren", None)
+
+
+def test_name_with_no_letters_or_digits_is_below_threshold() -> None:
+    match = match_title("...", "?!", [], DEFAULT)
+
+    assert match == TitleMatch(None, 0, None, TitleMatchReason.BELOW_THRESHOLD)
+
+
+def test_alias_with_no_letters_or_digits_is_never_scored() -> None:
+    match = match_title("!!!", "One Piece", ["?"], DEFAULT)
+
+    assert match == TitleMatch(None, 0, None, TitleMatchReason.BELOW_THRESHOLD)
 
 
 def test_best_alias_is_picked_and_reported_as_the_matched_name() -> None:

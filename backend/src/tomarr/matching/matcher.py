@@ -10,6 +10,8 @@ from tomarr.matching.normalize import normalize_name
 from tomarr.matching.script import comparable, script_groups
 from tomarr.matching.thresholds import Thresholds
 
+_APOSTROPHES = str.maketrans("", "", "'\u2018\u2019")
+
 
 class TitleMatchReason(StrEnum):
     EXTRA_WORDS = "extra_words"
@@ -23,7 +25,8 @@ class TitleMatch:
     """How well a name fits a Series, or why it was refused.
 
     A refused name has no Confidence and carries the reason. `matched` is the title or
-    Alias that scored best, and is None when no name shared the script of the query.
+    Alias that scored best, and is None when no name shared the script of the query or the
+    query has no letters or digits.
     """
 
     confidence: Confidence | None
@@ -40,13 +43,15 @@ def match_title(
     Token-set scores are not used: they rate `One Piece Party` against `One Piece` at 100.
     """
     query = _comparison_form(name)
+    if not query:
+        return TitleMatch(None, 0, None, TitleMatchReason.BELOW_THRESHOLD)
     query_script = script_groups(query)
     best_name: str | None = None
     best_form = ""
     best_score = 0.0
     for candidate in (title, *aliases):
         form = _comparison_form(candidate)
-        if not comparable(query_script, script_groups(form)):
+        if not form or not comparable(query_script, script_groups(form)):
             continue
         score = fuzz.ratio(query, form)
         if best_name is None or score > best_score:
@@ -69,8 +74,10 @@ def match_title(
 
 def _comparison_form(text: str) -> str:
     # Punctuation becomes a space, so `Re:Zero` and `Re Zero` compare equal while
-    # `normalize_name`, the Alias dedupe key, keeps them apart.
+    # `normalize_name`, the Alias dedupe key, keeps them apart. Apostrophes are dropped
+    # instead, so the `s` of `Jojo's` stays part of its word.
     spaced = "".join(
-        " " if unicodedata.category(char).startswith("P") else char for char in normalize_name(text)
+        " " if unicodedata.category(char).startswith("P") else char
+        for char in normalize_name(text).translate(_APOSTROPHES)
     )
     return " ".join(spaced.split())
