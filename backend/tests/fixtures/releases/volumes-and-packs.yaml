@@ -16,6 +16,12 @@
   hints: [colored]
   language: eng
   file_format: cbz
+- name: "One Piece, Vol. 106 (Colored) (Kobo Optimised) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [106]
+  hints: [colored]
+  language: eng
+  file_format: cbz
 - name: "One Piece, Vol. 106 by Eiichiro Oda [ENG / CBZ]"
   title: "One Piece"
   volumes: [106]
@@ -434,6 +440,9 @@
   group: "@anime-lover"
 
 # Fullmetal Alchemist
+- name: "Fullmetal Alchemist (Fullmetal Edition) Volume 01"
+  title: "Fullmetal Alchemist"
+  volumes: [1]
 - name: "Fullmetal Alchemist (v01-v27) (2005-2011) (Digital) (LostNerevarine-Empire)"
   title: "Fullmetal Alchemist"
   volumes: ["1-27"]

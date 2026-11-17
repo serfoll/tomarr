@@ -450,6 +450,11 @@
 - name: "The Beginning After The End - Providence - Book 11"
   title: "The Beginning After The End - Providence - Book 11"
   warnings: [no_numbers]
+- name: "The Beginning After The End - Webtoon (Season 1-5) by TurtleMe, Fuyuki23 [ENG / CBZ]"
+  title: "The Beginning After The End - Webtoon by TurtleMe, Fuyuki23"
+  language: eng
+  file_format: cbz
+  warnings: [no_numbers]
 # A publisher tag is read whole as the group.
 - name: "The Beginning After the End (Aethon/Remastered) Novel Complete (1-12)"
   title: "The Beginning After the End Novel Complete"

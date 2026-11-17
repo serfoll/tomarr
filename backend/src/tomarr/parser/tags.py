@@ -8,7 +8,10 @@ from tomarr.parser.release import EditionHint, FileFormat, Source, Unparseable
 # so a run of unclosed brackets costs a fixed amount per character.
 _TAG = re.compile(r"\[[^\[\]]*\]|\([^()]*\)|\{[^{}]*\}")
 _ITEM_BREAK = re.compile(r"[,/]")
-_NUMBERS_ONLY = re.compile(r"[\d\s.\-]*")
+# Neither a season count ("Season 1-5") nor an edition name ("Fullmetal
+# Edition") is a group.
+_NUMBERS_ONLY = re.compile(r"(?:seasons? )?[\d\s.\-]*")
+_EDITION = re.compile(r"\bedition\b")
 _DIGITAL = re.compile(r"digital(?: [sh]d)?")
 _COLORED = re.compile(r"colou?red")
 _COLORED_COMICS = re.compile(r"colou?red comics")
@@ -52,6 +55,7 @@ _NOT_A_GROUP = frozenset(
         "upscaled",
         "reupload",
         "updated",
+        "kobo optimised",
     }
 )
 
@@ -82,7 +86,7 @@ class _Facts:
 
     def read_item(self, item: str) -> bool:
         """Take in one comma or slash separated item. False when it is none we know."""
-        if _NUMBERS_ONLY.fullmatch(item) or item in _NOT_A_GROUP:
+        if _NUMBERS_ONLY.fullmatch(item) or item in _NOT_A_GROUP or _EDITION.search(item):
             return True
         if _DIGITAL.fullmatch(item):
             self._set_source(Source.DIGITAL)

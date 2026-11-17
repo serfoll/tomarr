@@ -215,6 +215,9 @@ def test_group_is_the_leading_bracket_tag_or_the_last_trailing_tag(name: str, gr
         pytest.param("Dandadan 242 (2026) [reupload]", id="reupload"),
         pytest.param("Jujutsu Kaisen (Manga) [Updated]", id="Updated"),
         pytest.param("One Piece v012-023 (Colored) {Alabasta}", id="curly tag"),
+        pytest.param("Fullmetal Alchemist (Fullmetal Edition) Volume 01", id="edition"),
+        pytest.param("One Piece, Vol. 106 (Colored) (Kobo Optimised)", id="Kobo Optimised"),
+        pytest.param("The Beginning After The End - Webtoon (Season 1-5)", id="season numbers"),
         pytest.param("One Piece - Vol. 3 (v1-v2)", id="marker tag"),
     ],
 )
