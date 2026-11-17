@@ -4,7 +4,13 @@ from dataclasses import dataclass, field
 from tomarr.parser.formats import take_extension
 from tomarr.parser.markers import read_numbers
 from tomarr.parser.release import EditionHint, FileFormat, Source, Unparseable
-from tomarr.parser.vocabulary import FORMATS, LANGUAGES, OTHER_FORMATS, names_no_group
+from tomarr.parser.vocabulary import (
+    FORMATS,
+    LANGUAGES,
+    OTHER_FORMATS,
+    is_series_position,
+    names_no_group,
+)
 
 # One pass, innermost-first: each branch stops at the next opener of its own kind,
 # so a run of unclosed brackets costs a fixed amount per character.
@@ -108,7 +114,9 @@ def read_tags(name: str) -> Tags:
             continue
         pieces.append(" ")
         items = [item.strip() for item in _ITEM_BREAK.split(inner.lower())]
-        if all([facts.read_item(item) for item in items]):
+        if all([facts.read_item(item) for item in items]) or any(
+            is_series_position(item) for item in items
+        ):
             continue
         if tag[0][0] == "[" and leading:
             leading_group = leading_group or inner.strip()

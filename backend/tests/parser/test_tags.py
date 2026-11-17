@@ -254,6 +254,13 @@ def test_group_is_the_leading_bracket_tag_or_the_last_trailing_tag(name: str, gr
         pytest.param("One Piece v012-023 (Colored) {Alabasta}", id="curly tag"),
         pytest.param("Fullmetal Alchemist (Fullmetal Edition) Volume 01", id="edition"),
         pytest.param("Monster v01 [CBZ ITA] [1,85GB]", id="file size"),
+        pytest.param("A Tale of Two Demon Slayers (Demon Slayer #3) by Angie Fox", id="series #"),
+        pytest.param("Our Last Hope (The Demon Slayer, n. 1) by Michael Arches", id="series n."),
+        pytest.param("One Piece - Dive to Grand World (15th anniversary book)", id="anniversary"),
+        pytest.param("Solo Leveling | I Alone Level-Up (Novel) (Full) (Scanlated)", id="Full"),
+        pytest.param(
+            "Omniscient Reader's Viewpoint - English TL (Fan-TL) (Web-Novel)", id="Fan-TL"
+        ),
         pytest.param("Tower of God 210 [NR].pdf", id="two letter status tag"),
         pytest.param("Fullmetal Alchemist Brotherhood [Multi] [BR]", id="two letter source tag"),
         pytest.param(

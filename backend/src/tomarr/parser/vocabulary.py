@@ -31,10 +31,11 @@ FORMATS = {format.value: format for format in FileFormat}
 # Seen next to a language in a tag, but not a format Tomarr imports.
 OTHER_FORMATS = frozenset({"mobi", "jpg", "azw3", "txt"})
 
-# Neither a season count ("Season 1-5") nor an edition name ("Fullmetal
-# Edition") is a group.
+# Neither a season count ("Season 1-5"), an edition ("Fullmetal Edition", "15th
+# anniversary book") nor a series position ("Demon Slayer #3", "n. 1") is a group.
 _NUMBERS_ONLY = re.compile(r"(?:seasons? )?[\d\s.\-]*")
-_EDITION = re.compile(r"\bedition\b")
+_EDITION = re.compile(r"\b(?:edition|anniversary)\b")
+_SERIES_POSITION = re.compile(r"(?:#|\bn\. ?)\d+\Z")
 _FILE_SIZE = re.compile(r"\d+(?:\.\d+)?\s?[kmgt]i?b")
 _NOT_A_GROUP = frozenset(
     {
@@ -49,6 +50,9 @@ _NOT_A_GROUP = frozenset(
         "reupload",
         "updated",
         "kobo optimised",
+        "full",
+        "web-novel",
+        "fan-tl",
     }
 )
 
@@ -61,3 +65,11 @@ def names_no_group(item: str) -> bool:
         or item in _NOT_A_GROUP
         or _EDITION.search(item)
     )
+
+
+def is_series_position(item: str) -> bool:
+    """Whether a tag item gives a book's place in a series (`Demon Slayer #3`, `n. 1`).
+
+    Such a tag names a series, not a group, even beside other items.
+    """
+    return _SERIES_POSITION.search(item) is not None

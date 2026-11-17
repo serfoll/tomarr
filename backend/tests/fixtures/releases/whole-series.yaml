@@ -195,6 +195,9 @@
 - name: "One Piece Mini Magazine"
   title: "One Piece Mini Magazine"
   warnings: [no_numbers]
+- name: "One Piece - Dive to Grand World (15th anniversary book)"
+  title: "One Piece - Dive to Grand World"
+  warnings: [no_numbers]
 - name: "ONE PIECE Collection of rare items"
   title: "ONE PIECE Collection of rare items"
   warnings: [no_numbers]
@@ -248,6 +251,16 @@
   title: "Angie Fox - Demon Slayers 02 - The Dangerous Book for Demon Slayers by Angie Fox"
   language: eng
   file_format: pdf
+  warnings: [no_numbers]
+# A series position in a tag (`#3`, `n. 1`) is not a group.
+- name: "A Tale of Two Demon Slayers (Demon Slayer #3) by Angie Fox (epub) by Angie Fox [ENG / EPUB]"
+  title: "A Tale of Two Demon Slayers by Angie Fox by Angie Fox"
+  language: eng
+  file_format: epub
+  warnings: [no_numbers]
+- name: "The Dangerous Book for Demon Slayers (Demon Slayer #2) by Angie Fox (mobi) by Angie Fox [ENG / MOBI]"
+  title: "The Dangerous Book for Demon Slayers by Angie Fox by Angie Fox"
+  language: eng
   warnings: [no_numbers]
 - name: "Demon Slayer by Linsey Hall [ENG / EPUB]"
   title: "Demon Slayer by Linsey Hall"
@@ -375,6 +388,9 @@
 - name: "Naoki Urasawa's Monster (Manga)"
   title: "Naoki Urasawa's Monster"
   warnings: [no_numbers]
+- name: "Omniscient Reader's Viewpoint - English TL (Fan-TL) (Web-Novel)"
+  title: "Omniscient Reader's Viewpoint - English TL"
+  warnings: [no_numbers]
 - name: "Omniscient Reader's Viewpoint by singNsong [ENG / EPUB]"
   title: "Omniscient Reader's Viewpoint by singNsong"
   language: eng
@@ -450,6 +466,10 @@
 - name: "나 혼자만 레벨업 : 라그나로크 | Solo Leveling Ragnarok S1-S2 (Scanlated) (Flame Comics x Reaper Scans) (Void) | Completed"
   title: "나 혼자만 레벨업 : 라그나로크 | Solo Leveling Ragnarok S1-S2 | Completed"
   group: "Void"
+  warnings: [no_numbers]
+# `[01-270]` is a bare range, so it is not read.
+- name: "Solo Leveling | I Alone Level-Up (Novel) (Full) (Scanlated) [01-270]"
+  title: "Solo Leveling | I Alone Level-Up"
   warnings: [no_numbers]
 - name: "Solo Leveling by Chu-Gong [ENG / EPUB PDF]"
   title: "Solo Leveling by Chu-Gong"
