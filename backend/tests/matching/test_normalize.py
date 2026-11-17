@@ -33,13 +33,35 @@ def test_casefold_result_is_still_nfkc() -> None:
     assert unicodedata.is_normalized("NFKC", result)
 
 
+@pytest.mark.parametrize("invisible", [chr(0x200B), chr(0xFEFF), chr(0xAD)])
+def test_invisible_format_characters_are_dropped(invisible: str) -> None:
+    assert normalize_name(invisible + "Frieren" + invisible) == "frieren"
+    assert normalize_name("Fri" + invisible + "eren") == "frieren"
+
+
+def test_format_character_between_spaces_leaves_one_space() -> None:
+    assert normalize_name("One " + chr(0x200B) + " Piece") == "one piece"
+
+
+def test_apostrophe_is_kept() -> None:
+    assert normalize_name("Jojo's") == "jojo's"
+
+
 def test_punctuation_is_kept() -> None:
     assert normalize_name("Re:Zero") != normalize_name("Re Zero")
     assert normalize_name("Re:Zero") == "re:zero"
 
 
 @pytest.mark.parametrize(
-    "name", ["  " + FULLWIDTH_ONE_PIECE + " ", "Straße", "cafe" + COMBINING_ACUTE, "Re:ゼロ", ""]
+    "name",
+    [
+        "  " + FULLWIDTH_ONE_PIECE + " ",
+        "Straße",
+        "cafe" + COMBINING_ACUTE,
+        "Re:ゼロ",
+        "",
+        chr(0xFEFF) + "a" + chr(0x200B),
+    ],
 )
 def test_normalizing_twice_changes_nothing(name: str) -> None:
     once = normalize_name(name)
