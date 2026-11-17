@@ -64,9 +64,10 @@ _NOT_A_GROUP = frozenset(
 class Tags:
     """What the tags of a name say, and the name's text without them.
 
-    A tag that holds a Volume or Chapter marker (`(v000-v105 & ch0035-1078)`,
-    `[Kagurabachi vol 01-05]`) is not removed: its brackets are dropped and its
-    text stays in `text`, so the numbers are read with the rest of the name.
+    A `(...)` or `[...]` tag that holds a Volume or Chapter marker
+    (`(v000-v105 & ch0035-1078)`, `[Kagurabachi vol 01-05]`) is not removed:
+    its brackets are dropped and its text stays in `text`, so the numbers are
+    read with the rest of the name.
     """
 
     text: str
@@ -141,7 +142,9 @@ def read_tags(name: str) -> Tags:
         leading = leading and not name[position : tag.start()].strip()
         position = tag.end()
         inner = tag[0][1:-1]
-        if _holds_marker(inner):
+        # A {...} tag holds extras, an arc or a release version (`{v1.0}`), never
+        # the numbers of the release.
+        if tag[0][0] != "{" and _holds_marker(inner):
             pieces.append(f" {inner} ")
             continue
         pieces.append(" ")

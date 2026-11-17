@@ -20,6 +20,11 @@ def test_curly_tags_are_taken_out_of_the_text() -> None:
     assert without_tags(name) == "One Piece vN"
 
 
+def test_curly_tag_is_taken_out_even_when_it_looks_like_a_marker() -> None:
+    name = "One Piece v012-023 (Colored) (Digital) (VLT) {Alabasta} {v1.0}"
+    assert without_tags(name) == "One Piece v012-023"
+
+
 def test_tag_holding_a_marker_stays_in_the_text() -> None:
     name = "Fullmetal Alchemist (v01-v27) (2005-2011) (Digital) (LostNerevarine-Empire)"
     assert without_tags(name) == "Fullmetal Alchemist v01-v27"

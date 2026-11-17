@@ -265,6 +265,12 @@
   source: digital
   hints: [colored]
   group: "VLT"
+- name: "One Piece Definitive Edition Re-Translation v012-023 (Colored) (Digital) (VLT) {Alabasta} {v1.0}"
+  title: "One Piece Definitive Edition Re-Translation"
+  volumes: ["12-23"]
+  source: digital
+  hints: [colored]
+  group: "VLT"
 - name: "One Piece v001-100 {+ the cover One-Shots} (2003-2022) (Digital HD) (AnHeroGold-Empire, aKraa, & jxc3764)"
   title: "One Piece"
   volumes: ["1-100"]
