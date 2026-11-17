@@ -25,6 +25,36 @@ def test_curly_tag_is_taken_out_even_when_it_looks_like_a_marker() -> None:
     assert without_tags(name) == "One Piece v012-023"
 
 
+@pytest.mark.parametrize(
+    ("name", "text", "file_format"),
+    [
+        pytest.param(
+            "[AnimeRG] Tower of God 210 [NR].pdf", "Tower of God 210", FileFormat.PDF, id="pdf"
+        ),
+        pytest.param("[Love-Saber] Solo Leveling.zip", "Solo Leveling", FileFormat.ZIP, id="zip"),
+        pytest.param(
+            "(\u540c\u4eba\u8a8c) [kkan] Shoko (Jujutsu Kaisen). zip",
+            "Shoko",
+            FileFormat.ZIP,
+            id="space after the dot",
+        ),
+        pytest.param("Dandadan v01.CBZ", "Dandadan v01", FileFormat.CBZ, id="upper case"),
+        pytest.param(
+            "Art by Black Box.pdf by sing N song",
+            "Art by Black Box.pdf by sing N song",
+            None,
+            id="not at the end",
+        ),
+        pytest.param("Solo Leveling.mobi", "Solo Leveling.mobi", None, id="format we do not read"),
+    ],
+)
+def test_file_extension_ending_the_name_is_the_file_format(
+    name: str, text: str, file_format: FileFormat | None
+) -> None:
+    assert without_tags(name) == text
+    assert read_tags(name).file_format is file_format
+
+
 def test_tag_holding_a_marker_stays_in_the_text() -> None:
     name = "Fullmetal Alchemist (v01-v27) (2005-2011) (Digital) (LostNerevarine-Empire)"
     assert without_tags(name) == "Fullmetal Alchemist v01-v27"

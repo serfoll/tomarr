@@ -112,6 +112,16 @@
   language: eng
   file_format: cbz
   warnings: [no_numbers]
+- name: "[AnimeRG] Tower of God 210 [NR].pdf"
+  title: "Tower of God 210"
+  group: "AnimeRG"
+  file_format: pdf
+  warnings: [no_numbers]
+- name: "[AnimeRG] Tower of God 214 [NR].zip"
+  title: "Tower of God 214"
+  group: "AnimeRG"
+  file_format: zip
+  warnings: [no_numbers]
 
 # Volume words the parser does not read: French T01, Russian Том, Spanish tomo
 - name: "Dandadan T01 by Yukinobu Tatsu [FRE / CBZ]"
@@ -229,6 +239,10 @@
 - name: "Demon Slayer Kimetsu no Yaiba - The Flower of Happiness [VIZ Media] [LuCaZ]"
   title: "Demon Slayer Kimetsu no Yaiba - The Flower of Happiness"
   group: "LuCaZ"
+  warnings: [no_numbers]
+- name: "Kimetsu no Yaiba Illustration Collection 2 (Collector's Edition).zip"
+  title: "Kimetsu no Yaiba Illustration Collection 2"
+  file_format: zip
   warnings: [no_numbers]
 - name: "Demon Slayer by Linsey Hall [ENG / EPUB]"
   title: "Demon Slayer by Linsey Hall"
@@ -447,6 +461,15 @@
   language: eng
   file_format: pdf
   warnings: [no_numbers]
+- name: "Solo Leveling: Arise - Characters Items Artworks Others.zip"
+  title: "Solo Leveling: Arise - Characters Items Artworks Others"
+  file_format: zip
+  warnings: [no_numbers]
+- name: "[Love-Saber] Solo Leveling.zip"
+  title: "Solo Leveling"
+  group: "Love-Saber"
+  file_format: zip
+  warnings: [no_numbers]
 - name: "The Beginning After The End - Providence - Book 11"
   title: "The Beginning After The End - Providence - Book 11"
   warnings: [no_numbers]
@@ -478,3 +501,43 @@
   warnings: [no_numbers]
 
 # Doujinshi: the leading tag is the circle, a trailing extension is the format.
+- name: "(同人誌) [kkan] Shoko (Jujutsu Kaisen). zip"
+  title: "Shoko"
+  group: "kkan"
+  file_format: zip
+  warnings: [no_numbers]
+- name: "[ Nuko.] Enshinryoku [Ea shinkan](Jujutsu Kaisen).zip"
+  title: "Enshinryoku"
+  group: "Nuko."
+  file_format: zip
+  warnings: [no_numbers]
+- name: "[Nonko] 10 Tsuki 25-nichi tora kugi onrī shinkan an'nai(Jujutsu Kaisen).zip"
+  title: "10 Tsuki 25-nichi tora kugi onrī shinkan an'nai"
+  group: "Nonko"
+  file_format: zip
+  warnings: [no_numbers]
+- name: "[Suego (Suzuhiro)] Oyaji ga Ite Kokuhaku Dekinai! ︱ 아버지가 계셔서 고백할 수 없어! (Jujutsu Kaisen) [Korean]. zip"
+  title: "Oyaji ga Ite Kokuhaku Dekinai! ︱ 아버지가 계셔서 고백할 수 없어!"
+  group: "Suego (Suzuhiro)"
+  language: kor
+  file_format: zip
+  warnings: [no_numbers]
+- name: "[YUBI] Together with Nami (One Piece) [English].zip"
+  title: "Together with Nami"
+  group: "YUBI"
+  language: eng
+  file_format: zip
+  warnings: [no_numbers]
+- name: "[fingerbox] Nami who marries the invisible man (One Piece) [English].zip"
+  title: "Nami who marries the invisible man"
+  group: "fingerbox"
+  language: eng
+  file_format: zip
+  warnings: [no_numbers]
+- name: "[Shimono Cable] Nami-san, Ofuro no Ato ni Oil Massage wa Ikaga？ ︱ 나미 씨, 목욕 후에 오일 마사지는 어때？ (One Piece) [Digital] [Korean].zip"
+  title: "Nami-san, Ofuro no Ato ni Oil Massage wa Ikaga？ ︱ 나미 씨, 목욕 후에 오일 마사지는 어때？"
+  group: "Shimono Cable"
+  source: digital
+  language: kor
+  file_format: zip
+  warnings: [no_numbers]

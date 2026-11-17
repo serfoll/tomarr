@@ -42,6 +42,8 @@ _LANGUAGES = {
 _FORMATS = {format.value: format for format in FileFormat}
 # Seen next to a language in a tag, but not a format Tomarr imports.
 _OTHER_FORMATS = frozenset({"mobi", "jpg", "azw3"})
+# A name that is a file name ends in its extension, at times after a space.
+_EXTENSION = re.compile(rf"\.\s?({'|'.join(_FORMATS)})\Z", re.IGNORECASE)
 # Words that say something about the release but name neither group nor hint.
 _NOT_A_GROUP = frozenset(
     {
@@ -129,9 +131,13 @@ def read_tags(name: str) -> Tags:
     [LuCaZ]` gives LuCaZ). A `{...}` tag is never a group. A hint or source
     comes from an item standing on its own in a tag, so `(Colored Council)` is a
     group and not a colored edition; only the phrase `Colored Comics` also
-    counts in the title.
+    counts in the title. A file extension ending the name (`.zip`) is read as
+    the file format and taken off the text.
     """
     facts = _Facts()
+    if extension := _EXTENSION.search(name):
+        facts.file_format = _FORMATS[extension[1].lower()]
+        name = name[: extension.start()]
     pieces: list[str] = []
     leading_group: str | None = None
     trailing_group: str | None = None
