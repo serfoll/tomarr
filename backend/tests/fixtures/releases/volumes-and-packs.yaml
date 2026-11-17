@@ -1,0 +1,667 @@
+# Names with Volume markers only: single volumes and volume packs.
+# Format: see tests/parser/test_release_corpus.py.
+
+# One Piece, English
+- name: "One Piece, Vol. 106 (Colored) (Digital) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [106]
+  source: digital
+  hints: [colored]
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol. 105 (Colored) (Digital) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [105]
+  source: digital
+  hints: [colored]
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol. 106 by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [106]
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol. 110 by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [110]
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol. 103 by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [103]
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol. 104 by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [104]
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol. 076 (2015) (Colored) (Digital) (HQ) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [76]
+  source: digital
+  hints: [colored]
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol. 104 (2023) (Colored) (Digital) (HQ) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [104]
+  source: digital
+  hints: [colored]
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol. 100-102 (Colored) (Digital) (HQ) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: ["100-102"]
+  source: digital
+  hints: [colored]
+  language: eng
+  file_format: cbz
+- name: "One Piece Vol. 103 (Colored) (Digital) (HQ) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [103]
+  source: digital
+  hints: [colored]
+  language: eng
+  file_format: cbz
+- name: "One Piece v106 (Colored) (Digital) (Transponder Comics) (PZG)"
+  title: "One Piece"
+  volumes: [106]
+  source: digital
+  hints: [colored]
+  group: "PZG"
+- name: "One Piece, Vol.1 - Vol.103 by Eiichiro Oda [POR / MOBI]"
+  title: "One Piece"
+  volumes: ["1-103"]
+  language: por
+- name: "One Piece, Vol.2 (VIZ Media LLC) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [2]
+  group: "VIZ Media LLC"
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol.3 (VIZ Media LLC) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [3]
+  group: "VIZ Media LLC"
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol.4 (VIZ Media LLC) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [4]
+  group: "VIZ Media LLC"
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol.5 (VIZ Media LLC) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [5]
+  group: "VIZ Media LLC"
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol.9 (VIZ Media LLC) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [9]
+  group: "VIZ Media LLC"
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol.10 (VIZ Media LLC) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [10]
+  group: "VIZ Media LLC"
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol.13 (VIZ Media LLC) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [13]
+  group: "VIZ Media LLC"
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol.19 (VIZ Media LLC) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [19]
+  group: "VIZ Media LLC"
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol.20 (VIZ Media LLC) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [20]
+  group: "VIZ Media LLC"
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol.28 (VIZ Media LLC) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [28]
+  group: "VIZ Media LLC"
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol.32 (VIZ Media LLC) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [32]
+  group: "VIZ Media LLC"
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol.47 (VIZ Media LLC) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [47]
+  group: "VIZ Media LLC"
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol.56 (VIZ Media LLC) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [56]
+  group: "VIZ Media LLC"
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol.60 (VIZ Media LLC) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [60]
+  group: "VIZ Media LLC"
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol.69 (VIZ Media LLC) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [69]
+  group: "VIZ Media LLC"
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol.72 (VIZ Media LLC) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [72]
+  group: "VIZ Media LLC"
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol.80 (VIZ Media LLC) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [80]
+  group: "VIZ Media LLC"
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol.87 (VIZ Media LLC) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [87]
+  group: "VIZ Media LLC"
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol.88 (2018) (VIZ Media LLC) by Eiichiro Oda, Viz Media [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [88]
+  group: "VIZ Media LLC"
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol.90 (2019) (VIZ Media LLC) by Eiichiro Oda, Viz Media [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [90]
+  group: "VIZ Media LLC"
+  language: eng
+  file_format: cbz
+- name: "One Piece, Vol.92 (2019) (VIZ Media LLC) by Eiichiro Oda, Viz Media [ENG / CBZ]"
+  title: "One Piece"
+  volumes: [92]
+  group: "VIZ Media LLC"
+  language: eng
+  file_format: cbz
+- name: "[ENG] One Piece - Vol. 94 (FULL COLOR Digital Colored Comics)"
+  title: "One Piece"
+  volumes: [94]
+  hints: [colored]
+  language: eng
+- name: "[ENG] One Piece - Vol. 100 (FULL COLOR Digital Colored Comics)"
+  title: "One Piece"
+  volumes: [100]
+  hints: [colored]
+  language: eng
+- name: "[ENG] One Piece - Vol. 102-105 (FULL COLOR Digital Colored Comics)"
+  title: "One Piece"
+  volumes: ["102-105"]
+  hints: [colored]
+  language: eng
+- name: "[ENG] One Piece - Vol. 106 (FULL COLOR Digital Colored Comics)"
+  title: "One Piece"
+  volumes: [106]
+  hints: [colored]
+  language: eng
+- name: "One Piece - Digital Colored Comics v01-14 (2021) (Colored Council)"
+  title: "One Piece - Digital Colored Comics"
+  volumes: ["1-14"]
+  hints: [colored]
+  group: "Colored Council"
+- name: "One Piece - Digital Colored Comics v15 (2021) (Colored Council)"
+  title: "One Piece - Digital Colored Comics"
+  volumes: [15]
+  hints: [colored]
+  group: "Colored Council"
+- name: "One Piece - Digital Colored Comics v20-24 (2021) (Colored Council)"
+  title: "One Piece - Digital Colored Comics"
+  volumes: ["20-24"]
+  hints: [colored]
+  group: "Colored Council"
+- name: "One Piece - Digital Colored Comics v33-41 (2021) (Colored Council)"
+  title: "One Piece - Digital Colored Comics"
+  volumes: ["33-41"]
+  hints: [colored]
+  group: "Colored Council"
+- name: "One Piece Digital Colored Comics v001-103 (Ongoing)"
+  title: "One Piece Digital Colored Comics"
+  volumes: ["1-103"]
+  hints: [colored]
+- name: "One Piece Digital Colored Comics v001-v099 + Cover Stories"
+  title: "One Piece Digital Colored Comics"
+  volumes: ["1-99"]
+  hints: [colored]
+- name: "[Glitter] One Piece - Digital Colored Comics v001-099 (+ Cover Stories)"
+  title: "One Piece - Digital Colored Comics"
+  volumes: ["1-99"]
+  hints: [colored]
+  group: "Glitter"
+- name: "One Piece Definitive Edition Re-Translation v001-011 (Colored) (Digital) (VLT) {East Blue} {2.0}"
+  title: "One Piece Definitive Edition Re-Translation"
+  volumes: ["1-11"]
+  source: digital
+  hints: [colored]
+  group: "VLT"
+- name: "One Piece v001-100 {+ the cover One-Shots} (2003-2022) (Digital HD) (AnHeroGold-Empire, aKraa, & jxc3764)"
+  title: "One Piece"
+  volumes: ["1-100"]
+  source: digital
+  group: "AnHeroGold-Empire, aKraa, & jxc3764"
+- name: "One PIece vol 1-98 Coloured editions"
+  title: "One PIece"
+  volumes: ["1-98"]
+- name: "One Piece Volumes 99-102 Coloured JP"
+  title: "One Piece"
+  volumes: ["99-102"]
+- name: "One Piece volumes 1-102 JP"
+  title: "One Piece"
+  volumes: ["1-102"]
+- name: "One Piece Magazine Volume 20"
+  title: "One Piece Magazine"
+  volumes: [20]
+- name: "ONE PIECE magazine Vol.1-17"
+  title: "ONE PIECE magazine"
+  volumes: ["1-17"]
+- name: "One Piece: Ace's Story--The Manga, Vol. 1 by Eiichiro Oda, Boichi, Sho Hinata, Tatsuya Hamazaki [ENG / CBZ]"
+  title: "One Piece: Ace's Story--The Manga"
+  volumes: [1]
+  language: eng
+  file_format: cbz
+- name: "One Piece: Ace's Story--The Manga, Vol. 2 by Eiichiro Oda, Boichi, Sho Hinata, Tatsuya Hamazaki [ENG / CBZ]"
+  title: "One Piece: Ace's Story--The Manga"
+  volumes: [2]
+  language: eng
+  file_format: cbz
+
+# One Piece, Japanese
+- name: "ONE PIECE カラー版 105巻 ONE PIECE Volume 105 Colour"
+  title: "ONE PIECE カラー版"
+  volumes: [105]
+- name: "ONE PIECE カラー版 第001-106巻"
+  title: "ONE PIECE カラー版"
+  volumes: ["1-106"]
+- name: "[超RAW] ONE PIECE 第1巻 [フルカラー・リマスター版]"
+  title: "ONE PIECE"
+  volumes: [1]
+  group: "超RAW"
+- name: "[超RAW] ONE PIECE 第3巻 [フルカラー・リマスター版]"
+  title: "ONE PIECE"
+  volumes: [3]
+  group: "超RAW"
+- name: "ワンピース raw 第112巻 [ONE PIECE vol 112]"
+  title: "ワンピース raw"
+  volumes: [112]
+- name: "ワンピース パーディー 第01-07巻 [One Piece Party vol 01-07]"
+  title: "ワンピース パーディー"
+  volumes: ["1-7"]
+- name: "ワンピース 第01-109巻 [ONE PIECE vol 01-109]"
+  title: "ワンピース"
+  volumes: ["1-109"]
+- name: "ワンピース 第103巻 [ONE PIECE vol 103]"
+  title: "ワンピース"
+  volumes: [103]
+- name: "ワンピース 第107巻 [ONE PIECE vol 107][HQ]"
+  title: "ワンピース"
+  volumes: [107]
+- name: "ワンピース 第115巻 [ONE PIECE vol 115]"
+  title: "ワンピース"
+  volumes: [115]
+
+# Dandadan
+- name: "Dandadan Vol. 15 by Yukinobu Tatsu [ENG / CBZ]"
+  title: "Dandadan"
+  volumes: [15]
+  language: eng
+  file_format: cbz
+- name: "Dandadan, Vol. 1 (VIZ) by Yukinobu Tatsu [ENG / CBZ]"
+  title: "Dandadan"
+  volumes: [1]
+  group: "VIZ"
+  language: eng
+  file_format: cbz
+- name: "Dandadan, Vol. 2 (VIZ) by Yukinobu Tatsu [ENG / CBZ]"
+  title: "Dandadan"
+  volumes: [2]
+  group: "VIZ"
+  language: eng
+  file_format: cbz
+- name: "Dandadan, Vol. 3-5 by Yukinobu Tatsu [ENG / CBZ]"
+  title: "Dandadan"
+  volumes: ["3-5"]
+  language: eng
+  file_format: cbz
+- name: "Dandadan, Vol. 6-8 by Yukinobu Tatsu [ENG / CBZ]"
+  title: "Dandadan"
+  volumes: ["6-8"]
+  language: eng
+  file_format: cbz
+- name: "Dandadan, Vol. 9 by Yukinobu Tatsu [ENG / CBZ]"
+  title: "Dandadan"
+  volumes: [9]
+  language: eng
+  file_format: cbz
+- name: "Dandadan, Vol. 10 by Yukinobu Tatsu [ENG / CBZ]"
+  title: "Dandadan"
+  volumes: [10]
+  language: eng
+  file_format: cbz
+- name: "Dandadan, Vol. 14 by Yukinobu Tatsu [ENG / CBZ]"
+  title: "Dandadan"
+  volumes: [14]
+  language: eng
+  file_format: cbz
+- name: "Dandadan, Vol. 18 by Yukinobu Tatsu [ENG / CBZ]"
+  title: "Dandadan"
+  volumes: [18]
+  language: eng
+  file_format: cbz
+- name: "ダンダダン 第23巻 [Dandadan vol 23]"
+  title: "ダンダダン"
+  volumes: [23]
+
+# Demon Slayer
+- name: "Demon Slayer - Kimetsu no Yaiba v12 (2020) (Digital) by Koyoharu Gotouge [ENG / CBZ]"
+  title: "Demon Slayer - Kimetsu no Yaiba"
+  volumes: [12]
+  source: digital
+  language: eng
+  file_format: cbz
+- name: "Demon Slayer - Kimetsu no Yaiba v13 (2020) (Digital) by Koyoharu Gotouge [ENG / CBZ]"
+  title: "Demon Slayer - Kimetsu no Yaiba"
+  volumes: [13]
+  source: digital
+  language: eng
+  file_format: cbz
+- name: "Demon Slayer: Kimetsu Academy, Vol. 1 by Natsuki Hokami [ENG / CBZ]"
+  title: "Demon Slayer: Kimetsu Academy"
+  volumes: [1]
+  language: eng
+  file_format: cbz
+- name: "Demon Slayer: Kimetsu Academy, Vol. 1-6 by Koyoharu Gotouge [ENG / CBZ]"
+  title: "Demon Slayer: Kimetsu Academy"
+  volumes: ["1-6"]
+  language: eng
+  file_format: cbz
+- name: "Demon Slayer: Kimetsu no Yaiba v1-23 by Koyoharu Gotouge [ENG / CBZ]"
+  title: "Demon Slayer: Kimetsu no Yaiba"
+  volumes: ["1-23"]
+  language: eng
+  file_format: cbz
+- name: "Demon Slayer: Kimetsu no Yaiba, Vol. 8 by Koyoharu Gotouge [ENG / CBZ]"
+  title: "Demon Slayer: Kimetsu no Yaiba"
+  volumes: [8]
+  language: eng
+  file_format: cbz
+- name: "Demon Slayer: Kimetsu no Yaiba, Vol. 11 by Koyoharu Gotouge [ENG / CBZ]"
+  title: "Demon Slayer: Kimetsu no Yaiba"
+  volumes: [11]
+  language: eng
+  file_format: cbz
+- name: "Demon Slayer: Kimetsu no Yaiba, Vol. 19 by Koyoharu Gotouge [ENG / CBZ]"
+  title: "Demon Slayer: Kimetsu no Yaiba"
+  volumes: [19]
+  language: eng
+  file_format: cbz
+- name: "Demon Slayer: Kimetsu no Yaiba, vol. 10 by Koyoharu Gotouge [ENG / CBZ]"
+  title: "Demon Slayer: Kimetsu no Yaiba"
+  volumes: [10]
+  language: eng
+  file_format: cbz
+- name: "[@anime-lover] Demon Slayer(Kimetsu no yaiba)MANGA VOL 1-23 PDF HIGH QUALITY"
+  title: "Demon Slayer MANGA"
+  volumes: ["1-23"]
+  group: "@anime-lover"
+
+# Fullmetal Alchemist
+- name: "Fullmetal Alchemist (v01-v27) (2005-2011) (Digital) (LostNerevarine-Empire)"
+  title: "Fullmetal Alchemist"
+  volumes: ["1-27"]
+  source: digital
+  group: "LostNerevarine-Empire"
+- name: "Fullmetal Alchemist Volumes #01-27 (Digital) by Hiromu Arakawa [ENG / CBZ]"
+  title: "Fullmetal Alchemist"
+  volumes: ["1-27"]
+  source: digital
+  language: eng
+  file_format: cbz
+- name: "Fullmetal Alchemist, Vol.1 - Vol.27 by Hiromu Arakawa [POR / MOBI]"
+  title: "Fullmetal Alchemist"
+  volumes: ["1-27"]
+  language: por
+- name: "鋼の錬金術師 {Fullmetal Alchemist} v01-27 (2002-2010) (Digital SD) (KG Manga)"
+  title: "鋼の錬金術師"
+  volumes: ["1-27"]
+  source: digital
+  group: "KG Manga"
+- name: "鋼の錬金術師 第00-27巻 [Fullmetal Alchemist vol 00-27]"
+  title: "鋼の錬金術師"
+  volumes: ["0-27"]
+
+# Jujutsu Kaisen
+- name: "Jujutsu Kaisen Vol. 18 by Gege Akutami [ENG / CBZ]"
+  title: "Jujutsu Kaisen"
+  volumes: [18]
+  language: eng
+  file_format: cbz
+- name: "Jujutsu Kaisen Vol. 28 by Gege Akutami [ENG / CBZ]"
+  title: "Jujutsu Kaisen"
+  volumes: [28]
+  language: eng
+  file_format: cbz
+- name: "Jujutsu Kaisen v00-30+Epilogue (Viz+TCB+innit)"
+  title: "Jujutsu Kaisen"
+  volumes: ["0-30"]
+  group: "Viz+TCB+innit"
+- name: "Jujutsu Kaisen v30 (2026) (Digital) (Gomi)"
+  title: "Jujutsu Kaisen"
+  volumes: [30]
+  source: digital
+  group: "Gomi"
+- name: "Jujutsu Kaisen, Vol. 21 by Gege Akutami [ENG / CBZ]"
+  title: "Jujutsu Kaisen"
+  volumes: [21]
+  language: eng
+  file_format: cbz
+- name: "Jujutsu Kaisen, Vol. 23 by Viz Media, Gege Akutami [ENG / CBZ]"
+  title: "Jujutsu Kaisen"
+  volumes: [23]
+  language: eng
+  file_format: cbz
+- name: "Jujutsu Kaisen, Vol. 27 by Viz Media, Gege Akutami [ENG / CBZ]"
+  title: "Jujutsu Kaisen"
+  volumes: [27]
+  language: eng
+  file_format: cbz
+- name: "Jujutsu Kaisen, Vol. 30 by Gege Akutami [ENG / CBZ]"
+  title: "Jujutsu Kaisen"
+  volumes: [30]
+  language: eng
+  file_format: cbz
+- name: "呪術廻戦 {Jujutsu Kaisen} v00-16 {+Fan Book} (2018-2021) (Digital SD) (KG Manga)"
+  title: "呪術廻戦"
+  volumes: ["0-16"]
+  source: digital
+  group: "KG Manga"
+
+# Kagurabachi
+- name: "Kagurabachi Vol. 4 by Takeru Hokazono [ENG / CBZ]"
+  title: "Kagurabachi"
+  volumes: [4]
+  language: eng
+  file_format: cbz
+- name: "Kagurabachi, Vol. 5 by Takeru Hokazono [ENG / CBZ]"
+  title: "Kagurabachi"
+  volumes: [5]
+  language: eng
+  file_format: cbz
+- name: "カグラバチ 第01-05巻 [Kagurabachi vol 01-05]"
+  title: "カグラバチ"
+  volumes: ["1-5"]
+
+# Blue Box
+- name: "Blue Box, Vol. 1 by Kouji Miura [ENG / CBZ]"
+  title: "Blue Box"
+  volumes: [1]
+  language: eng
+  file_format: cbz
+- name: "Blue Box, Vol. 2 by Kouji Miura [ENG / CBZ]"
+  title: "Blue Box"
+  volumes: [2]
+  language: eng
+  file_format: cbz
+- name: "Blue Box, Vol. 3 by Kouji Miura [ENG / CBZ]"
+  title: "Blue Box"
+  volumes: [3]
+  language: eng
+  file_format: cbz
+- name: "アオのハコ 第01-27巻 [Ao no Hako vol 01-27]"
+  title: "アオのハコ"
+  volumes: ["1-27"]
+
+# Monster
+- name: "Monster: The Perfect Edition, Vol. 01-09 (2014-2016) (Scan) (HQ) by Naoki Urasawa [ENG / CBZ]"
+  title: "Monster: The Perfect Edition"
+  volumes: ["1-9"]
+  source: scan
+  language: eng
+  file_format: cbz
+
+# Omniscient Reader's Viewpoint
+- name: "Omniscient Reader's Viewpoint, Vol. 03 by singNsong [ENG / EPUB JPG]"
+  title: "Omniscient Reader's Viewpoint"
+  volumes: [3]
+  language: eng
+  file_format: epub
+- name: "Omniscient Reader's Viewpoint, Vol. 1 by singNsong [ENG / EPUB]"
+  title: "Omniscient Reader's Viewpoint"
+  volumes: [1]
+  language: eng
+  file_format: epub
+- name: "Omniscient Reader's Viewpoint, Vol. 2 by singNsong [ENG / EPUB]"
+  title: "Omniscient Reader's Viewpoint"
+  volumes: [2]
+  language: eng
+  file_format: epub
+
+# Solo Leveling
+- name: "Solo Leveling v01-14 (2021-2025) (Digital) (1r0n)"
+  title: "Solo Leveling"
+  volumes: ["1-14"]
+  source: digital
+  group: "1r0n"
+- name: "Solo Leveling Vol. 13 by Chugong, h-goon [ENG / CBZ]"
+  title: "Solo Leveling"
+  volumes: [13]
+  language: eng
+  file_format: cbz
+- name: "Solo Leveling Vol. 14 by Chugong [ENG / CBZ]"
+  title: "Solo Leveling"
+  volumes: [14]
+  language: eng
+  file_format: cbz
+- name: "Solo Leveling Vol 3 by Chugong [ENG / EPUB]"
+  title: "Solo Leveling"
+  volumes: [3]
+  language: eng
+  file_format: epub
+- name: "Solo Leveling, Vol.1 - Vol.13 by DUBU [ENG / CBZ]"
+  title: "Solo Leveling"
+  volumes: ["1-13"]
+  language: eng
+  file_format: cbz
+- name: "Solo Leveling, Vol. 1 (light novel) by Chugong [ENG / EPUB]"
+  title: "Solo Leveling"
+  volumes: [1]
+  language: eng
+  file_format: epub
+- name: "Solo Leveling, Vol. 6 (light Novel) by Chugong [ENG / AZW3 EPUB MOBI]"
+  title: "Solo Leveling"
+  volumes: [6]
+  language: eng
+  file_format: epub
+- name: "Solo Leveling, Vol. 6 by Chugong EPUB"
+  title: "Solo Leveling"
+  volumes: [6]
+- name: "Solo Leveling, Vol. 7 (novel) by Chugong [ENG / EPUB]"
+  title: "Solo Leveling"
+  volumes: [7]
+  language: eng
+  file_format: epub
+- name: "Solo Leveling, Vol. 8 (novel) by Chugong [ENG / EPUB]"
+  title: "Solo Leveling"
+  volumes: [8]
+  language: eng
+  file_format: epub
+
+# The Beginning After the End
+- name: "The Beginning After the End Volumes 1-8 epub"
+  title: "The Beginning After the End"
+  volumes: ["1-8"]
+- name: "[Nobody] The Beginning After the End ebooks Volumes 1-7 + fan made 8 [epub]"
+  title: "The Beginning After the End ebooks"
+  volumes: ["1-7"]
+  group: "Nobody"
+  file_format: epub
+
+# Witch Hat Atelier
+- name: "Witch Hat Atelier v01-13 (2019-2025) (Digital) (1r0n)"
+  title: "Witch Hat Atelier"
+  volumes: ["1-13"]
+  source: digital
+  group: "1r0n"
+- name: "Witch Hat Atelier Vol. 7 by Kodansha Manga, Kamome Shirahama [ENG / CBZ]"
+  title: "Witch Hat Atelier"
+  volumes: [7]
+  language: eng
+  file_format: cbz
+- name: "Witch Hat Atelier Vol. 12 by Kodansha Manga, Kamome Shirahama [ENG / CBZ]"
+  title: "Witch Hat Atelier"
+  volumes: [12]
+  language: eng
+  file_format: cbz
+- name: "Witch Hat Atelier Vol. 13 by Kodansha Manga, Kamome Shirahama [ENG / CBZ]"
+  title: "Witch Hat Atelier"
+  volumes: [13]
+  language: eng
+  file_format: cbz
+- name: "Witch Hat Atelier Kitchen v01 (2023) (Digital) (DeadMan)"
+  title: "Witch Hat Atelier Kitchen"
+  volumes: [1]
+  source: digital
+  group: "DeadMan"
+- name: "Witch Hat Atelier Kitchen v01-03 (2023-2024) (Digital) (LuCaZ)"
+  title: "Witch Hat Atelier Kitchen"
+  volumes: ["1-3"]
+  source: digital
+  group: "LuCaZ"
+- name: "Witch Hat Atelier Kitchen v01-05 (2023-2024) (Digital) (1r0n)"
+  title: "Witch Hat Atelier Kitchen"
+  volumes: ["1-5"]
+  source: digital
+  group: "1r0n"
+- name: "[Unpaid Ferryman] Witch Hat Atelier Kitchen v01-05 (2023-2024) (Digital) (LuCaZ)"
+  title: "Witch Hat Atelier Kitchen"
+  volumes: ["1-5"]
+  source: digital
+  group: "Unpaid Ferryman"
+- name: "[0v3r] Witch Hat Atelier - Grimoire Edition v01 (extras only)"
+  title: "Witch Hat Atelier - Grimoire Edition"
+  volumes: [1]
+  group: "0v3r"

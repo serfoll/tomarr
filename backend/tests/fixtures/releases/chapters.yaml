@@ -1,0 +1,63 @@
+# Names with Chapter markers only.
+# Format: see tests/parser/test_release_corpus.py.
+
+- name: "One Piece - Chapter 1144"
+  title: "One Piece"
+  chapters: [1144]
+- name: "[BlackLuster] One Piece (Digital) (Upscaled) [Chapter 1127]"
+  title: "One Piece"
+  chapters: [1127]
+  source: digital
+  group: "BlackLuster"
+- name: "One Piece Manga (Chapters 1-535) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece Manga"
+  chapters: ["1-535"]
+  language: eng
+  file_format: cbz
+- name: "One Piece Manga Digitally Colored (Chapters 1-497) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece Manga Digitally Colored"
+  chapters: ["1-497"]
+  language: eng
+  file_format: cbz
+- name: "One Piece Manga Digitally Colored (Chapters 498-994) by Eiichiro Oda [ENG / CBZ]"
+  title: "One Piece Manga Digitally Colored"
+  chapters: ["498-994"]
+  language: eng
+  file_format: cbz
+# "Volume CHOPPER" has no number, so it stays in the title.
+- name: "True Beauty c000-256 (2018-2023) (Digital) (angy)"
+  title: "True Beauty"
+  chapters: ["0-256"]
+  source: digital
+  group: "angy"
+- name: "Solo Leveling Manga Ch1-50 (Webtoon, CBZ)"
+  title: "Solo Leveling Manga"
+  chapters: ["1-50"]
+  hints: [webtoon]
+  file_format: cbz
+- name: "Solo Leveling Manga Ch51-100 (Webtoon, CBZ)"
+  title: "Solo Leveling Manga"
+  chapters: ["51-100"]
+  hints: [webtoon]
+  file_format: cbz
+- name: "[Kamizye] Omniscient Reader (Chapter 000-109) (Webtoon)"
+  title: "Omniscient Reader"
+  chapters: ["0-109"]
+  hints: [webtoon]
+  group: "Kamizye"
+# "LINE Webtoon" names the platform, so it is not the webtoon hint on its own.
+- name: "[fr3akyphantom] Omniscient Reader (2020) (Digital) (LINE Webtoon) | (Chapter 000-205) Ongoing"
+  title: "Omniscient Reader"
+  chapters: ["0-205"]
+  source: digital
+  group: "fr3akyphantom"
+- name: "[fr3akyphantom] Omniscient Reader (2020) (Digital) [AVIF] (LINE Webtoon) | (Chapter 000-205) Ongoing"
+  title: "Omniscient Reader"
+  chapters: ["0-205"]
+  source: digital
+  group: "fr3akyphantom"
+# The bare "2-25" is not read; only the marked "Ch. 1" is.
+- name: "[TCB] Jujutsu Kaisen Modulo 2-25 + [OP Chapters] Ch. 1"
+  title: "Jujutsu Kaisen Modulo 2-25"
+  chapters: [1]
+  group: "TCB"
