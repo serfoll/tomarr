@@ -24,6 +24,7 @@ backend/
     services/         business logic called by routes and commands
     commands/         command queue, scheduler, one module per command type
     parser/           release-name parser (pure functions, no I/O)
+    matching/         title matching and Confidence (pure functions, no I/O)
     providers/        metadata providers, one package each, behind providers/base.py
     indexers/         Prowlarr, Torznab, Newznab
     download_clients/ qBittorrent, SABnzbd
