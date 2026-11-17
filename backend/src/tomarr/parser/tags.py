@@ -41,7 +41,18 @@ _FORMATS = {format.value: format for format in FileFormat}
 _OTHER_FORMATS = frozenset({"mobi", "jpg", "azw3"})
 # Words that say something about the release but name neither group nor hint.
 _NOT_A_GROUP = frozenset(
-    {"hq", "manga", "novel", "light novel", "complete", "ongoing", "scanlated", "upscaled"}
+    {
+        "hq",
+        "manga",
+        "novel",
+        "light novel",
+        "complete",
+        "ongoing",
+        "scanlated",
+        "upscaled",
+        "reupload",
+        "updated",
+    }
 )
 
 
@@ -109,10 +120,11 @@ def read_tags(name: str) -> Tags:
     """Read group, source, language, hints and file format from the tags of a name.
 
     A group is the first unrecognized tag among the `[...]` tags that open the
-    name, else the last unrecognized `(...)` tag anywhere. A hint or source comes
-    from an item standing on its own in a tag, so `(Colored Council)` is a group
-    and not a colored edition; only the phrase `Colored Comics` also counts in
-    the title.
+    name, else the last other unrecognized `(...)` or `[...]` tag (`[VIZ Media]
+    [LuCaZ]` gives LuCaZ). A `{...}` tag is never a group. A hint or source
+    comes from an item standing on its own in a tag, so `(Colored Council)` is a
+    group and not a colored edition; only the phrase `Colored Comics` also
+    counts in the title.
     """
     facts = _Facts()
     pieces: list[str] = []
@@ -134,7 +146,7 @@ def read_tags(name: str) -> Tags:
             continue
         if tag[0][0] == "[" and leading:
             leading_group = leading_group or inner.strip()
-        elif tag[0][0] == "(":
+        elif tag[0][0] != "{":
             trailing_group = inner.strip()
     pieces.append(name[position:])
     text = "".join(pieces)

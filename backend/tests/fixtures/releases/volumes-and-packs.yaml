@@ -279,6 +279,10 @@
 - name: "ONE PIECE magazine Vol.1-17"
   title: "ONE PIECE magazine"
   volumes: ["1-17"]
+- name: "One Piece: Heroines v01-02 [VIZ Media] [Stick]"
+  title: "One Piece: Heroines"
+  volumes: ["1-2"]
+  group: "Stick"
 - name: "One Piece: Ace's Story--The Manga, Vol. 1 by Eiichiro Oda, Boichi, Sho Hinata, Tatsuya Hamazaki [ENG / CBZ]"
   title: "One Piece: Ace's Story--The Manga"
   volumes: [1]
@@ -544,6 +548,14 @@
   file_format: cbz
 
 # Omniscient Reader's Viewpoint
+- name: "Omniscient Reader's Viewpoint v01-03 [Yen Press] [Stick]"
+  title: "Omniscient Reader's Viewpoint"
+  volumes: ["1-3"]
+  group: "Stick"
+- name: "Omniscient Reader's Viewpoint v01-04 [Yen Press] [Stick]"
+  title: "Omniscient Reader's Viewpoint"
+  volumes: ["1-4"]
+  group: "Stick"
 - name: "Omniscient Reader's Viewpoint, Vol. 03 by singNsong [ENG / EPUB JPG]"
   title: "Omniscient Reader's Viewpoint"
   volumes: [3]
@@ -611,9 +623,17 @@
   file_format: epub
 
 # The Beginning After the End
+- name: "The Beginning After the End Vol. 09 Digital Art Print [TurtleMe LLC] [Amethyst]"
+  title: "The Beginning After the End"
+  volumes: [9]
+  group: "Amethyst"
 - name: "The Beginning After the End Volumes 1-8 epub"
   title: "The Beginning After the End"
   volumes: ["1-8"]
+- name: "The Beginning After the End v08-v10 [OZR]"
+  title: "The Beginning After the End"
+  volumes: ["8-10"]
+  group: "OZR"
 - name: "[Nobody] The Beginning After the End ebooks Volumes 1-7 + fan made 8 [epub]"
   title: "The Beginning After the End ebooks"
   volumes: ["1-7"]

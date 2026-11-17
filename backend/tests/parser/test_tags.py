@@ -185,11 +185,18 @@ def test_hints_come_from_a_tag_standing_on_its_own(name: str, hints: set[Edition
             "Suego (Suzuhiro)",
             id="nested parentheses",
         ),
+        pytest.param("Dandadan v01 [Group]", "Group", id="trailing bracket tag"),
+        pytest.param(
+            "Dandadan v01 [Yen Press][Stick]", "Stick", id="trailing bracket tags in a row"
+        ),
+        pytest.param(
+            "Monster - Naoki Urasawa (1995-2001) [CBZ ITA] [1,85GB] [ImFilippo]",
+            "ImFilippo",
+            id="last of brackets and parentheses",
+        ),
     ],
 )
-def test_group_is_the_leading_bracket_tag_or_the_last_parenthesis_tag(
-    name: str, group: str
-) -> None:
+def test_group_is_the_leading_bracket_tag_or_the_last_trailing_tag(name: str, group: str) -> None:
     assert read_tags(name).group == group
 
 
@@ -205,8 +212,9 @@ def test_group_is_the_leading_bracket_tag_or_the_last_parenthesis_tag(
         pytest.param("Solo Leveling (Webtoon, Complete, 2020-2023) by Chugong", id="status words"),
         pytest.param("Jujutsu Kaisen (Manga)", id="Manga"),
         pytest.param("One Piece (Digital) (Upscaled) [Chapter 5]", id="Upscaled"),
-        pytest.param("Dandadan v01 [Group]", id="trailing bracket tag"),
-        pytest.param("Dandadan v01 [Yen Press][Stick]", id="trailing bracket tags in a row"),
+        pytest.param("Dandadan 242 (2026) [reupload]", id="reupload"),
+        pytest.param("Jujutsu Kaisen (Manga) [Updated]", id="Updated"),
+        pytest.param("One Piece v012-023 (Colored) {Alabasta}", id="curly tag"),
         pytest.param("One Piece - Vol. 3 (v1-v2)", id="marker tag"),
     ],
 )

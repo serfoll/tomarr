@@ -169,6 +169,10 @@
   source: digital
   group: "1r0n"
   warnings: [no_numbers]
+- name: "One Piece - Law’s Story [VIZ Media] [Stick]"
+  title: "One Piece - Law’s Story"
+  group: "Stick"
+  warnings: [no_numbers]
 - name: "[Bejee] One Piece Box Set Extras [Viz]"
   title: "One Piece Box Set Extras"
   group: "Bejee"
@@ -213,9 +217,17 @@
   source: digital
   group: "LuCaZ"
   warnings: [no_numbers]
+- name: "Demon Slayer Kimetsu no Yaiba - Signs From the Wind [VIZ Media] [LuCaZ]"
+  title: "Demon Slayer Kimetsu no Yaiba - Signs From the Wind"
+  group: "LuCaZ"
+  warnings: [no_numbers]
 - name: "Demon Slayer Kimetsu no Yaiba - The Flower of Happiness (2022) (Digital) (LuCaZ)"
   title: "Demon Slayer Kimetsu no Yaiba - The Flower of Happiness"
   source: digital
+  group: "LuCaZ"
+  warnings: [no_numbers]
+- name: "Demon Slayer Kimetsu no Yaiba - The Flower of Happiness [VIZ Media] [LuCaZ]"
+  title: "Demon Slayer Kimetsu no Yaiba - The Flower of Happiness"
   group: "LuCaZ"
   warnings: [no_numbers]
 - name: "Demon Slayer by Linsey Hall [ENG / EPUB]"
@@ -243,6 +255,14 @@
   title: "Fullmetal Alchemist Brotherhood TV Animation Gengashuu by BONES"
   language: jpn
   file_format: cbz
+  warnings: [no_numbers]
+- name: "Fullmetal Alchemist: The Abducted Alchemist [VIZ Media] [Stick]"
+  title: "Fullmetal Alchemist: The Abducted Alchemist"
+  group: "Stick"
+  warnings: [no_numbers]
+- name: "Fullmetal Alchemist: Under the Faraway Sky [VIZ Media] [Stick]"
+  title: "Fullmetal Alchemist: Under the Faraway Sky"
+  group: "Stick"
   warnings: [no_numbers]
 - name: "Fullmetal Alchemist: The Land of Sand by Makoto Inoue [ENG / EPUB]"
   title: "Fullmetal Alchemist: The Land of Sand by Makoto Inoue"
@@ -288,6 +308,10 @@
   source: digital
   group: "LuCaZ"
   warnings: [no_numbers]
+- name: "Jujutsu Kaisen - Thorny Road at Dawn [VIZ Media] [LuCaZ]"
+  title: "Jujutsu Kaisen - Thorny Road at Dawn"
+  group: "LuCaZ"
+  warnings: [no_numbers]
 - name: "Jujutsu Kaisen: The Official Character Guide by Gege Akutami [ENG / CBZ]"
   title: "Jujutsu Kaisen: The Official Character Guide by Gege Akutami"
   language: eng
@@ -317,6 +341,12 @@
   title: "Monster - Complete Series by Naoki Urasawa"
   language: eng
   file_format: cbr
+  warnings: [no_numbers]
+- name: "Monster - Naoki Urasawa (1995-2001) [CBZ ITA] [1,85GB] [ImFilippo]"
+  title: "Monster - Naoki Urasawa"
+  group: "ImFilippo"
+  language: ita
+  file_format: cbz
   warnings: [no_numbers]
 - name: "Monster by Naoki Urasawa [ENG / CBR]"
   title: "Monster by Naoki Urasawa"
