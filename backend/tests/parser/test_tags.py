@@ -93,6 +93,7 @@ def test_tag_holding_a_bad_number_stays_in_the_text() -> None:
         pytest.param("Fullmetal Alchemist Brotherhood [Multi]", "mul", None, id="Multi tag"),
         pytest.param("Dandadan v01 MULTi", "mul", None, id="MULTi word"),
         pytest.param("One Piece vN [VF]", "fre", None, id="VF"),
+        pytest.param("[Bejee] One Piece - Volume CHOPPER [Eng.]", "eng", None, id="Eng."),
     ],
 )
 def test_language_and_format_are_read_from_tags(

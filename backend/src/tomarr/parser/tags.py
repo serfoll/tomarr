@@ -100,7 +100,8 @@ class _Facts:
         elif item == "webtoon":
             self.hints.add(EditionHint.WEBTOON)
         else:
-            return self._read_language_and_format(item.split())
+            # A language may be abbreviated with a dot (`[Eng.]`).
+            return self._read_language_and_format([w.rstrip(".") for w in item.split()])
         return True
 
     def _set_source(self, source: Source) -> None:

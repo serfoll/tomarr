@@ -25,6 +25,11 @@
   language: eng
   file_format: cbz
 # "Volume CHOPPER" has no number, so it stays in the title.
+- name: "[Bejee] One Piece - Volume CHOPPER (Chapters 151-153 Full Color) [Eng.]"
+  title: "One Piece - Volume CHOPPER"
+  chapters: ["151-153"]
+  group: "Bejee"
+  language: eng
 - name: "True Beauty c000-256 (2018-2023) (Digital) (angy)"
   title: "True Beauty"
   chapters: ["0-256"]
