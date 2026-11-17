@@ -1,0 +1,111 @@
+# Hand-written names for the markers the raw files lack: Korean, Chinese and
+# Japanese suffixes and a Chapter range stated under its Volume. They prove the
+# parser reads the documented shapes, not that indexers use them. Every entry
+# here carries `synthetic: true`, and no entry anywhere else may.
+# Format: see tests/parser/test_release_corpus.py.
+
+# Korean: 권 (volume), 화 (chapter)
+- name: "[Mangaline] Dandadan 3권 [KOR / CBZ]"
+  synthetic: true
+  title: "Dandadan"
+  volumes: [3]
+  group: "Mangaline"
+  language: kor
+  file_format: cbz
+- name: "Solo Leveling 나 혼자만 레벨업 1-14권 (Digital) [KOR / ZIP]"
+  synthetic: true
+  title: "Solo Leveling 나 혼자만 레벨업"
+  volumes: ["1-14"]
+  source: digital
+  language: kor
+  file_format: zip
+- name: "Tower of God 신의 탑 12화 [KOR / CBZ]"
+  synthetic: true
+  title: "Tower of God 신의 탑"
+  chapters: [12]
+  language: kor
+  file_format: cbz
+- name: "[Aqua Scans] Omniscient Reader 전지적 독자 시점 100-120화 (Webtoon)"
+  synthetic: true
+  title: "Omniscient Reader 전지적 독자 시점"
+  chapters: ["100-120"]
+  group: "Aqua Scans"
+  hints: [webtoon]
+
+# Chinese: 卷 and 册 (volume), 话 (simplified) and 話 (traditional) for a chapter
+- name: "One Piece 海贼王 第105卷 (Digital) (Ruri)"
+  synthetic: true
+  title: "One Piece 海贼王"
+  volumes: [105]
+  source: digital
+  group: "Ruri"
+- name: "鬼灭之刃 Demon Slayer 1-23册 (Digital) (Ruri)"
+  synthetic: true
+  title: "鬼灭之刃 Demon Slayer"
+  volumes: ["1-23"]
+  source: digital
+  group: "Ruri"
+- name: "[Kuaikan] 斗罗大陆 Douluo Dalu 第120话 (Webtoon)"
+  synthetic: true
+  title: "斗罗大陆 Douluo Dalu"
+  chapters: [120]
+  group: "Kuaikan"
+  hints: [webtoon]
+- name: "[Kuaikan] 斗罗大陆 Douluo Dalu 第121-130话"
+  synthetic: true
+  title: "斗罗大陆 Douluo Dalu"
+  chapters: ["121-130"]
+  group: "Kuaikan"
+- name: "鋼の錬金術師 第12話 (Digital) (Mushishi)"
+  synthetic: true
+  title: "鋼の錬金術師"
+  chapters: [12]
+  source: digital
+  group: "Mushishi"
+
+# Japanese: 第…巻 and 第…話, with full-width digits
+- name: "ワンピース 第１０５巻 (Digital) (Nyaa)"
+  synthetic: true
+  title: "ワンピース"
+  volumes: [105]
+  source: digital
+  group: "Nyaa"
+- name: "進撃の巨人 Attack on Titan 第１２３話 [ENG / CBZ]"
+  synthetic: true
+  title: "進撃の巨人 Attack on Titan"
+  chapters: [123]
+  language: eng
+  file_format: cbz
+- name: "呪術廻戦 第01-27巻 [Jujutsu Kaisen] (Digital) (LuCaZ)"
+  synthetic: true
+  title: "呪術廻戦"
+  volumes: ["1-27"]
+  source: digital
+  group: "LuCaZ"
+- name: "Tower of God 第3卷 第12话 (Digital) (Ruri)"
+  synthetic: true
+  title: "Tower of God"
+  chapters: [{range: "12", volume: "3"}]
+  source: digital
+  group: "Ruri"
+
+# A Chapter range stated under its Volume
+- name: "Dandadan Vol. 3 Ch. 12-20 (Digital) (LuCaZ)"
+  synthetic: true
+  title: "Dandadan"
+  chapters: [{range: "12-20", volume: "3"}]
+  source: digital
+  group: "LuCaZ"
+- name: "[Mangaline] Blue Box Vol. 5 Ch. 40-48 [ENG / CBZ]"
+  synthetic: true
+  title: "Blue Box"
+  chapters: [{range: "40-48", volume: "5"}]
+  group: "Mangaline"
+  language: eng
+  file_format: cbz
+- name: "Kagurabachi Volume 2, Chapter 10 (Digital) (1r0n)"
+  synthetic: true
+  title: "Kagurabachi"
+  chapters: [{range: "10", volume: "2"}]
+  source: digital
+  group: "1r0n"
