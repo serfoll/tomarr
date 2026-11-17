@@ -34,6 +34,7 @@ from tomarr.parser.release import (
 
 CORPUS = Path(__file__).parents[1] / "fixtures" / "releases"
 MINIMUM_CASES = 300
+SYNTHETIC_FILE = "synthetic-markers.yaml"
 # A parser that refused every name would return this for each of them.
 REJECT_ALL = Unparseable(UnparseableReason.NO_TITLE)
 
@@ -155,9 +156,25 @@ def test_real_names_are_the_bulk_of_the_corpus() -> None:
     assert len(synthetic) * 10 <= len(CASES)
 
 
+def test_synthetic_names_live_in_their_own_file_and_nowhere_else() -> None:
+    misplaced = [
+        case.name for case in CASES if case.synthetic != (case.source_file == SYNTHETIC_FILE)
+    ]
+    assert misplaced == []
+
+
+def test_synthetic_file_holds_ten_to_twenty_names() -> None:
+    count = sum(case.source_file == SYNTHETIC_FILE for case in CASES)
+    assert 10 <= count <= 20
+
+
 def test_real_names_are_copied_exactly_from_raw() -> None:
     missing = [case.name for case in CASES if not case.synthetic and case.name not in RAW_NAMES]
     assert missing == []
+
+
+def test_synthetic_names_are_not_real_names() -> None:
+    assert [case.name for case in CASES if case.synthetic and case.name in RAW_NAMES] == []
 
 
 def test_no_two_entries_share_a_name() -> None:
