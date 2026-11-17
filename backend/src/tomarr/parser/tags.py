@@ -1,65 +1,19 @@
 import re
 from dataclasses import dataclass, field
 
+from tomarr.parser.formats import take_extension
 from tomarr.parser.markers import read_numbers
 from tomarr.parser.release import EditionHint, FileFormat, Source, Unparseable
+from tomarr.parser.vocabulary import FORMATS, LANGUAGES, OTHER_FORMATS, names_no_group
 
 # One pass, innermost-first: each branch stops at the next opener of its own kind,
 # so a run of unclosed brackets costs a fixed amount per character.
 _TAG = re.compile(r"\[[^\[\]]*\]|\([^()]*\)|\{[^{}]*\}")
 _ITEM_BREAK = re.compile(r"[,/]")
-# Neither a season count ("Season 1-5") nor an edition name ("Fullmetal
-# Edition") is a group.
-_NUMBERS_ONLY = re.compile(r"(?:seasons? )?[\d\s.\-]*")
-_EDITION = re.compile(r"\bedition\b")
 _DIGITAL = re.compile(r"digital(?: [sh]d)?")
 _COLORED = re.compile(r"colou?red")
 _COLORED_COMICS = re.compile(r"colou?red comics")
 _MULTI_WORD = re.compile(r"\bMULTi\b")
-
-# ISO 639-2/B codes, because that is how names spell them (`FRE`, `GER`).
-_LANGUAGES = {
-    "eng": "eng",
-    "english": "eng",
-    "jp": "jpn",
-    "jpn": "jpn",
-    "japanese": "jpn",
-    "kor": "kor",
-    "korean": "kor",
-    "rus": "rus",
-    "russian": "rus",
-    "fre": "fre",
-    "french": "fre",
-    "vf": "fre",
-    "ger": "ger",
-    "german": "ger",
-    "por": "por",
-    "ita": "ita",
-    "spa": "spa",
-    "spanish": "spa",
-    "multi": "mul",
-}
-_FORMATS = {format.value: format for format in FileFormat}
-# Seen next to a language in a tag, but not a format Tomarr imports.
-_OTHER_FORMATS = frozenset({"mobi", "jpg", "azw3"})
-# A name that is a file name ends in its extension, at times after a space.
-_EXTENSION = re.compile(rf"\.\s?({'|'.join(_FORMATS)})\Z", re.IGNORECASE)
-# Words that say something about the release but name neither group nor hint.
-_NOT_A_GROUP = frozenset(
-    {
-        "hq",
-        "manga",
-        "novel",
-        "light novel",
-        "complete",
-        "ongoing",
-        "scanlated",
-        "upscaled",
-        "reupload",
-        "updated",
-        "kobo optimised",
-    }
-)
 
 
 @dataclass(frozen=True)
@@ -89,7 +43,7 @@ class _Facts:
 
     def read_item(self, item: str) -> bool:
         """Take in one comma or slash separated item. False when it is none we know."""
-        if _NUMBERS_ONLY.fullmatch(item) or item in _NOT_A_GROUP or _EDITION.search(item):
+        if names_no_group(item):
             return True
         if _DIGITAL.fullmatch(item):
             self._set_source(Source.DIGITAL)
@@ -109,13 +63,13 @@ class _Facts:
             self.source = source
 
     def _read_language_and_format(self, words: list[str]) -> bool:
-        if not all(w in _LANGUAGES or w in _FORMATS or w in _OTHER_FORMATS for w in words):
+        if not all(w in LANGUAGES or w in FORMATS or w in OTHER_FORMATS for w in words):
             return False
         for word in words:
-            if word in _LANGUAGES and self.language is None:
-                self.language = _LANGUAGES[word]
-            elif word in _FORMATS and self.file_format is None:
-                self.file_format = _FORMATS[word]
+            if word in LANGUAGES and self.language is None:
+                self.language = LANGUAGES[word]
+            elif word in FORMATS and self.file_format is None:
+                self.file_format = FORMATS[word]
         return True
 
 
@@ -135,10 +89,8 @@ def read_tags(name: str) -> Tags:
     counts in the title. A file extension ending the name (`.zip`) is read as
     the file format and taken off the text.
     """
-    facts = _Facts()
-    if extension := _EXTENSION.search(name):
-        facts.file_format = _FORMATS[extension[1].lower()]
-        name = name[: extension.start()]
+    name, extension = take_extension(name)
+    facts = _Facts(file_format=extension)
     pieces: list[str] = []
     leading_group: str | None = None
     trailing_group: str | None = None
@@ -167,7 +119,7 @@ def read_tags(name: str) -> Tags:
     if _COLORED_COMICS.search(name.lower()):
         facts.hints.add(EditionHint.COLORED)
     if _MULTI_WORD.search(text) and facts.language is None:
-        facts.language = _LANGUAGES["multi"]
+        facts.language = LANGUAGES["multi"]
     return Tags(
         text,
         leading_group or trailing_group,
