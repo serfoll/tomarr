@@ -63,9 +63,10 @@ def test_unparseable_carries_the_normalizer_reason_or_none() -> None:
 
 
 def test_enum_values_are_the_names_the_corpus_and_ui_use() -> None:
-    assert {r.value for r in UnparseableReason} >= {
+    assert {r.value for r in UnparseableReason} == {
         "video",
         "audiobook",
+        "game",
         "no_title",
         "invalid_number",
         "too_long",

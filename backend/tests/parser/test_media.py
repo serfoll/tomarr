@@ -7,6 +7,7 @@ from tomarr.parser.release import UnparseableReason
 
 VIDEO = UnparseableReason.VIDEO
 AUDIOBOOK = UnparseableReason.AUDIOBOOK
+GAME = UnparseableReason.GAME
 
 VIDEO_NAMES = [
     # SxxExx, with and without a range
@@ -105,6 +106,8 @@ AUDIOBOOK_NAMES = [
 # Music is refused with the audiobook reason: it is audio, and MP3 already covers both.
 SINGLE_AUDIO_MARKERS = ["M4B", "MP3", "Audiobook", "FLAC", "OST", "Original Soundtrack"]
 
+SINGLE_GAME_MARKERS = ["DLC", "DLCs", "REPACK"]
+
 COMIC_NAMES = [
     "Jujutsu Kaisen, Vol. 27 by Viz Media, Gege Akutami [ENG / CBZ]",
     "One Piece 1190 (Digital)",
@@ -132,6 +135,7 @@ NOT_WHOLE_TOKENS = [
     "Subspace Chapter 4",
     "Ghost Hunt Vol. 3",
     "Flacco Chapter 2",
+    "Repackaged Hearts Vol. 2",
     "Blue Box, Vol. 5 by Kouji Miura [ENG / CBZ]",
 ]
 
@@ -154,6 +158,15 @@ def test_audiobook_name_is_rejected_as_audiobook(name: str) -> None:
 @pytest.mark.parametrize("marker", SINGLE_AUDIO_MARKERS)
 def test_a_single_audio_marker_is_enough_to_reject(marker: str) -> None:
     assert rejection_reason(f"Some Title Vol. 3 [{marker}]") == AUDIOBOOK
+
+
+@pytest.mark.parametrize("marker", SINGLE_GAME_MARKERS)
+def test_a_single_game_marker_is_enough_to_reject(marker: str) -> None:
+    assert rejection_reason(f"Some Title (v1.83 & {marker})") == GAME
+
+
+def test_audio_marker_wins_over_game_marker() -> None:
+    assert rejection_reason("Some Title OST (All DLCs)") == AUDIOBOOK
 
 
 @pytest.mark.parametrize("name", COMIC_NAMES)

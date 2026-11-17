@@ -52,6 +52,8 @@ _VIDEO_PAIRS = frozenset(
 # Music shares the audiobook reason: it is audio too, and MP3 names either.
 _AUDIO_TOKENS = frozenset({"audiobook", "m4b", "mp3", "flac", "ost", "soundtrack"})
 
+_GAME_TOKENS = frozenset({"dlc", "dlcs", "repack"})
+
 
 def rejection_reason(name: str) -> UnparseableReason | None:
     tokens = _TOKEN.findall(name.lower())
@@ -61,6 +63,8 @@ def rejection_reason(name: str) -> UnparseableReason | None:
         return UnparseableReason.VIDEO
     if any(token in _AUDIO_TOKENS for token in tokens):
         return UnparseableReason.AUDIOBOOK
+    if any(token in _GAME_TOKENS for token in tokens):
+        return UnparseableReason.GAME
     return None
 
 

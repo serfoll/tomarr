@@ -210,6 +210,11 @@ def test_audiobook_name_is_unparseable() -> None:
     assert parse_release(name) == Unparseable(UnparseableReason.AUDIOBOOK)
 
 
+def test_game_name_is_unparseable() -> None:
+    name = "Demon Slayer -Kimetsu no Yaiba- The Hinokami Chronicles (v1.83 & All DLCs) (Hype"
+    assert parse_release(name) == Unparseable(UnparseableReason.GAME)
+
+
 def test_rejected_name_reaches_no_other_code(monkeypatch: MonkeyPatch) -> None:
     def fail(*_: object) -> None:
         raise AssertionError("reached")
@@ -226,11 +231,7 @@ def test_number_error_comes_back_with_the_normalizer_reason() -> None:
 
 
 def test_number_error_inside_a_tag_is_not_dropped() -> None:
-    name = (
-        "Demon Slayer -Kimetsu no Yaiba- Sweep the Board! "
-        "(v16933346 & All DLCs) (Hypervisor|DenuvOwO)"
-    )
-    assert parse_release(name) == Unparseable(
+    assert parse_release("Dandadan Extras (v16933346 & more) (LuCaZ)") == Unparseable(
         UnparseableReason.INVALID_NUMBER, ChapterNumberReason.TOO_LARGE
     )
 
