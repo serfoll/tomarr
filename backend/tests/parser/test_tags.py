@@ -94,6 +94,7 @@ def test_tag_holding_a_bad_number_stays_in_the_text() -> None:
         pytest.param("Dandadan v01 MULTi", "mul", None, id="MULTi word"),
         pytest.param("One Piece vN [VF]", "fre", None, id="VF"),
         pytest.param("[Bejee] One Piece - Volume CHOPPER [Eng.]", "eng", None, id="Eng."),
+        pytest.param("Demon Slayer (2019) [Manga FR]", "fre", None, id="Manga FR"),
     ],
 )
 def test_language_and_format_are_read_from_tags(
@@ -127,6 +128,7 @@ def test_language_is_none_when_no_tag_says_it(name: str) -> None:
         pytest.param("Dandadan v01 (Digital SD) (KG Manga)", Source.DIGITAL, id="Digital SD"),
         pytest.param("Dandadan v01 [Digital] [Korean]", Source.DIGITAL, id="bracketed Digital"),
         pytest.param("Dandadan v01 (Webtoon, Digital)", Source.DIGITAL, id="among other items"),
+        pytest.param("Demon Slayer (01-23) [Digital-1920]", Source.DIGITAL, id="Digital-1920"),
         pytest.param("Monster, Vol. 01-09 (Scan) (HQ)", Source.SCAN, id="Scan"),
         pytest.param("Monster, Vol. 01-09 (Scans)", Source.SCAN, id="Scans"),
         pytest.param("Monster, Vol. 01-09 (Scan) (Digital)", Source.SCAN, id="first tag wins"),

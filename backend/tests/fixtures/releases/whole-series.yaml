@@ -192,6 +192,11 @@
   language: eng
   file_format: cbz
   warnings: [no_numbers]
+- name: "One-Piece Knits: Essential Designs in Multiple Sizes and Gauges for Sweaters Knit Top Down, Side Over, and Back to Front by Margaret Hubert [ENG / EPUB MOBI]"
+  title: "One-Piece Knits: Essential Designs in Multiple Sizes and Gauges for Sweaters Knit Top Down, Side Over, and Back to Front by Margaret Hubert"
+  language: eng
+  file_format: epub
+  warnings: [no_numbers]
 - name: "One Piece Mini Magazine"
   title: "One Piece Mini Magazine"
   warnings: [no_numbers]
@@ -269,6 +274,23 @@
 - name: "Our Last Hope (The Demon Slayer, n. 1) by Michael Arches EPUB"
   title: "Our Last Hope by Michael Arches"
   file_format: epub
+  warnings: [no_numbers]
+# `(01-23)` is a bare range and `(Gotoge)` the author; the last unknown tag wins.
+- name: "Demon Slayer (01-23) (Gotoge) (2019) [Digital-1920] [Manga FR] (PapriKa+)"
+  title: "Demon Slayer"
+  source: digital
+  language: fre
+  group: "PapriKa+"
+  warnings: [no_numbers]
+- name: "[Dining] uma(Kimetsu no Yaiba).zip"
+  title: "uma"
+  group: "Dining"
+  file_format: zip
+  warnings: [no_numbers]
+- name: "Demon Slayer - Class for MÖRK BORG by Theatre Macabre [ENG / PDF]"
+  title: "Demon Slayer - Class for MÖRK BORG by Theatre Macabre"
+  language: eng
+  file_format: pdf
   warnings: [no_numbers]
 - name: "Demon Slayer by Linsey Hall [ENG / EPUB]"
   title: "Demon Slayer by Linsey Hall"

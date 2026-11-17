@@ -17,6 +17,7 @@ LANGUAGES = {
     "rus": "rus",
     "russian": "rus",
     "fre": "fre",
+    "fr": "fre",
     "french": "fre",
     "vf": "fre",
     "ger": "ger",

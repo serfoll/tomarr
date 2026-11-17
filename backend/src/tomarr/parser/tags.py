@@ -16,7 +16,8 @@ from tomarr.parser.vocabulary import (
 # so a run of unclosed brackets costs a fixed amount per character.
 _TAG = re.compile(r"\[[^\[\]]*\]|\([^()]*\)|\{[^{}]*\}")
 _ITEM_BREAK = re.compile(r"[,/+]")
-_DIGITAL = re.compile(r"digital(?: [sh]d)?")
+# `Digital-1920` gives the scan width.
+_DIGITAL = re.compile(r"digital(?: [sh]d|-\d+)?")
 _COLORED = re.compile(r"colou?red")
 _COLORED_COMICS = re.compile(r"colou?red comics")
 _MULTI_WORD = re.compile(r"\bMULTi\b")
@@ -69,7 +70,9 @@ class _Facts:
             self.source = source
 
     def _read_language_and_format(self, words: list[str]) -> bool:
-        if not all(w in LANGUAGES or w in FORMATS or w in OTHER_FORMATS for w in words):
+        # `manga` only says what the language goes with (`[Manga FR]`).
+        known = LANGUAGES.keys() | FORMATS.keys() | OTHER_FORMATS | {"manga"}
+        if not all(word in known for word in words):
             return False
         for word in words:
             if word in LANGUAGES and self.language is None:
