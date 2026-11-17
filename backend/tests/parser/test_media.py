@@ -102,6 +102,9 @@ AUDIOBOOK_NAMES = [
     "The Beginning After The End, Book 12 - Apotheosis (Audiobook) [Troglodyte]",
 ]
 
+# Music is refused with the audiobook reason: it is audio, and MP3 already covers both.
+SINGLE_AUDIO_MARKERS = ["M4B", "MP3", "Audiobook", "FLAC", "OST", "Original Soundtrack"]
+
 COMIC_NAMES = [
     "Jujutsu Kaisen, Vol. 27 by Viz Media, Gege Akutami [ENG / CBZ]",
     "One Piece 1190 (Digital)",
@@ -127,6 +130,8 @@ NOT_WHOLE_TOKENS = [
     "Mydual Audio Vol. 2",
     "Dubai Detective Vol. 2",
     "Subspace Chapter 4",
+    "Ghost Hunt Vol. 3",
+    "Flacco Chapter 2",
     "Blue Box, Vol. 5 by Kouji Miura [ENG / CBZ]",
 ]
 
@@ -144,6 +149,11 @@ def test_a_single_video_marker_is_enough_to_reject(marker: str) -> None:
 @pytest.mark.parametrize("name", AUDIOBOOK_NAMES)
 def test_audiobook_name_is_rejected_as_audiobook(name: str) -> None:
     assert rejection_reason(name) == AUDIOBOOK
+
+
+@pytest.mark.parametrize("marker", SINGLE_AUDIO_MARKERS)
+def test_a_single_audio_marker_is_enough_to_reject(marker: str) -> None:
+    assert rejection_reason(f"Some Title Vol. 3 [{marker}]") == AUDIOBOOK
 
 
 @pytest.mark.parametrize("name", COMIC_NAMES)

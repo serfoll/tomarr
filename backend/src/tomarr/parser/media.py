@@ -49,7 +49,8 @@ _VIDEO_PAIRS = frozenset(
     }
 )
 
-_AUDIO_TOKENS = frozenset({"audiobook", "m4b", "mp3"})
+# Music shares the audiobook reason: it is audio too, and MP3 names either.
+_AUDIO_TOKENS = frozenset({"audiobook", "m4b", "mp3", "flac", "ost", "soundtrack"})
 
 
 def rejection_reason(name: str) -> UnparseableReason | None:
