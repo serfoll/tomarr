@@ -1,4 +1,6 @@
-from decimal import Decimal
+from decimal import Decimal, localcontext
+
+import pytest
 
 from tomarr.matching.chapters import ProviderChapters, unlisted_decimals
 from tomarr.parser.parse import parse_release
@@ -177,3 +179,13 @@ def test_no_volume_bucket_counts_when_the_release_names_no_volume() -> None:
     }
 
     assert unlisted_decimals(release, provider) == numbers("40.5")
+
+
+@pytest.mark.parametrize("precision", [1, 2])
+def test_caller_decimal_precision_does_not_change_the_whole_chapter_above(precision: int) -> None:
+    release = parsed("Blue Box Ch. 100.5")
+    provider: ProviderChapters = {None: chapters("100")}
+
+    with localcontext() as context:
+        context.prec = precision
+        assert unlisted_decimals(release, provider) == ()

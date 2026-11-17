@@ -48,6 +48,8 @@ def _reference_chapters(
 
 
 def _is_unlisted(number: Decimal, reference: frozenset[Decimal]) -> bool:
-    # A whole number is its own floor, so it can never be both missing and listed.
+    # A whole number is its own floor, so it can never be both missing and listed. The
+    # chapter above is built from an int, since `below + 1` rounds to the caller's precision.
     below = number.to_integral_value(rounding=ROUND_FLOOR)
-    return number not in reference and below in reference and below + 1 in reference
+    above = Decimal(int(below) + 1)
+    return number not in reference and below in reference and above in reference
