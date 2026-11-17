@@ -222,6 +222,7 @@ def test_hints_come_from_a_tag_standing_on_its_own(name: str, hints: set[Edition
             id="nested parentheses",
         ),
         pytest.param("Dandadan v01 [Group]", "Group", id="trailing bracket tag"),
+        pytest.param("[DB] Dandadan v01", "DB", id="two letter leading tag"),
         pytest.param(
             "Dandadan v01 [Yen Press][Stick]", "Stick", id="trailing bracket tags in a row"
         ),
@@ -252,6 +253,12 @@ def test_group_is_the_leading_bracket_tag_or_the_last_trailing_tag(name: str, gr
         pytest.param("Jujutsu Kaisen (Manga) [Updated]", id="Updated"),
         pytest.param("One Piece v012-023 (Colored) {Alabasta}", id="curly tag"),
         pytest.param("Fullmetal Alchemist (Fullmetal Edition) Volume 01", id="edition"),
+        pytest.param("Monster v01 [CBZ ITA] [1,85GB]", id="file size"),
+        pytest.param("Tower of God 210 [NR].pdf", id="two letter status tag"),
+        pytest.param("Fullmetal Alchemist Brotherhood [Multi] [BR]", id="two letter source tag"),
+        pytest.param(
+            "Demon Slayers 02 [PDF + TXT] by Angie Fox [ENG / PDF]", id="format list with a plus"
+        ),
         pytest.param("One Piece, Vol. 106 (Colored) (Kobo Optimised)", id="Kobo Optimised"),
         pytest.param("The Beginning After The End - Webtoon (Season 1-5)", id="season numbers"),
         pytest.param("One Piece - Vol. 3 (v1-v2)", id="marker tag"),

@@ -9,7 +9,7 @@ from tomarr.parser.vocabulary import FORMATS, LANGUAGES, OTHER_FORMATS, names_no
 # One pass, innermost-first: each branch stops at the next opener of its own kind,
 # so a run of unclosed brackets costs a fixed amount per character.
 _TAG = re.compile(r"\[[^\[\]]*\]|\([^()]*\)|\{[^{}]*\}")
-_ITEM_BREAK = re.compile(r"[,/]")
+_ITEM_BREAK = re.compile(r"[,/+]")
 _DIGITAL = re.compile(r"digital(?: [sh]d)?")
 _COLORED = re.compile(r"colou?red")
 _COLORED_COMICS = re.compile(r"colou?red comics")
@@ -42,7 +42,7 @@ class _Facts:
     hints: set[EditionHint] = field(default_factory=set[EditionHint])
 
     def read_item(self, item: str) -> bool:
-        """Take in one comma or slash separated item. False when it is none we know."""
+        """Take in one comma, slash or plus separated item. False when it is none we know."""
         if names_no_group(item):
             return True
         if _DIGITAL.fullmatch(item):
@@ -112,7 +112,8 @@ def read_tags(name: str) -> Tags:
             continue
         if tag[0][0] == "[" and leading:
             leading_group = leading_group or inner.strip()
-        elif tag[0][0] != "{":
+        # A trailing two-letter tag is a status or source code (`[NR]`, `[BR]`).
+        elif tag[0][0] != "{" and len(inner.strip()) > 2:
             trailing_group = inner.strip()
     pieces.append(name[position:])
     text = "".join(pieces)

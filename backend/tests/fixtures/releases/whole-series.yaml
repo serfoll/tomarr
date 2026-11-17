@@ -244,6 +244,11 @@
   title: "Kimetsu no Yaiba Illustration Collection 2"
   file_format: zip
   warnings: [no_numbers]
+- name: "Angie Fox - Demon Slayers 02 - The Dangerous Book for Demon Slayers [PDF + TXT] by Angie Fox [ENG / PDF]"
+  title: "Angie Fox - Demon Slayers 02 - The Dangerous Book for Demon Slayers by Angie Fox"
+  language: eng
+  file_format: pdf
+  warnings: [no_numbers]
 - name: "Demon Slayer by Linsey Hall [ENG / EPUB]"
   title: "Demon Slayer by Linsey Hall"
   language: eng
