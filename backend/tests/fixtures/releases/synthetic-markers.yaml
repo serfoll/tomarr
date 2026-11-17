@@ -109,3 +109,24 @@
   chapters: [{range: "10", volume: "2"}]
   source: digital
   group: "1r0n"
+
+# Comma lists. No real name in raw/ holds one inside a marker, so these are the
+# only cases that pin the split happening before the normalizer reads "10,12".
+- name: "Dandadan Ch. 1-5, 8, 10 [ENG / CBZ]"
+  synthetic: true
+  title: "Dandadan"
+  chapters: ["1-5", 8, 10]
+  language: eng
+  file_format: cbz
+- name: "Dandadan Ch. 10,12 (Digital) (LuCaZ)"
+  synthetic: true
+  title: "Dandadan"
+  chapters: [10, 12]
+  source: digital
+  group: "LuCaZ"
+- name: "ワンピース 第1,2,3巻 (Digital) (Nyaa)"
+  synthetic: true
+  title: "ワンピース"
+  volumes: [1, 2, 3]
+  source: digital
+  group: "Nyaa"
