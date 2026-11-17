@@ -71,6 +71,9 @@ def test_volume_marker(text: str, expected: NumberRange) -> None:
         pytest.param("Dandadan c001-c010", chapter("1", "10"), id="c on both ends"),
         pytest.param("Dandadan Ch. 10.5", chapter("10.5"), id="decimal chapter"),
         pytest.param("Dandadan Ch. 10a", chapter("10.1"), id="part letter"),
+        pytest.param("Dandadan Ch. 10i", chapter("10.9"), id="last part letter"),
+        pytest.param("Dandadan Ch. 10 Part 2", chapter("10.2"), id="Part 2"),
+        pytest.param("Naruto c10 part 9", chapter("10.9"), id="part 9"),
         pytest.param("第12話", chapter("12"), id="Japanese wa"),
         pytest.param("第１２話", chapter("12"), id="full-width wa"),
         pytest.param("鏐 140-205話", chapter("140", "205"), id="wa range without dai"),
@@ -89,6 +92,85 @@ def test_ampersand_pack_gives_a_volume_range_and_a_chapter_range() -> None:
     result = read("One Piece Digital Colored Comics (v000-v105 & ch0035-1078)")
     assert result.volumes == (volume("0", "105"),)
     assert result.chapters == (chapter("35", "1078"),)
+    assert not result.ambiguous
+
+
+@pytest.mark.parametrize(
+    ("text", "volumes", "chapters"),
+    [
+        pytest.param("Dandadan Vol. 01 ~ 05", (volume("1", "5"),), (), id="spaced tilde"),
+        pytest.param("Dandadan Ch. 1 \u2013 5", (), (chapter("1", "5"),), id="spaced en dash"),
+        pytest.param("Dandadan v01\u201305", (volume("1", "5"),), (), id="en dash"),
+        pytest.param("Dandadan Ch. 12\u201113", (), (chapter("12", "13"),), id="U+2011"),
+        pytest.param("Dandadan v01 \u2013 v05", (volume("1", "5"),), (), id="v on both ends"),
+        pytest.param("Naruto c1 \u2014 2", (), (chapter("1", "2"),), id="em dash"),
+        pytest.param("Naruto c1~2", (), (chapter("1", "2"),), id="tilde"),
+        pytest.param("Naruto 3\u8a71-5\u8a71", (), (chapter("3", "5"),), id="wa on both ends"),
+        pytest.param("Naruto 3\uff5e5\u5dfb", (volume("3", "5"),), (), id="full-width tilde"),
+    ],
+)
+def test_dash_or_tilde_joins_a_range(
+    text: str, volumes: tuple[NumberRange, ...], chapters: tuple[ChapterRange, ...]
+) -> None:
+    result = read(text)
+    assert (result.volumes, result.chapters) == (volumes, chapters)
+    assert text[: result.title_end].rstrip() in {"Dandadan", "Naruto"}
+    assert not result.ambiguous
+
+
+@pytest.mark.parametrize(
+    ("text", "volumes", "chapters"),
+    [
+        pytest.param("Naruto c1 & 2", (), (chapter("1"),), id="ampersand"),
+        pytest.param("Naruto c1 and 2", (), (chapter("1"),), id="and"),
+        pytest.param("Naruto c1 to 2", (), (chapter("1"),), id="to"),
+        pytest.param("Naruto c1/2", (), (chapter("1"),), id="slash"),
+        pytest.param("Naruto c1 + 2nd Season", (), (chapter("1"),), id="plus"),
+        pytest.param("Dandadan Vol. 1 & 2", (volume("1"),), (), id="volume ampersand"),
+        pytest.param("Dandadan Vol. 1 to 5", (volume("1"),), (), id="volume to"),
+        pytest.param("Dandadan 1\u5dfb & 2", (volume("1"),), (), id="after a suffix"),
+        pytest.param("Dandadan Ch. 10 Special", (), (chapter("10"),), id="Special"),
+        pytest.param("Dandadan Vol.0 Special", (volume("0"),), (), id="Vol.0 Special"),
+        pytest.param("Dandadan Ch. 10 Extra", (), (chapter("10"),), id="Extra"),
+        pytest.param("Dandadan Ch. 10 Omake", (), (chapter("10"),), id="Omake"),
+        pytest.param("Dandadan Ch. 10 Bonus", (), (chapter("10"),), id="Bonus"),
+        pytest.param("Dandadan Ch. 10 One Shot", (), (chapter("10"),), id="One Shot"),
+        pytest.param("Dandadan Ch. 10 one-shot", (), (chapter("10"),), id="one-shot"),
+        pytest.param("Naruto v01 - 2000", (volume("1"),), (), id="year after a dash"),
+        pytest.param("Dandadan Vol 3 - 2021 edition", (volume("3"),), (), id="year edition"),
+        pytest.param("Dandadan Ch.10a-12", (), (chapter("10.1", "12"),), id="part letter"),
+        pytest.param("Dandadan Ch. 10 Part 2", (), (chapter("10.2"),), id="Part 2"),
+        pytest.param("Dandadan Ch. 1, 10a", (), (chapter("1"), chapter("10.1")), id="later part"),
+        pytest.param("Bleach c1,000", (), (chapter("1000"),), id="thousands"),
+        pytest.param("Bleach c1,100-1,120", (), (chapter("1100", "1120"),), id="thousands range"),
+        pytest.param(
+            "Dandadan v01, 10,5", (volume("1"),), (chapter("10"), chapter("5")), id="loose"
+        ),
+    ],
+)
+def test_number_read_by_a_guess_is_ambiguous(
+    text: str, volumes: tuple[NumberRange, ...], chapters: tuple[ChapterRange, ...]
+) -> None:
+    result = read(text)
+    assert (result.volumes, result.chapters) == (volumes, chapters)
+    assert result.ambiguous
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Dandadan Ch. 10 Specialist",
+        "Dandadan Vol. 3 Ch. 12-20",
+        "Dandadan Ch. 1 & More",
+        "Dandadan Ch. 1-5, 8,10",
+        "Dandadan v01-05,041-124",
+        "Dandadan Vol. 1 (2021)",
+        "Dandadan Vol. 100 - 2000",
+    ],
+    ids=short_id,
+)
+def test_number_read_without_a_guess_is_not_ambiguous(text: str) -> None:
+    assert not read(text).ambiguous
 
 
 def test_version_before_batch_is_not_a_volume() -> None:
@@ -165,7 +247,9 @@ def test_every_unmarked_piece_after_a_volume_is_a_chapter_range() -> None:
 
 
 def test_comma_in_a_chapter_marker_splits_and_is_never_a_decimal() -> None:
-    assert read("Dandadan Ch. 10,5").chapters == (chapter("10"), chapter("5"))
+    result = read("Dandadan Ch. 10,5")
+    assert result.chapters == (chapter("10"), chapter("5"))
+    assert result.ambiguous
 
 
 def test_separate_markers_of_one_kind_collect_in_order() -> None:
@@ -175,6 +259,28 @@ def test_separate_markers_of_one_kind_collect_in_order() -> None:
 def test_volume_marker_repeated_in_two_scripts_is_reported_once() -> None:
     result = read("ONE PIECE カラー版 105巻 ONE PIECE Volume 105 Colour")
     assert result.volumes == (volume("105"),)
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        pytest.param("Dandadan v01-05 v03", id="after"),
+        pytest.param("Dandadan v03 v01-05", id="before"),
+        pytest.param("Dandadan v01-05 v01 v05", id="both ends"),
+    ],
+)
+def test_volume_inside_another_reported_volume_range_is_not_reported_again(text: str) -> None:
+    assert read(text).volumes == (volume("1", "5"),)
+
+
+def test_volumes_that_a_side_story_matches_are_not_reported_again() -> None:
+    result = read(
+        "\u9b3c\u6ec5\u306e\u5203 \u7b2c1-23\u5dfb\u5b8c \u5916\u4f1d "
+        "140-205\u8a71\u30ab\u30e9\u30fc\u7248"
+        "16\u5dfb\u304b\u308923\u5dfb\u76f8\u5f53"
+    )
+    assert result.volumes == (volume("1", "23"),)
+    assert result.chapters == (chapter("140", "205"),)
 
 
 @pytest.mark.parametrize(
@@ -309,6 +415,7 @@ def test_real_names(
     result = read(text)
     assert result.volumes == volumes
     assert result.chapters == chapters
+    assert not result.ambiguous
 
 
 def test_comma_list_after_a_single_volume_reads_the_rest_as_chapters() -> None:

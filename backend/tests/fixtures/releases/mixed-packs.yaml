@@ -85,11 +85,13 @@
   hints: [colored]
   warnings: [mixed_pack]
 
-# Volumes 1-23, then the colour side chapters 140-205 "matching volumes 16 to
-# 23": each marker is reported, and the leading tag is the uploader's.
+# Volumes 1-23 complete, then the colour side chapters 140-205, "equivalent to
+# volumes 16 to 23". Those volumes are inside 1-23, so the Volumes are 1-23
+# alone. The leading tag is the author's name, read as the group like any
+# leading tag.
 - name: "[吾峠呼世晴] 鬼滅の刃 Kimetsu no Yaiba 第1-23巻完 外伝 140-205話カラー版16巻から23巻相当"
   title: "鬼滅の刃 Kimetsu no Yaiba"
-  volumes: ["1-23", 16, 23]
+  volumes: ["1-23"]
   chapters: ["140-205"]
   group: "吾峠呼世晴"
   warnings: [mixed_pack]

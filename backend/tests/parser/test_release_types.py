@@ -71,7 +71,7 @@ def test_enum_values_are_the_names_the_corpus_and_ui_use() -> None:
         "invalid_number",
         "too_long",
     }
-    assert {w.value for w in ReleaseWarning} == {"mixed_pack", "no_numbers"}
+    assert {w.value for w in ReleaseWarning} == {"mixed_pack", "no_numbers", "ambiguous_number"}
     assert {s.value for s in Source} == {"digital", "scan", "unknown"}
     assert {h.value for h in EditionHint} == {"colored", "webtoon"}
     assert {f.value for f in FileFormat} == {"cbz", "cbr", "zip", "rar", "pdf", "epub"}

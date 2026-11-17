@@ -17,6 +17,7 @@ class UnparseableReason(StrEnum):
 class ReleaseWarning(StrEnum):
     MIXED_PACK = "mixed_pack"
     NO_NUMBERS = "no_numbers"
+    AMBIGUOUS_NUMBER = "ambiguous_number"
 
 
 class Source(StrEnum):
@@ -54,6 +55,21 @@ class ChapterRange:
 
 @dataclass(frozen=True)
 class ParsedRelease:
+    """What one release name says, read without matching it to a Series.
+
+    `volumes` holds only the Volumes reported on their own. A Volume that
+    states its chapters (`Vol. 3 Ch. 12-20`) is the `volume` of those chapter
+    ranges and is not repeated in `volumes`, so every Volume a release holds is
+    `volumes` together with each `chapters[].volume`.
+
+    `clean` is false when any warning is set: `mixed_pack` (Volume ranges beside
+    chapters that belong to no Volume), `no_numbers` (no marker was read) or
+    `ambiguous_number` (a number was read by a guess: a part letter or `part N`,
+    a thousands comma, a list that goes backwards, a range that ends on a year,
+    a joiner or special word after a marker that is left unread, or a `(v2)`
+    revision tag).
+    """
+
     title: str
     volumes: tuple[NumberRange, ...] = ()
     chapters: tuple[ChapterRange, ...] = ()
