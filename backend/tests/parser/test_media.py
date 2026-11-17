@@ -94,6 +94,10 @@ SINGLE_VIDEO_MARKERS = [
     "DUBBED",
     "SUBS",
     "Lektor",
+    "sub eng",
+    "Music Video",
+    "Audio Description",
+    "Full Animation",
 ]
 
 AUDIOBOOK_NAMES = [

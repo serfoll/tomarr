@@ -46,6 +46,10 @@ _VIDEO_PAIRS = frozenset(
         ("h", "265"),
         ("dual", "audio"),
         ("multi", "audio"),
+        ("sub", "eng"),
+        ("music", "video"),
+        ("audio", "description"),
+        ("full", "animation"),
     }
 )
 
