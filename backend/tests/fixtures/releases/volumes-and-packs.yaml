@@ -444,6 +444,7 @@
   title: "Demon Slayer MANGA"
   volumes: ["1-23"]
   group: "@anime-lover"
+  file_format: pdf
 
 # Fullmetal Alchemist
 - name: "Fullmetal Alchemist (Fullmetal Edition) Volume 01"
@@ -626,6 +627,7 @@
 - name: "Solo Leveling, Vol. 6 by Chugong EPUB"
   title: "Solo Leveling"
   volumes: [6]
+  file_format: epub
 - name: "Solo Leveling, Vol. 7 (novel) by Chugong [ENG / EPUB]"
   title: "Solo Leveling"
   volumes: [7]
@@ -645,6 +647,7 @@
 - name: "The Beginning After the End Volumes 1-8 epub"
   title: "The Beginning After the End"
   volumes: ["1-8"]
+  file_format: epub
 - name: "The Beginning After the End v08-v10 [OZR]"
   title: "The Beginning After the End"
   volumes: ["8-10"]

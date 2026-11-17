@@ -262,6 +262,14 @@
   title: "The Dangerous Book for Demon Slayers by Angie Fox by Angie Fox"
   language: eng
   warnings: [no_numbers]
+- name: "Inside the Storm (Demon Slayer, n. 2) by Michael Arches EPUB"
+  title: "Inside the Storm by Michael Arches"
+  file_format: epub
+  warnings: [no_numbers]
+- name: "Our Last Hope (The Demon Slayer, n. 1) by Michael Arches EPUB"
+  title: "Our Last Hope by Michael Arches"
+  file_format: epub
+  warnings: [no_numbers]
 - name: "Demon Slayer by Linsey Hall [ENG / EPUB]"
   title: "Demon Slayer by Linsey Hall"
   language: eng
@@ -509,7 +517,8 @@
   group: "Aethon/Remastered"
   warnings: [no_numbers]
 - name: "Ascension: The Beginning After the End by TurtleMe EPUB"
-  title: "Ascension: The Beginning After the End by TurtleMe EPUB"
+  title: "Ascension: The Beginning After the End by TurtleMe"
+  file_format: epub
   warnings: [no_numbers]
 - name: "Beyond the Little Blue Box: The Biographical Adventures of John T Draper Notorious 'phone Phreak', Legendary Internet Pioneer and Ardent Privacy Advocate by John T Draper, C Wilson Fraser [ENG / EPUB]"
   title: "Beyond the Little Blue Box: The Biographical Adventures of John T Draper Notorious 'phone Phreak', Legendary Internet Pioneer and Ardent Privacy Advocate by John T Draper, C Wilson Fraser"

@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass, field
 
-from tomarr.parser.formats import take_extension
+from tomarr.parser.formats import take_extension, take_format_words
 from tomarr.parser.markers import read_numbers
 from tomarr.parser.release import EditionHint, FileFormat, Source, Unparseable
 from tomarr.parser.vocabulary import (
@@ -92,8 +92,9 @@ def read_tags(name: str) -> Tags:
     [LuCaZ]` gives LuCaZ). A `{...}` tag is never a group. A hint or source
     comes from an item standing on its own in a tag, so `(Colored Council)` is a
     group and not a colored edition; only the phrase `Colored Comics` also
-    counts in the title. A file extension ending the name (`.zip`) is read as
-    the file format and taken off the text.
+    counts in the title. A file extension ending the name (`.zip`) or a format
+    word standing alone (`by Chugong EPUB`) is read as the file format and taken
+    off the text; the extension, then a tag, take precedence over the word.
     """
     name, extension = take_extension(name)
     facts = _Facts(file_format=extension)
@@ -124,7 +125,8 @@ def read_tags(name: str) -> Tags:
         elif tag[0][0] != "{" and len(inner.strip()) > 2:
             trailing_group = inner.strip()
     pieces.append(name[position:])
-    text = "".join(pieces)
+    text, format_word = take_format_words("".join(pieces))
+    facts.file_format = facts.file_format or format_word
     if _COLORED_COMICS.search(name.lower()):
         facts.hints.add(EditionHint.COLORED)
     if _MULTI_WORD.search(text) and facts.language is None:
