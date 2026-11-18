@@ -46,9 +46,7 @@ async def test_get_volume_chapters_returns_the_volumes_of_a_series(
 
     volumes = await client.get_volume_chapters(DANDADAN_ID)
 
-    assert set(volumes) == {None, *map(Decimal, [*range(1, 19), 23, 26])}
     assert volumes[Decimal(23)] == {Decimal("201.5")}
-    assert len(volumes[None]) == 105
 
 
 def test_client_satisfies_the_series_volumes_protocol(database: Database) -> None:

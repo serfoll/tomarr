@@ -1,3 +1,4 @@
+import logging
 from decimal import Decimal
 from pathlib import Path
 
@@ -73,10 +74,10 @@ def test_a_volume_listed_with_no_chapters_comes_back_with_no_chapters() -> None:
 
 
 def test_a_decimal_chapter_is_kept_as_given() -> None:
-    result = parse_aggregate(aggregate({"1": volume("1", "10", "10.5", "11")}))
+    result = parse_aggregate(aggregate({"1": volume("1", "10", "10.1", "11")}))
 
-    assert result == {Decimal(1): {Decimal(10), Decimal("10.5"), Decimal(11)}}
-    assert Decimal("10.5") in result[Decimal(1)]
+    assert result == {Decimal(1): {Decimal(10), Decimal("10.1"), Decimal(11)}}
+    assert all(type(number) is Decimal for number in result[Decimal(1)])
 
 
 def test_chapter_zero_is_a_chapter() -> None:
@@ -91,8 +92,9 @@ def test_volume_zero_is_a_volume_not_no_volume() -> None:
     assert result == {Decimal(0): {Decimal(1)}}
 
 
-def test_a_volume_numbered_none_maps_to_no_volume() -> None:
-    result = parse_aggregate(aggregate({"none": volume("none", "121", "122")}))
+@pytest.mark.parametrize("none", ["none", "None", "NONE"])
+def test_a_volume_numbered_none_maps_to_no_volume(none: str) -> None:
+    result = parse_aggregate(aggregate({"none": volume(none, "121", "122")}))
 
     assert result == {None: {Decimal(121), Decimal(122)}}
 
@@ -108,6 +110,52 @@ def test_a_chapter_that_is_not_a_plain_number_is_skipped(chapter: str) -> None:
     result = parse_aggregate(aggregate({"1": volume("1", chapter, "2")}))
 
     assert result == {Decimal(1): {Decimal(2)}}
+
+
+@pytest.mark.parametrize(
+    "number", ["Extra", "1a", "", "-1", "10,5", "1e3", "NaN", "Infinity", "\u0663"]
+)
+def test_a_volume_that_is_not_a_plain_number_is_skipped_whole(number: str) -> None:
+    result = parse_aggregate(aggregate({"0": volume(number, "5", "6"), "1": volume("none", "100")}))
+
+    assert result == {None: {Decimal(100)}}
+
+
+def test_skipped_numbers_are_counted_in_one_warning_without_their_text(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    body = aggregate(
+        {
+            "0": volume("Extra", "5"),
+            "1": volume("1", "secret-a", "2"),
+            "2": volume("none", "secret-b", "none"),
+        }
+    )
+
+    with caplog.at_level(logging.WARNING):
+        parse_aggregate(body)
+
+    (record,) = caplog.records
+    assert record.levelno == logging.WARNING
+    assert "1 volume(s) and 2 chapter(s)" in record.getMessage()
+    assert "Extra" not in record.getMessage()
+    assert "secret" not in record.getMessage()
+
+
+def test_a_chapter_numbered_none_is_not_counted_as_unreadable(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    with caplog.at_level(logging.WARNING):
+        parse_aggregate(aggregate({"none": volume("none", "none", "NONE", "7")}))
+
+    assert caplog.records == []
+
+
+def test_the_recorded_series_parses_without_a_warning(caplog: pytest.LogCaptureFixture) -> None:
+    with caplog.at_level(logging.WARNING):
+        parse_aggregate(recorded_response_body(RECORDED_DANDADAN))
+
+    assert caplog.records == []
 
 
 def test_the_volume_number_comes_from_its_field_not_its_key() -> None:
