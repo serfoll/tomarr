@@ -85,6 +85,12 @@ def test_chapter_zero_is_a_chapter() -> None:
     assert result == {Decimal(1): {Decimal(0), Decimal(1)}}
 
 
+def test_volume_zero_is_a_volume_not_no_volume() -> None:
+    result = parse_aggregate(aggregate({"0": volume("0", "1")}))
+
+    assert result == {Decimal(0): {Decimal(1)}}
+
+
 def test_a_volume_numbered_none_maps_to_no_volume() -> None:
     result = parse_aggregate(aggregate({"none": volume("none", "121", "122")}))
 
@@ -97,7 +103,7 @@ def test_a_chapter_with_no_number_is_skipped() -> None:
     assert result == {None: {Decimal(7)}}
 
 
-@pytest.mark.parametrize("chapter", ["", "abc", "NaN", "Infinity", "1e5", "-1", "1,5", "١"])
+@pytest.mark.parametrize("chapter", ["", "abc", "NaN", "Infinity", "1e5", "-1", "1,5", "\u0661"])
 def test_a_chapter_that_is_not_a_plain_number_is_skipped(chapter: str) -> None:
     result = parse_aggregate(aggregate({"1": volume("1", chapter, "2")}))
 

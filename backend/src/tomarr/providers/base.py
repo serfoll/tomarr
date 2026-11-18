@@ -34,6 +34,12 @@ class CharacterName:
     alternatives: tuple[str, ...]
 
 
+type VolumeChapters = Mapping[Decimal | None, frozenset[Decimal]]
+"""The chapters a Provider lists for a Series, keyed by Volume number. `None` holds the chapters
+in no Volume. A Volume the Provider lists with no chapters maps to an empty set, and one it does
+not list at all is absent."""
+
+
 @runtime_checkable
 class SeriesSearch(Protocol):
     async def search(self, query: str) -> list[SeriesCandidate]: ...
@@ -47,3 +53,8 @@ class SeriesLookup(Protocol):
 @runtime_checkable
 class SeriesCharacters(Protocol):
     async def get_character_names(self, provider_id: str) -> list[CharacterName]: ...
+
+
+@runtime_checkable
+class SeriesVolumes(Protocol):
+    async def get_volume_chapters(self, provider_id: str) -> VolumeChapters: ...
