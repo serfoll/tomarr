@@ -1,24 +1,14 @@
 from decimal import Decimal
 
+from tests.helpers.matching import chapters, parsed
 from tomarr.matching.chapters import ProviderChapters
 from tomarr.matching.confidence import Confidence
 from tomarr.matching.matcher import TitleMatchReason
 from tomarr.matching.release import Lowering, assess_release
 from tomarr.matching.thresholds import Thresholds
-from tomarr.parser.parse import parse_release
 from tomarr.parser.release import ChapterRange, ParsedRelease, ReleaseWarning
 
 THRESHOLDS = Thresholds(high=90, medium=70)
-
-
-def parsed(name: str) -> ParsedRelease:
-    outcome = parse_release(name)
-    assert isinstance(outcome, ParsedRelease)
-    return outcome
-
-
-def chapters(*numbers: str) -> frozenset[Decimal]:
-    return frozenset(Decimal(number) for number in numbers)
 
 
 def test_clean_release_keeps_the_title_confidence() -> None:

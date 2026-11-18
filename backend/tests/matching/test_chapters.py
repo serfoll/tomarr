@@ -2,19 +2,9 @@ from decimal import Decimal, localcontext
 
 import pytest
 
+from tests.helpers.matching import chapters, parsed
 from tomarr.matching.chapters import ProviderChapters, unlisted_decimals
-from tomarr.parser.parse import parse_release
 from tomarr.parser.release import ChapterRange, NumberRange, ParsedRelease
-
-
-def parsed(name: str) -> ParsedRelease:
-    outcome = parse_release(name)
-    assert isinstance(outcome, ParsedRelease)
-    return outcome
-
-
-def chapters(*numbers: str) -> frozenset[Decimal]:
-    return frozenset(Decimal(number) for number in numbers)
 
 
 def numbers(*values: str) -> tuple[Decimal, ...]:
