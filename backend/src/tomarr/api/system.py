@@ -1,10 +1,9 @@
-from importlib.metadata import version
 from typing import Literal
 
 from fastapi import APIRouter, Response, status
 from pydantic import BaseModel
 
-APP_VERSION = version("tomarr")
+from tomarr.core.version import APP_VERSION
 
 router = APIRouter(prefix="/system")
 public_router = APIRouter(prefix="/system")

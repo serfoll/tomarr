@@ -1,4 +1,5 @@
 import logging
+import re
 from collections.abc import Callable
 
 import httpx2
@@ -17,6 +18,15 @@ def require_digits(provider: str, provider_id: str) -> None:
     # The ID goes into a path or a query variable, so anything but digits could reach another one.
     if not (provider_id.isascii() and provider_id.isdigit()):
         raise ValueError(f"{provider} series IDs are made of digits only.")
+
+
+_UUID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}", re.IGNORECASE)
+
+
+def require_uuid(provider: str, provider_id: str) -> None:
+    # Not uuid.UUID(), which also takes braces, a urn: prefix and hyphen-less forms.
+    if not _UUID.fullmatch(provider_id):
+        raise ValueError(f"{provider} series IDs are UUIDs.")
 
 
 def read_response[T](provider: str, response: httpx2.Response, parse: Callable[[object], T]) -> T:
