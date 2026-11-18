@@ -4,7 +4,7 @@ import httpx2
 import pytest
 
 from tomarr.core.errors import ProviderError
-from tomarr.providers.response import read_response, require_digits
+from tomarr.providers.response import read_response, require_digits, require_uuid
 
 SECRET_TEXT = "s3cr3t body text"
 
@@ -40,3 +40,31 @@ def test_an_id_that_is_not_digits_is_refused_with_the_providers_name(provider: s
         require_digits(provider, "12x")
 
     assert str(raised.value) == f"{provider} series IDs are made of digits only."
+
+
+@pytest.mark.parametrize(
+    "provider_id", ["68112dc1-2b80-4f20-beb8-2f2a8716a430", "68112DC1-2B80-4F20-BEB8-2F2A8716A430"]
+)
+def test_a_uuid_is_accepted_in_either_case(provider_id: str) -> None:
+    require_uuid("MangaDex", provider_id)
+
+
+@pytest.mark.parametrize(
+    "provider_id",
+    [
+        "",
+        "12x",
+        "68112dc12b804f208beb82f2a8716a430",
+        "{68112dc1-2b80-4f20-beb8-2f2a8716a430}",
+        "urn:uuid:68112dc1-2b80-4f20-beb8-2f2a8716a430",
+        "68112dc1-2b80-4f20-beb8-2f2a8716a430\n",
+        "68112dc1-2b80-4f20-beb8-2f2a8716a430/../x",
+        "68112dc1-2b80-4f20-beb8-2f2a8716a43g",
+        "\u0661" * 8 + "-2b80-4f20-beb8-2f2a8716a430",
+    ],
+)
+def test_an_id_that_is_not_a_uuid_is_refused_with_the_providers_name(provider_id: str) -> None:
+    with pytest.raises(ValueError) as raised:
+        require_uuid("MangaDex", provider_id)
+
+    assert str(raised.value) == "MangaDex series IDs are UUIDs."
