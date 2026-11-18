@@ -7,7 +7,6 @@ from urllib.parse import parse_qs
 
 import httpx2
 import pytest
-from tomarr.providers.mangadex.client import MangaDexClient
 
 from tests.helpers.cassettes import recorded_response_body
 from tests.helpers.clock import FakeClock
@@ -15,6 +14,7 @@ from tests.helpers.http import make_factory
 from tomarr.core.database import Database
 from tomarr.core.errors import ProviderError, RateLimited
 from tomarr.providers.base import SeriesVolumes
+from tomarr.providers.mangadex.client import MangaDexClient
 
 DANDADAN_ID = "68112dc1-2b80-4f20-beb8-2f2a8716a430"
 RECORDED_DANDADAN = (
