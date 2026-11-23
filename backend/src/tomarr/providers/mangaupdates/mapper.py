@@ -3,13 +3,15 @@ from typing import Annotated
 
 from pydantic import BaseModel, Field
 
-from tomarr.parser.chapter_number import normalize_chapter_number
+from tomarr.parser.chapter_number import INTEGER_DIGITS, normalize_chapter_number
+
+# Strict, so "12", true and 12.0 are a wrong type and not a chapter. The bounds sit here so any
+# number the normalizer would refuse is a validation error too.
+_LatestChapter = Annotated[int, Field(strict=True, ge=0, le=10**INTEGER_DIGITS - 1)]
 
 
 class _SeriesResponse(BaseModel):
-    # Strict, so "12", true and 12.0 are a wrong type and not a chapter. A negative number is
-    # refused here, where the error is logged as a body Tomarr does not recognize.
-    latest_chapter: Annotated[int, Field(strict=True, ge=0)] | None = None
+    latest_chapter: _LatestChapter | None = None
 
 
 def parse_series(payload: object) -> Decimal | None:

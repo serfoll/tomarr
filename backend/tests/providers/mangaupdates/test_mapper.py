@@ -25,8 +25,14 @@ def test_unknown_fields_are_ignored() -> None:
     assert parse_series(body) == Decimal(12)
 
 
-@pytest.mark.parametrize("latest_chapter", ["12", True, 12.0, 12.5, [12], {"n": 12}, -3])
-def test_a_latest_chapter_that_is_not_a_non_negative_integer_raises_a_validation_error(
+def test_the_largest_latest_chapter_maps_to_a_decimal() -> None:
+    assert parse_series({"latest_chapter": 99999}) == Decimal(99999)
+
+
+@pytest.mark.parametrize(
+    "latest_chapter", ["12", True, 12.0, 12.5, [12], {"n": 12}, -3, 100000, 10**30]
+)
+def test_a_latest_chapter_that_is_not_a_chapter_number_raises_a_validation_error(
     latest_chapter: object,
 ) -> None:
     with pytest.raises(ValidationError):
@@ -37,8 +43,3 @@ def test_a_latest_chapter_that_is_not_a_non_negative_integer_raises_a_validation
 def test_a_body_that_is_not_an_object_raises_a_validation_error(payload: object) -> None:
     with pytest.raises(ValidationError):
         parse_series(payload)
-
-
-def test_a_latest_chapter_too_large_for_a_chapter_number_raises_a_value_error() -> None:
-    with pytest.raises(ValueError, match="too_large"):
-        parse_series({"latest_chapter": 100000})
