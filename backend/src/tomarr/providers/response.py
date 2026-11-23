@@ -45,3 +45,7 @@ def read_response[T](provider: str, response: httpx2.Response, parse: Callable[[
     except UNREADABLE as error:
         logger.warning("%s sent a body that is not JSON (%s).", provider, type(error).__name__)
         raise ProviderError(provider, response.status_code) from None
+
+
+def require_base36(provider: str, provider_id: str) -> None:
+    raise NotImplementedError
