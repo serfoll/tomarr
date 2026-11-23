@@ -45,3 +45,13 @@ def read_response[T](provider: str, response: httpx2.Response, parse: Callable[[
     except UNREADABLE as error:
         logger.warning("%s sent a body that is not JSON (%s).", provider, type(error).__name__)
         raise ProviderError(provider, response.status_code) from None
+
+
+_BASE_36 = re.compile(r"[0-9a-z]+")
+
+
+def require_base36(provider: str, provider_id: str) -> None:
+    # Spelled out because int(x, 36) takes uppercase, a sign, underscores, spaces and non-ASCII
+    # digits.
+    if not _BASE_36.fullmatch(provider_id):
+        raise ValueError(f"{provider} series IDs are digits and lowercase letters.")
