@@ -9,6 +9,7 @@ from tomarr.providers.base import (
     CharacterName,
     SeriesCandidate,
     SeriesCharacters,
+    SeriesLatestChapter,
     SeriesLookup,
     SeriesSearch,
     SeriesVolumes,
@@ -48,6 +49,11 @@ class CharactersOnlyAdapter:
 class VolumesOnlyAdapter:
     async def get_volume_chapters(self, provider_id: str) -> VolumeChapters:
         return {}
+
+
+class LatestChapterOnlyAdapter:
+    async def get_latest_chapter(self, provider_id: str) -> Decimal | None:
+        return Decimal(139)
 
 
 def test_candidate_is_immutable() -> None:
@@ -120,3 +126,15 @@ def test_volumes_adapter_satisfies_volumes_only() -> None:
 
 def test_search_adapter_does_not_satisfy_volumes() -> None:
     assert not isinstance(SearchOnlyAdapter(), SeriesVolumes)
+
+
+def test_latest_chapter_adapter_satisfies_latest_chapter_only() -> None:
+    adapter = LatestChapterOnlyAdapter()
+
+    assert isinstance(adapter, SeriesLatestChapter)
+    assert not isinstance(adapter, SeriesSearch)
+    assert not isinstance(adapter, SeriesLookup)
+
+
+def test_search_adapter_does_not_satisfy_latest_chapter() -> None:
+    assert not isinstance(SearchOnlyAdapter(), SeriesLatestChapter)
