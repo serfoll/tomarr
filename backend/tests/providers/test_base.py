@@ -11,6 +11,8 @@ from tomarr.providers.base import (
     SeriesCharacters,
     SeriesLookup,
     SeriesSearch,
+    SeriesVolumes,
+    VolumeChapters,
 )
 
 
@@ -41,6 +43,11 @@ class SearchAndLookupAdapter(SearchOnlyAdapter):
 class CharactersOnlyAdapter:
     async def get_character_names(self, provider_id: str) -> list[CharacterName]:
         return []
+
+
+class VolumesOnlyAdapter:
+    async def get_volume_chapters(self, provider_id: str) -> VolumeChapters:
+        return {}
 
 
 def test_candidate_is_immutable() -> None:
@@ -101,3 +108,15 @@ def test_characters_adapter_satisfies_characters_only() -> None:
 
 def test_search_adapter_does_not_satisfy_characters() -> None:
     assert not isinstance(SearchOnlyAdapter(), SeriesCharacters)
+
+
+def test_volumes_adapter_satisfies_volumes_only() -> None:
+    adapter = VolumesOnlyAdapter()
+
+    assert isinstance(adapter, SeriesVolumes)
+    assert not isinstance(adapter, SeriesSearch)
+    assert not isinstance(adapter, SeriesLookup)
+
+
+def test_search_adapter_does_not_satisfy_volumes() -> None:
+    assert not isinstance(SearchOnlyAdapter(), SeriesVolumes)
