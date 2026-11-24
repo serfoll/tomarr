@@ -1,14 +1,13 @@
 import httpx2
 
 from tomarr.core.http import HttpClientFactory, HttpPolicy
-from tomarr.core.version import APP_VERSION
+from tomarr.core.version import USER_AGENT
 from tomarr.providers.base import VolumeChapters
 from tomarr.providers.mangadex.mapper import parse_aggregate
 from tomarr.providers.response import UNREADABLE, read_response, require_uuid
 
 PROVIDER_NAME = "MangaDex"
 BASE_URL = "https://api.mangadex.org"
-USER_AGENT = f"Tomarr/{APP_VERSION} (+https://github.com/serfoll/tomarr)"
 
 # MangaDex allows about 5 requests per second per IP, answers 429 above that and blocks the IP
 # with 403 if requests keep coming. The one hour cache is a judgment, since MangaDex's docs give

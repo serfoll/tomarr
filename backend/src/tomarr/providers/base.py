@@ -59,3 +59,8 @@ class SeriesCharacters(Protocol):
 @runtime_checkable
 class SeriesVolumes(Protocol):
     async def get_volume_chapters(self, provider_id: str) -> VolumeChapters: ...
+
+
+@runtime_checkable
+class SeriesLatestChapter(Protocol):
+    async def get_latest_chapter(self, provider_id: str) -> Decimal | None: ...

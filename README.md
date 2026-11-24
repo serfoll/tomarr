@@ -18,6 +18,10 @@ Early development. Not usable yet.
 
 The sign-up page opens once each time the variable is set. A restart with the variable still set does not reopen it. Browsers signed in before the reset have to sign in again with the new password.
 
+## Data sources
+
+Tomarr reads the latest chapter number of each series from the [MangaUpdates](https://www.mangaupdates.com) API.
+
 ## License
 
 AGPL-3.0. See `LICENSE`.
