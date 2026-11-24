@@ -47,11 +47,12 @@ def read_response[T](provider: str, response: httpx2.Response, parse: Callable[[
         raise ProviderError(provider, response.status_code) from None
 
 
-_BASE_36 = re.compile(r"[0-9a-z]+")
+_BASE_36 = re.compile(r"[0-9a-z]{1,12}")
 
 
 def require_base36(provider: str, provider_id: str) -> None:
     # Spelled out because int(x, 36) takes uppercase, a sign, underscores, spaces and non-ASCII
-    # digits.
+    # digits. Twelve characters stay under 2**63 and far past any real ID, and a longer string
+    # would fail in int() or in formatting the path, with a message about digits.
     if not _BASE_36.fullmatch(provider_id):
-        raise ValueError(f"{provider} series IDs are digits and lowercase letters.")
+        raise ValueError(f"{provider} series IDs are up to 12 digits and lowercase letters.")

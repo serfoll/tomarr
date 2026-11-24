@@ -75,7 +75,7 @@ def test_an_id_that_is_not_a_uuid_is_refused_with_the_providers_name(provider_id
     assert str(raised.value) == "MangaDex series IDs are UUIDs."
 
 
-@pytest.mark.parametrize("provider_id", ["ugf5dzu", "0", "09az"])
+@pytest.mark.parametrize("provider_id", ["ugf5dzu", "0", "09az", "z" * 12])
 def test_lowercase_letters_and_digits_are_a_base_36_id(provider_id: str) -> None:
     require_base36("MangaUpdates", provider_id)
 
@@ -93,10 +93,12 @@ def test_lowercase_letters_and_digits_are_a_base_36_id(provider_id: str) -> None
         "-1",
         "1.5",
         "\u0661\u0662",
+        "z" * 13,
+        "0" * 2900,
     ],
 )
 def test_an_id_that_is_not_base_36_is_refused_with_the_providers_name(provider_id: str) -> None:
     with pytest.raises(ValueError) as raised:
         require_base36("MangaUpdates", provider_id)
 
-    assert str(raised.value) == "MangaUpdates series IDs are digits and lowercase letters."
+    assert str(raised.value) == "MangaUpdates series IDs are up to 12 digits and lowercase letters."

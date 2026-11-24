@@ -169,11 +169,11 @@ async def test_a_response_is_cached_for_an_hour(
     client = stubbed_client(database, clock, wall, respond)
 
     await client.get_latest_chapter(FRIEREN_ID)
-    wall.now += 60
+    wall.now += 3599
     await client.get_latest_chapter(FRIEREN_ID)
     assert len(seen) == 1
 
-    wall.now += 3541
+    wall.now += 2
     await client.get_latest_chapter(FRIEREN_ID)
     assert len(seen) == 2
 
