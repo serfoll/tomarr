@@ -1,10 +1,13 @@
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
+from datetime import date
 from decimal import Decimal
+from enum import StrEnum
 from typing import Protocol, runtime_checkable
 
 from tomarr.domain.external_id import Provider
 from tomarr.domain.series import Format
+from tomarr.matching.thresholds import Thresholds
 
 
 @dataclass(frozen=True)
@@ -32,6 +35,30 @@ class CharacterName:
     full: str
     native: str | None
     alternatives: tuple[str, ...]
+
+
+class DatePrecision(StrEnum):
+    """How much of a release date the Provider gave. The unstated part of a `date` is its first."""
+
+    MONTH = "month"
+    DAY = "day"
+
+
+@dataclass(frozen=True)
+class VolumeMetadata:
+    """One Volume as a Provider describes it. `title` is the Volume's own title, and None when the
+    Provider names only the Series. `other_isbns` holds the ISBNs the Provider lists for the same
+    Volume besides `isbn`, since a reprint or a second binding gets its own."""
+
+    number: Decimal
+    isbn: str
+    title: str | None = None
+    other_isbns: tuple[str, ...] = ()
+    release_date: date | None = None
+    release_precision: DatePrecision | None = None
+    cover_url: str | None = None
+    synopsis: str | None = None
+    upcoming: bool = False
 
 
 type VolumeChapters = Mapping[Decimal | None, frozenset[Decimal]]
@@ -64,3 +91,10 @@ class SeriesVolumes(Protocol):
 @runtime_checkable
 class SeriesLatestChapter(Protocol):
     async def get_latest_chapter(self, provider_id: str) -> Decimal | None: ...
+
+
+@runtime_checkable
+class SeriesVolumeMetadata(Protocol):
+    async def get_volume_metadata(
+        self, title: str, aliases: Sequence[str], thresholds: Thresholds
+    ) -> list[VolumeMetadata]: ...
