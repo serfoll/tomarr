@@ -148,6 +148,6 @@ def _read_issued(text: str | None) -> tuple[date | None, DatePrecision | None]:
     if match is None:
         return None, None
     year, month = int(match[1]), int(match[2])
-    if not 1 <= month <= 12:
+    if year < 1 or not 1 <= month <= 12:
         return None, None
     return date(year, month, 1), DatePrecision.MONTH

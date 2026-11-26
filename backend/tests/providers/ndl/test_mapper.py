@@ -143,6 +143,18 @@ def test_the_issued_date_has_month_precision_or_is_left_out(
     assert (volume.release_date, volume.release_precision) == (date_read, precision)
 
 
+def test_an_issued_year_of_zero_is_left_out_and_keeps_the_other_volumes() -> None:
+    volumes = read(
+        item(volume="VOL.1"),
+        item(volume="VOL.2", issued="0000.5", isbns=("978-4-09-850181-6",)),
+    )
+
+    assert [(v.number, v.release_date, v.release_precision) for v in volumes] == [
+        (Decimal(1), date(2020, 8, 1), DatePrecision.MONTH),
+        (Decimal(2), None, None),
+    ]
+
+
 def test_a_volume_listed_under_two_isbns_is_one_volume_that_keeps_both() -> None:
     volumes = read(
         item(volume="VOL.10", isbns=("9784098517718",)),
