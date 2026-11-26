@@ -1,19 +1,25 @@
+from collections.abc import Sequence
 from dataclasses import FrozenInstanceError, replace
+from datetime import date
 from decimal import Decimal
 
 import pytest
 
 from tomarr.domain.external_id import Provider
 from tomarr.domain.series import Format
+from tomarr.matching.thresholds import Thresholds
 from tomarr.providers.base import (
     CharacterName,
+    DatePrecision,
     SeriesCandidate,
     SeriesCharacters,
     SeriesLatestChapter,
     SeriesLookup,
     SeriesSearch,
+    SeriesVolumeMetadata,
     SeriesVolumes,
     VolumeChapters,
+    VolumeMetadata,
 )
 
 
@@ -54,6 +60,17 @@ class VolumesOnlyAdapter:
 class LatestChapterOnlyAdapter:
     async def get_latest_chapter(self, provider_id: str) -> Decimal | None:
         return Decimal(139)
+
+
+class VolumeMetadataOnlyAdapter:
+    async def get_volume_metadata(
+        self, title: str, aliases: Sequence[str], thresholds: Thresholds
+    ) -> list[VolumeMetadata]:
+        return []
+
+
+def make_volume() -> VolumeMetadata:
+    return VolumeMetadata(number=Decimal(1), isbn="9784098517718", title="葬送のフリーレン 1")
 
 
 def test_candidate_is_immutable() -> None:
@@ -138,3 +155,44 @@ def test_latest_chapter_adapter_satisfies_latest_chapter_only() -> None:
 
 def test_search_adapter_does_not_satisfy_latest_chapter() -> None:
     assert not isinstance(SearchOnlyAdapter(), SeriesLatestChapter)
+
+
+def test_volume_metadata_adapter_satisfies_volume_metadata_only() -> None:
+    adapter = VolumeMetadataOnlyAdapter()
+
+    assert isinstance(adapter, SeriesVolumeMetadata)
+    assert not isinstance(adapter, SeriesVolumes)
+    assert not isinstance(adapter, SeriesSearch)
+
+
+def test_volumes_adapter_does_not_satisfy_volume_metadata() -> None:
+    assert not isinstance(VolumesOnlyAdapter(), SeriesVolumeMetadata)
+
+
+def test_volume_metadata_has_only_what_it_is_given_by_default() -> None:
+    volume = make_volume()
+
+    assert volume.other_isbns == ()
+    assert volume.release_date is None
+    assert volume.release_precision is None
+    assert volume.cover_url is None
+    assert volume.synopsis is None
+    assert volume.upcoming is False
+
+
+def test_volume_metadata_holds_a_release_date_with_its_precision() -> None:
+    volume = replace(
+        make_volume(), release_date=date(2020, 8, 1), release_precision=DatePrecision.MONTH
+    )
+
+    assert (volume.release_date, volume.release_precision) == (
+        date(2020, 8, 1),
+        DatePrecision.MONTH,
+    )
+
+
+def test_volume_metadata_is_immutable() -> None:
+    volume = make_volume()
+
+    with pytest.raises(FrozenInstanceError):
+        volume.isbn = "9784098517725"  # pyright: ignore[reportAttributeAccessIssue]
