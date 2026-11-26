@@ -46,12 +46,13 @@ class DatePrecision(StrEnum):
 
 @dataclass(frozen=True)
 class VolumeMetadata:
-    """One Volume as a Provider describes it. `other_isbns` holds the ISBNs the Provider lists
-    for the same Volume besides `isbn`, since a reprint or a second binding gets its own."""
+    """One Volume as a Provider describes it. `title` is the Volume's own title, and None when the
+    Provider names only the Series. `other_isbns` holds the ISBNs the Provider lists for the same
+    Volume besides `isbn`, since a reprint or a second binding gets its own."""
 
     number: Decimal
     isbn: str
-    title: str
+    title: str | None = None
     other_isbns: tuple[str, ...] = ()
     release_date: date | None = None
     release_precision: DatePrecision | None = None

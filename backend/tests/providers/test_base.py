@@ -70,7 +70,7 @@ class VolumeMetadataOnlyAdapter:
 
 
 def make_volume() -> VolumeMetadata:
-    return VolumeMetadata(number=Decimal(1), isbn="9784098517718", title="葬送のフリーレン 1")
+    return VolumeMetadata(number=Decimal(1), isbn="9784098517718")
 
 
 def test_candidate_is_immutable() -> None:
@@ -172,6 +172,7 @@ def test_volumes_adapter_does_not_satisfy_volume_metadata() -> None:
 def test_volume_metadata_has_only_what_it_is_given_by_default() -> None:
     volume = make_volume()
 
+    assert volume.title is None
     assert volume.other_isbns == ()
     assert volume.release_date is None
     assert volume.release_precision is None
