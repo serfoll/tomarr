@@ -91,8 +91,6 @@ def test_an_item_whose_volume_is_missing_or_not_one_number_is_dropped(volume: st
         "978-4-09-850180-9",
         "9784098501809",
         "978 4 09 850180 9",
-        "4-09-850180-5",
-        "4098501805",
     ],
 )
 def test_an_isbn_becomes_13_digits_without_hyphens(isbn: str) -> None:
@@ -104,6 +102,11 @@ def test_an_isbn_becomes_13_digits_without_hyphens(isbn: str) -> None:
     ["978-4-09-850180-8", "4098501806", "978409850180", "97840985018099", "", "abcdefghijklm"],
 )
 def test_an_item_whose_only_isbn_is_not_valid_is_dropped(isbn: str) -> None:
+    assert read(item(isbns=(isbn,))) == []
+
+
+@pytest.mark.parametrize("isbn", ["4-09-850180-5", "4098501805", "409850180X", "4-09-850180-x"])
+def test_an_item_whose_only_isbn_is_an_isbn_10_is_dropped(isbn: str) -> None:
     assert read(item(isbns=(isbn,))) == []
 
 
@@ -119,6 +122,35 @@ def test_an_invalid_isbn_is_skipped_when_the_item_has_a_valid_one() -> None:
 
 def test_an_identifier_that_is_not_an_isbn_is_not_read_as_one() -> None:
     body = feed(item(isbns=())).replace(b"030560687", b"9784098501809")
+
+    assert parse_volumes(body, SERIES, (), THRESHOLDS) == []
+
+
+def _with_isbn_type(xsi_type: str, declaration: str) -> bytes:
+    body = feed(item()).decode()
+    body = body.replace('xsi:type="dcndl:ISBN"', f'xsi:type="{xsi_type}"')
+    return body.replace("<rss", f"<rss {declaration}", 1).encode()
+
+
+def test_an_isbn_is_read_when_the_dcndl_namespace_has_another_prefix() -> None:
+    body = _with_isbn_type("ndl:ISBN", 'xmlns:ndl="http://ndl.go.jp/dcndl/terms/"')
+
+    assert [v.isbn for v in parse_volumes(body, SERIES, (), THRESHOLDS)] == ["9784098501809"]
+
+
+@pytest.mark.parametrize(
+    ("xsi_type", "declaration"),
+    [
+        ("ndl:ISBN", 'xmlns:ndl="http://example.com/other"'),
+        ("unbound:ISBN", ""),
+        ("ISBN", ""),
+        ("dcndl:NDLBibID", ""),
+    ],
+)
+def test_an_identifier_whose_type_is_not_the_dcndl_isbn_is_not_read(
+    xsi_type: str, declaration: str
+) -> None:
+    body = _with_isbn_type(xsi_type, declaration)
 
     assert parse_volumes(body, SERIES, (), THRESHOLDS) == []
 
@@ -164,6 +196,38 @@ def test_a_volume_listed_under_two_isbns_is_one_volume_that_keeps_both() -> None
     assert [(v.number, v.isbn, v.other_isbns) for v in volumes] == [
         (Decimal(10), "9784098517718", ("9784099431259",))
     ]
+
+
+def test_a_second_volume_listing_an_isbn_the_first_has_is_dropped() -> None:
+    volumes = read(
+        item(volume="VOL.1", isbns=("9784098501809",)),
+        item(volume="VOL.2", isbns=("978-4-09-850180-9",)),
+    )
+
+    assert [(v.number, v.isbn, v.other_isbns) for v in volumes] == [
+        (Decimal(1), "9784098501809", ())
+    ]
+
+
+def test_a_second_volume_keeps_its_own_isbns_and_loses_the_shared_one() -> None:
+    volumes = read(
+        item(volume="VOL.1", isbns=("9784098501809",)),
+        item(volume="VOL.2", isbns=("9784098501809", "9784098501816")),
+    )
+
+    assert [(v.number, v.isbn, v.other_isbns) for v in volumes] == [
+        (Decimal(1), "9784098501809", ()),
+        (Decimal(2), "9784098501816", ()),
+    ]
+
+
+def test_the_first_volume_in_feed_order_keeps_a_shared_isbn() -> None:
+    volumes = read(
+        item(volume="VOL.2", isbns=("9784098501809",)),
+        item(volume="VOL.1", isbns=("9784098501809",)),
+    )
+
+    assert [(v.number, v.isbn) for v in volumes] == [(Decimal(2), "9784098501809")]
 
 
 def test_an_isbn_listed_twice_is_kept_once() -> None:

@@ -1,5 +1,6 @@
 import re
 from collections.abc import Sequence
+from dataclasses import replace
 from datetime import date
 from decimal import Decimal
 
@@ -38,18 +39,33 @@ def parse_volumes(
 
     An item is a Volume of the Series when its title matches the Series title or one of its
     Aliases, it has a single Volume number and it has at least one valid ISBN. Anything else is
-    dropped. The same Volume listed under several ISBNs comes back once, with the first ISBN
-    in `isbn` and the others in `other_isbns`.
+    dropped. Only a valid 13-digit ISBN counts, so an ISBN-10 is not read. The same Volume listed
+    under several ISBNs comes back once, with the first ISBN in `isbn` and the others in
+    `other_isbns`.
+
+    An ISBN belongs to one Volume. When NDL lists it on two Volume numbers, the first Volume in
+    feed order keeps it and a later one loses it from `isbn` and `other_isbns`, and is dropped
+    when it has no ISBN left.
 
     Raises ValueError when the body is not an RSS feed, which includes a DOCTYPE.
     """
     root = _parse(body)
     merged: dict[Decimal, VolumeMetadata] = {}
+    owner: dict[str, Decimal] = {}
     for element in root.iterfind("channel/item"):
         volume = _read_item(element, title, aliases, thresholds)
-        if volume is not None:
-            known = merged.get(volume.number)
-            merged[volume.number] = volume if known is None else _merge(known, volume)
+        if volume is None:
+            continue
+        isbns = [
+            isbn
+            for isbn in (volume.isbn, *volume.other_isbns)
+            if owner.setdefault(isbn, volume.number) == volume.number
+        ]
+        if not isbns:
+            continue
+        volume = replace(volume, isbn=isbns[0], other_isbns=tuple(isbns[1:]))
+        known = merged.get(volume.number)
+        merged[volume.number] = volume if known is None else _merge(known, volume)
     return [merged[number] for number in sorted(merged)]
 
 
@@ -114,28 +130,24 @@ def _read_volume_number(text: str) -> Decimal | None:
 
 def _read_isbns(element: Element) -> tuple[str, ...]:
     found = (
-        _to_isbn13(identifier.text or "")
+        _read_isbn(identifier.text or "")
         for identifier in element.iterfind("dc:identifier", _NS)
-        if identifier.get(_XSI_TYPE) == "dcndl:ISBN"
+        if _is_isbn_type(identifier)
     )
     return tuple(dict.fromkeys(isbn for isbn in found if isbn is not None))
 
 
-def _to_isbn13(text: str) -> str | None:
+def _is_isbn_type(identifier: Element) -> bool:
+    # The prefix is the feed's choice, so xsi:type is read as a QName against the element's scope.
+    prefix, colon, local = identifier.get(_XSI_TYPE, "").partition(":")
+    return bool(colon) and local == "ISBN" and identifier.nsmap.get(prefix) == _NS["dcndl"]
+
+
+def _read_isbn(text: str) -> str | None:
     digits = _ISBN_SEPARATORS.sub("", text)
-    if re.fullmatch(r"[0-9]{13}", digits):
-        return digits if _check_digit_13(digits[:12]) == digits[12] else None
-    if re.fullmatch(r"[0-9]{9}[0-9X]", digits):
-        weighted = sum((10 - place) * _digit(char) for place, char in enumerate(digits))
-        if weighted % 11 != 0:
-            return None
-        converted = f"978{digits[:9]}"
-        return converted + _check_digit_13(converted)
+    if re.fullmatch(r"[0-9]{13}", digits) and _check_digit_13(digits[:12]) == digits[12]:
+        return digits
     return None
-
-
-def _digit(char: str) -> int:
-    return 10 if char == "X" else int(char)
 
 
 def _check_digit_13(first_twelve: str) -> str:
