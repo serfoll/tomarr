@@ -105,9 +105,29 @@ def test_an_item_whose_only_isbn_is_not_valid_is_dropped(isbn: str) -> None:
     assert read(item(isbns=(isbn,))) == []
 
 
-@pytest.mark.parametrize("isbn", ["4-09-850180-5", "4098501805", "409850180X", "4-09-850180-x"])
-def test_an_item_whose_only_isbn_is_an_isbn_10_is_dropped(isbn: str) -> None:
+@pytest.mark.parametrize(
+    ("isbn", "isbn_13"),
+    [
+        ("4-09-850180-5", "9784098501809"),
+        ("4098501805", "9784098501809"),
+        # Real NDL identifiers for pre-2007 volumes.
+        ("4-08-851688-5", "9784088516882"),
+        ("493139681X", "9784931396814"),
+    ],
+)
+def test_an_isbn_10_is_converted_to_isbn_13(isbn: str, isbn_13: str) -> None:
+    assert [v.isbn for v in read(item(isbns=(isbn,)))] == [isbn_13]
+
+
+@pytest.mark.parametrize("isbn", ["4098501806", "409850180Y", "4-09-850180-x", "40985018"])
+def test_an_item_whose_only_isbn_is_an_invalid_isbn_10_is_dropped(isbn: str) -> None:
     assert read(item(isbns=(isbn,))) == []
+
+
+def test_an_isbn_10_and_its_isbn_13_are_one_isbn() -> None:
+    volumes = read(item(isbns=("4-09-850180-5", "978-4-09-850180-9")))
+
+    assert [(v.isbn, v.other_isbns) for v in volumes] == [("9784098501809", ())]
 
 
 def test_an_item_with_no_isbn_is_dropped() -> None:

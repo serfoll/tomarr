@@ -39,9 +39,9 @@ def parse_volumes(
 
     An item is a Volume of the Series when its title matches the Series title or one of its
     Aliases, it has a single Volume number and it has at least one valid ISBN. Anything else is
-    dropped. Only a valid 13-digit ISBN counts, so an ISBN-10 is not read. The same Volume listed
-    under several ISBNs comes back once, with the first ISBN in `isbn` and the others in
-    `other_isbns`.
+    dropped. An ISBN is valid when its check digit is, and an ISBN-10 is returned as its ISBN-13.
+    The same Volume listed under several ISBNs comes back once, with the first ISBN in `isbn` and
+    the others in `other_isbns`.
 
     An ISBN belongs to one Volume. When NDL lists it on two Volume numbers, the first Volume in
     feed order keeps it and a later one loses it from `isbn` and `other_isbns`, and is dropped
@@ -145,8 +145,17 @@ def _is_isbn_type(identifier: Element) -> bool:
 
 def _read_isbn(text: str) -> str | None:
     digits = _ISBN_SEPARATORS.sub("", text)
-    if re.fullmatch(r"[0-9]{13}", digits) and _check_digit_13(digits[:12]) == digits[12]:
-        return digits
+    if re.fullmatch(r"[0-9]{13}", digits):
+        return digits if _check_digit_13(digits[:12]) == digits[12] else None
+    # Volumes from before 2007 carry only an ISBN-10, which is read as its ISBN-13.
+    if re.fullmatch(r"[0-9]{9}[0-9X]", digits):
+        weighted = sum(
+            (10 - place) * (10 if char == "X" else int(char)) for place, char in enumerate(digits)
+        )
+        if weighted % 11 != 0:
+            return None
+        converted = f"978{digits[:9]}"
+        return converted + _check_digit_13(converted)
     return None
 
 
