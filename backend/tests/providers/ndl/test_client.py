@@ -43,8 +43,23 @@ async def test_get_volume_metadata_returns_the_volumes_of_a_series_with_isbns(
 
     volumes = await client.get_volume_metadata(SERIES, [], THRESHOLDS)
 
-    assert [volume.number for volume in volumes] == [Decimal(n) for n in range(1, 16)]
-    assert all(volume.isbn.startswith("978") and len(volume.isbn) == 13 for volume in volumes)
+    assert [(volume.number, volume.isbn, volume.other_isbns) for volume in volumes] == [
+        (Decimal(1), "9784098501809", ()),
+        (Decimal(2), "9784098501816", ()),
+        (Decimal(3), "9784098502851", ()),
+        (Decimal(4), "9784098504909", ()),
+        (Decimal(5), "9784098506347", ()),
+        (Decimal(6), "9784098507283", ("9784099430962",)),
+        (Decimal(7), "9784098508761", ("9784099431044",)),
+        (Decimal(8), "9784098511488", ("9784099431167",)),
+        (Decimal(9), "9784098512607", ("9784099431198",)),
+        (Decimal(10), "9784098517718", ("9784099431259",)),
+        (Decimal(11), "9784098527694", ("9784099431327",)),
+        (Decimal(12), "9784098530304", ("9784099431402",)),
+        (Decimal(13), "9784098532339", ("9784099431587",)),
+        (Decimal(14), "9784098540174", ("9784099431952",)),
+        (Decimal(15), "9784098543465", ("9784099432201",)),
+    ]
 
 
 def test_client_satisfies_the_series_volume_metadata_protocol(database: Database) -> None:
