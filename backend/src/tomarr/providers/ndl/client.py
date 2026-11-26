@@ -33,6 +33,8 @@ class NdlClient:
     async def get_volume_metadata(
         self, title: str, aliases: Sequence[str], thresholds: Thresholds
     ) -> list[VolumeMetadata]:
+        if not title.strip():
+            raise ValueError(f"{PROVIDER_NAME} needs a series title.")
         response = await self._get(title, aliases, thresholds)
         if response.status_code != 200:
             raise ProviderError(PROVIDER_NAME, response.status_code)

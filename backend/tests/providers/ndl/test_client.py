@@ -215,3 +215,16 @@ async def test_the_policy_allows_one_request_every_two_seconds(
             await client.get_volume_metadata(SERIES, [], THRESHOLDS)
 
     assert arrivals == [0, 2, 4]
+
+
+@pytest.mark.parametrize("title", ["", " ", "\u3000", " \t\n"])
+async def test_a_blank_title_is_refused_before_any_request(
+    database: Database, clock: FakeClock, wall: FakeClock, title: str
+) -> None:
+    def respond(request: httpx2.Request) -> httpx2.Response:
+        pytest.fail(f"A request was sent: {request.url}")
+
+    client = stubbed_client(database, clock, wall, respond)
+
+    with pytest.raises(ValueError, match="title"):
+        await client.get_volume_metadata(title, [], THRESHOLDS)
