@@ -22,6 +22,10 @@ The sign-up page opens once each time the variable is set. A restart with the va
 
 Tomarr reads the latest chapter number of each series from the [MangaUpdates](https://www.mangaupdates.com) API.
 
+Tomarr reads volume ISBNs and release months from the [NDL Search API](https://ndlsearch.ndl.go.jp) of the National Diet Library of Japan.
+
+If you self-host Tomarr and use it continuously, NDL asks you to submit its [usage application form](https://form2.ndl.go.jp/form/pub/ndl07/api).
+
 ## License
 
 AGPL-3.0. See `LICENSE`.
