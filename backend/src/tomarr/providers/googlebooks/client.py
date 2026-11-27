@@ -22,7 +22,9 @@ _FIELDS = "items(volumeInfo(description,publishedDate,imageLinks,industryIdentif
 class GoogleBooksClient:
     def __init__(self, factory: HttpClientFactory, api_key: str) -> None:
         self._factory = factory
-        self._api_key = api_key
+        self._api_key = api_key.strip()
+        if any(c.isspace() or not c.isprintable() for c in self._api_key):
+            raise ValueError(f"{PROVIDER_NAME} API key has whitespace or control characters in it.")
 
     async def get_volume_details(self, isbns: Sequence[str]) -> dict[str, VolumeDetails]:
         if not self._api_key:
@@ -59,5 +61,5 @@ class GoogleBooksClient:
 
 def _require_isbn(isbn: str) -> None:
     # The ISBN goes into the q parameter, where anything but digits could add a search term.
-    if not (isbn.isascii() and isbn.isdigit() and len(isbn) in (10, 13)):
-        raise ValueError(f"{PROVIDER_NAME} ISBNs are 10 or 13 digits.")
+    if not (isbn.isascii() and isbn.isdigit() and len(isbn) == 13):
+        raise ValueError(f"{PROVIDER_NAME} ISBNs are 13 digits.")

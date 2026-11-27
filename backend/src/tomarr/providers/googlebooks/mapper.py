@@ -26,7 +26,7 @@ class _VolumeInfo(BaseModel):
 
 
 class _Item(BaseModel):
-    volumeInfo: _VolumeInfo
+    volumeInfo: _VolumeInfo = Field(default_factory=_VolumeInfo)
 
 
 class _Response(BaseModel):
@@ -43,7 +43,7 @@ def parse_volume_details(body: object, isbn: str) -> VolumeDetails | None:
         if any(i.type == "ISBN_13" and i.identifier == isbn for i in info.industryIdentifiers):
             release_date, precision = _read_published(info.publishedDate)
             return VolumeDetails(
-                synopsis=info.description or None,
+                synopsis=(info.description or "").strip() or None,
                 cover_url=_read_cover(info.imageLinks),
                 release_date=release_date,
                 release_precision=precision,
@@ -52,11 +52,15 @@ def parse_volume_details(body: object, isbn: str) -> VolumeDetails | None:
 
 
 def _read_cover(links: _ImageLinks | None) -> str | None:
-    url = links and (links.thumbnail or links.smallThumbnail)
+    if links is None:
+        return None
+    url = links.thumbnail or links.smallThumbnail
     if not url:
         return None
     # Google serves the same image over https, and the links come back as http.
-    return re.sub(r"^http://", "https://", url)
+    if url.startswith("http://"):
+        return "https://" + url.removeprefix("http://")
+    return url
 
 
 def _read_published(text: str | None) -> tuple[date | None, DatePrecision | None]:

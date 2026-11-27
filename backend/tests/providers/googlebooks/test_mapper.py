@@ -67,9 +67,9 @@ def test_a_year_and_month_gives_month_precision_on_the_first() -> None:
 def test_a_date_that_is_not_a_day_or_a_month_gives_no_date_and_keeps_the_rest(
     published: str,
 ) -> None:
-    info = volume_info(FRIEREN_1, publishedDate=published, description="A elf mage.")
+    info = volume_info(FRIEREN_1, publishedDate=published, description="An elf mage.")
 
-    assert parse_volume_details(body(info), FRIEREN_1) == VolumeDetails(synopsis="A elf mage.")
+    assert parse_volume_details(body(info), FRIEREN_1) == VolumeDetails(synopsis="An elf mage.")
 
 
 def test_a_record_with_no_published_date_gives_no_date() -> None:
@@ -78,7 +78,7 @@ def test_a_record_with_no_published_date_gives_no_date() -> None:
     assert details == VolumeDetails()
 
 
-@pytest.mark.parametrize("description", ["", None])
+@pytest.mark.parametrize("description", ["", "   \n", None])
 def test_an_empty_or_missing_description_gives_no_synopsis(description: str | None) -> None:
     info = volume_info(MASHIRO_3, description=description, publishedDate="2026-01-01")
 
@@ -143,7 +143,11 @@ def test_an_isbn_10_alone_does_not_match() -> None:
 
 @pytest.mark.parametrize(
     "response",
-    [{"kind": "books#volumes", "totalItems": 0}, {"totalItems": 0, "items": []}],
+    [
+        {"kind": "books#volumes", "totalItems": 0},
+        {"totalItems": 0, "items": []},
+        {"items": [{}]},
+    ],
 )
 def test_no_items_gives_none(response: object) -> None:
     assert parse_volume_details(response, ONE_PIECE_115) is None

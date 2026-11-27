@@ -58,11 +58,11 @@ def answer_with_match(request: httpx2.Request) -> httpx2.Response:
     return httpx2.Response(200, content=body_for(by_isbn(request)))
 
 
-# Test-only. The app reads the key from the google_books.api_key setting.
 @pytest.mark.vcr
 async def test_get_volume_details_reads_real_responses(
     database: Database, clock: FakeClock, wall: FakeClock
 ) -> None:
+    # Test-only. The app reads the key from the google_books.api_key setting.
     key = os.environ.get("GOOGLE_BOOKS_API_KEY", "replay-key")
     client = GoogleBooksClient(make_factory(database, clock, wall), key)
 
@@ -173,6 +173,7 @@ async def test_an_empty_key_is_refused_before_any_request(
     "isbn",
     [
         "",
+        "4098501805",
         "978409850180",
         "97840985018099",
         "978-4-09-850180-9",
@@ -180,7 +181,7 @@ async def test_an_empty_key_is_refused_before_any_request(
         "\uff19\uff17\uff18\uff14\uff10\uff19\uff18\uff15\uff10\uff11\uff18\uff10\uff19",
     ],
 )
-async def test_an_isbn_that_is_not_10_or_13_digits_is_refused_before_any_request(
+async def test_an_isbn_that_is_not_13_digits_is_refused_before_any_request(
     database: Database, clock: FakeClock, wall: FakeClock, isbn: str
 ) -> None:
     def respond(request: httpx2.Request) -> httpx2.Response:
@@ -192,14 +193,43 @@ async def test_an_isbn_that_is_not_10_or_13_digits_is_refused_before_any_request
         await client.get_volume_details([FRIEREN_ONE, isbn])
 
 
-async def test_a_ten_digit_isbn_is_accepted(
+async def test_a_key_with_a_trailing_newline_is_sent_stripped(
     database: Database, clock: FakeClock, wall: FakeClock
 ) -> None:
-    client = stubbed_client(
-        database, clock, wall, lambda _r: httpx2.Response(200, content=NO_MATCH)
-    )
+    seen: list[httpx2.Request] = []
 
-    assert await client.get_volume_details(["4098501805"]) == {}
+    def respond(request: httpx2.Request) -> httpx2.Response:
+        seen.append(request)
+        return httpx2.Response(200, content=NO_MATCH)
+
+    client = stubbed_client(database, clock, wall, respond, api_key=f"{KEY}\n")
+    await client.get_volume_details([FRIEREN_ONE])
+
+    (request,) = seen
+    assert request.headers["x-goog-api-key"] == KEY
+
+
+async def test_a_whitespace_only_key_is_refused_before_any_request(
+    database: Database, clock: FakeClock, wall: FakeClock
+) -> None:
+    def respond(request: httpx2.Request) -> httpx2.Response:
+        pytest.fail(f"A request was sent: {request.url}")
+
+    client = stubbed_client(database, clock, wall, respond, api_key=" \n")
+
+    with pytest.raises(ValueError, match="key"):
+        await client.get_volume_details([FRIEREN_ONE])
+
+
+@pytest.mark.parametrize("api_key", ["abc def", "abc\x00def", "abc\tdef", "abc\x7fdef"])
+def test_a_key_with_whitespace_or_control_characters_inside_is_refused_without_echoing_it(
+    database: Database, clock: FakeClock, wall: FakeClock, api_key: str
+) -> None:
+    with pytest.raises(ValueError, match="key") as raised:
+        stubbed_client(database, clock, wall, lambda _r: httpx2.Response(200), api_key=api_key)
+
+    assert api_key not in str(raised.value)
+    assert api_key not in repr(raised.value)
 
 
 async def test_a_429_raises_rate_limited_with_the_retry_after(
@@ -324,3 +354,18 @@ async def test_the_key_is_in_no_log_line_and_no_error_message(
     assert KEY not in str(raised.value)
     assert KEY not in repr(raised.value)
     assert KEY not in caplog.text
+
+
+async def test_a_bare_item_for_one_isbn_does_not_discard_the_others(
+    database: Database, clock: FakeClock, wall: FakeClock
+) -> None:
+    def respond(request: httpx2.Request) -> httpx2.Response:
+        if by_isbn(request) == FRIEREN_TWO:
+            return httpx2.Response(200, content=b'{"items":[{}]}')
+        return answer_with_match(request)
+
+    client = stubbed_client(database, clock, wall, respond)
+
+    details = await client.get_volume_details([FRIEREN_ONE, FRIEREN_TWO])
+
+    assert details == {FRIEREN_ONE: details_for(FRIEREN_ONE)}
