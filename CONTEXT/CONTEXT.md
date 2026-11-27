@@ -33,7 +33,7 @@ The record of which Chapters a Volume contains, for one Edition. Every Mapping h
 _Avoid_: link, index
 
 **Provenance**:
-Where a Mapping or a piece of metadata came from, plus a confidence. In priority order: `user`, `mangadex_aggregate`, `description_parse` (for example `第18話〜第26話収録` from Rakuten or openBD), `llm_extraction`, `inferred`. A higher-priority source never gets overwritten by a lower one.
+Where a Mapping or a piece of metadata came from, plus a confidence. In priority order: `user`, `mangadex_aggregate`, `description_parse` (for example `第18話〜第26話収録` in a Rakuten description), `llm_extraction`, `inferred`. A higher-priority source never gets overwritten by a lower one.
 _Avoid_: source (on its own, it's ambiguous with Provider)
 
 **Locked**:
@@ -41,7 +41,7 @@ A Mapping or field the user has fixed by hand. Metadata refreshes never change i
 _Avoid_: pinned, frozen
 
 **Provider**:
-An external metadata source behind a common interface: MangaBaka, AniList, MangaDex, MangaUpdates, Rakuten Books, NDL, openBD, WEBTOON.
+An external metadata source behind a common interface: MangaBaka, AniList, MangaDex, MangaUpdates, Rakuten Books, NDL, Google Books, WEBTOON.
 _Avoid_: source, API, integration
 
 **External ID**:

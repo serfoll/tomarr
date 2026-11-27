@@ -35,7 +35,7 @@
 24. **MangaUpdates adapter** (type:feature, area:metadata)
 25. **Rakuten Books adapter** (type:feature, area:metadata)
 26. **NDL search adapter** (type:feature, area:metadata)
-27. **openBD adapter** (type:feature, area:metadata)
+27. **Google Books adapter** (type:feature, area:metadata)
 28. **Description chapter-range parser** (type:feature, area:parser)
 29. **WEBTOON RSS adapter** (type:feature, area:metadata)
 30. **Add series: resolve, suggest, override title and aliases** (type:feature, area:backend, area:frontend)

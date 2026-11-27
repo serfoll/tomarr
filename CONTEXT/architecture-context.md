@@ -67,7 +67,7 @@ CONTEXT/              product, process and (later) design docs
 | MangaUpdates | Latest released chapters |
 | Rakuten Books | Japanese volumes: ISBN, date, synopsis, upcoming volumes |
 | NDL | Authoritative list of published Japanese volumes and ISBNs |
-| openBD | Enrichment by ISBN, including publisher descriptions |
+| Google Books | Synopsis, cover and release date by ISBN, with the user's own API key |
 | WEBTOON RSS | Latest episodes for webtoon Series |
 
 Results are merged by Provenance priority. Locked fields and Mappings are skipped. New Japanese synopses queue `TranslateSynopses` when a Gemini key is set.
