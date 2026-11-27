@@ -1,0 +1,216 @@
+interactions:
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      host:
+      - www.googleapis.com
+      user-agent:
+      - Tomarr/0.1.0 (+https://github.com/serfoll/tomarr)
+      x-goog-api-key:
+      - REDACTED
+    method: GET
+    uri: https://www.googleapis.com/books/v1/volumes?fields=items%28volumeInfo%28description%2CpublishedDate%2CimageLinks%2CindustryIdentifiers%29%29&q=isbn%3A9784088851303
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAC/7VST28SQRy98ymWPXBqy1KsYBPSoPaAMXrQm2ka2F1g0t2dze7SpJImzK6SKLSl
+        VNBGsTGtgja01WraGInfpT9mkW/hLKQUPBgvzmH+vN+b9978yfs4jkeWrJr8PPeILTguP+gZvIqV
+        nContDRmtUuU4XoupSAzK0u3k5bMSvysMHt9WohMC2F+6oomyaZoIN1CWPNIvUrRdU6BHHXP671a
+        Gezqr58dIE/czzbYhJ506PPXQF4C+cBAIHvgbIHzEZxDcJ5BwaaVDVphhBbd/gHkBOwy4/Q2Swxx
+        yTFtV8Bpg91m+v36DpDD7nmh29npdmpAyv4FDkhjKE6ftjwLu9rbew9kf2DELGpg7/fJCyDHYLcG
+        SGUAVt3aNpCiR2MhtzbcqsPAfr1Em8x6F+yS389dFN4A+cKSADkA8gnIJotBD5q95it61LgoNNgW
+        evaOkd1vZ+7XEi1W+7vfvcDOW3BO/f7xa0OalDMtYy0hyZqF0kg2rp5m2PJjc7bBWtMHr5B4cPPe
+        ckgY0xrqjXQ80jUhGo3OhcJChB+jrU/9q3z47/I3ItGRQ3jCYTRfGj+rmszId5G2Yk78MFYx1aSi
+        PMzm1JSWRIonnbUsfT4YTGG8Ys5kMM4o8oyI1SEQFLFmsSALSIpJi/i+kFmM34rH7wR0A2mWKYux
+        tMEYIl6VjQBSM7FQ4DHGamwuYOKcIcqxTMpcTupo4nS89d/9Q3/6j+wvL2w4ev2Sb933G1KHhiev
+        AwAA
+    headers:
+      alt-svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      content-encoding:
+      - gzip
+      content-type:
+      - application/json; charset=UTF-8
+      date:
+      - Fri, 27 Nov 2026 15:34:02 GMT
+      server:
+      - ESF
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - X-Origin
+      - Referer
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - SAMEORIGIN
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      host:
+      - www.googleapis.com
+      user-agent:
+      - Tomarr/0.1.0 (+https://github.com/serfoll/tomarr)
+      x-goog-api-key:
+      - REDACTED
+    method: GET
+    uri: https://www.googleapis.com/books/v1/volumes?fields=items%28volumeInfo%28description%2CpublishedDate%2CimageLinks%2CindustryIdentifiers%29%29&q=isbn%3A9784098501809
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAC/7WTbU/TUBTH3/Mp6l4smjDoQOJGspj58GLGkBB9ZwjZQxk3rL1L25EgIeltJ4LD
+        p8l4UJFMQ4YIIwZNCAL7Lpx17b6F5+4ZTdQ3Ns3t7bn/8/ufc2873ycIHqJLsuYZFR7hiyDMN0YM
+        z9JURpYiyhTFtXYU4+lMLEW0aSlxJ6pLuOQZEodEnxjw9Hc1CUmLqyStE6pwRf1g1XmRAzNvG3lg
+        68C27dxT13hSPTbc4gqwsn2+UlvfcQ/eglUAswjWEZgVMI/BOhX+mnxhvAe21aRcGFtgmDyndlSo
+        nlWAZTnS2kMSWPsczA7B3AXrC4+zEjATzGdgsOqPNUQMV09OgO3WGa4t1q1de2kR2EpLxM6BbXK8
+        fXZq7yCJ27VMWbl6vOYUUFpyVreBPQczB+wNspBdy2Jkoxvh96HPJ9TKGPmEHWE7OAIrItP5huMr
+        zHJf79cNhmJnZ6lh38pylj+7ex9wjo3bi/n6JlZcdr5jiS9R1igGt2vZLuV4xWiKFbu5r/V32bYH
+        37JmlbXSBk8w8y0oV7POaVwF82PjRCq4fdd+P5srvWdOlERG09W5SEJSdDJFJLX7UTWv+Z45Juhz
+        6cb3E3lwa2zSL/awmrwOh4uui8HAiOgPiCOeHtlC/7/ih/+MD94IdByClxw684neXuVoUrpPlBnt
+        0r+BK5ocTaUeTmfkmBIlKY6e1vX06OBgjNIZbSBJaTIlDcSp3AwMxqmiYyE3SSI0NhnLiON3w7fD
+        4XvetEoUXZPioSkVFXE6K6leIidDfu9jSuXQiFejGTUuhZIxbTKaJpe68+j/3d//q3/Hvr1hzScf
+        J/oW+n4CRJIj2WkEAAA=
+    headers:
+      alt-svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      content-encoding:
+      - gzip
+      content-type:
+      - application/json; charset=UTF-8
+      date:
+      - Fri, 27 Nov 2026 15:34:03 GMT
+      server:
+      - ESF
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - X-Origin
+      - Referer
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - SAMEORIGIN
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      host:
+      - www.googleapis.com
+      user-agent:
+      - Tomarr/0.1.0 (+https://github.com/serfoll/tomarr)
+      x-goog-api-key:
+      - REDACTED
+    method: GET
+    uri: https://www.googleapis.com/books/v1/volumes?fields=items%28volumeInfo%28description%2CpublishedDate%2CimageLinks%2CindustryIdentifiers%29%29&q=isbn%3A9784088851488
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAC/7VQy26DMBC88xWIA6ckmJS0biRU0ceBquolPVStooiHMRZ+INtESlH+vSYoBHqo
+        eqkP6/Xs7Ix3W8u2HaIRU87a/jQP225P0cB7QRuGYl4IUzujBq+blBJVovwx0ciUnCVYXs8BnIPA
+        mV1ohOeN0vIQ54hrUhAkLx79aUe5adCH+iQXb+5fdz4YafV6g05HCgCEcOUH8N0Z0Y6zv8pf/S5/
+        ewMHBzhxGPLteFaWYPRCeKUmqzIVxRJK38qGpTwhtJMuta7XnpcKUakFFgJTtMgE6wEvE1ybj9yR
+        PEw31QfAT9FDFD27tSRcK5SFhTSMTOyRdAnDoe9+CcHClatEIzMU4lTtkppMpnP0v/v7P/0H+/PC
+        +ruLW+tofQPiRJ7HeAIAAA==
+    headers:
+      alt-svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      content-encoding:
+      - gzip
+      content-type:
+      - application/json; charset=UTF-8
+      date:
+      - Fri, 27 Nov 2026 15:34:04 GMT
+      server:
+      - ESF
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - X-Origin
+      - Referer
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - SAMEORIGIN
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+- request:
+    body: ''
+    headers:
+      accept:
+      - '*/*'
+      accept-encoding:
+      - gzip, deflate
+      connection:
+      - keep-alive
+      host:
+      - www.googleapis.com
+      user-agent:
+      - Tomarr/0.1.0 (+https://github.com/serfoll/tomarr)
+      x-goog-api-key:
+      - REDACTED
+    method: GET
+    uri: https://www.googleapis.com/books/v1/volumes?fields=items%28volumeInfo%28description%2CpublishedDate%2CimageLinks%2CindustryIdentifiers%29%29&q=isbn%3A9784866781829
+  response:
+    body:
+      string: !!binary |
+        H4sIAAAAAAAC/6uu5QIABrCh3QMAAAA=
+    headers:
+      alt-svc:
+      - h3=":443"; ma=2592000,h3-29=":443"; ma=2592000
+      content-encoding:
+      - gzip
+      content-type:
+      - application/json; charset=UTF-8
+      date:
+      - Fri, 27 Nov 2026 15:34:04 GMT
+      server:
+      - ESF
+      transfer-encoding:
+      - chunked
+      vary:
+      - Origin
+      - X-Origin
+      - Referer
+      x-content-type-options:
+      - nosniff
+      x-frame-options:
+      - SAMEORIGIN
+      x-xss-protection:
+      - '0'
+    status:
+      code: 200
+      message: OK
+version: 1
