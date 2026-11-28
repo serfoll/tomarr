@@ -320,12 +320,12 @@
     },
     {
       "milestone": "M2 Metadata",
-      "title": "openBD adapter",
+      "title": "Google Books adapter",
       "labels": [
         "type:feature",
         "area:metadata"
       ],
-      "body": "## Goal\nEnrich volumes by ISBN, including publisher descriptions.\n\n## Scope\n- Batch lookup by ISBN\n- Description stored for chapter-range parsing and translation\n\n## Acceptance criteria\n- [ ] Batch call for a series' ISBNs\n- [ ] Missing ISBNs handled without errors\n\n## Refs\n- CONTEXT/architecture-context.md"
+      "body": "## Goal\nEnrich volumes by ISBN with the publisher's synopsis, cover and release date from Google Books.\n\n## Scope\n- Look up each volume of a series by ISBN. Google Books has no multi-ISBN query, so this is one request per ISBN, paced by the HTTP policy and cached\n- Return synopsis, cover URL and release date (day precision where Google gives it) for translation and the calendar\n- The user supplies their own Google Books API key. Requests without one share a quota that is already exhausted\n\n## Acceptance criteria\n- [ ] Lookup for a series' ISBNs\n- [ ] Missing ISBNs handled without errors\n- [ ] Credential field name confirmed against the provider's docs and added to the cassette filters (#66); cassettes pass the secret scan. The scan covers headers, query and form values only, so a credential in a request or response body (a login reply, a config dump) is replaced by value with `filter_sensitive_data`, and the cassette is searched for the real key\n\n## Notes\nThis replaces the openBD adapter. Across 34,000 openBD records from five publishers (2015 on), only 0.3% to 3% had a description, almost none had a cover, and it lists no unreleased volumes. Google Books returned the publisher blurb, a cover and a release date for recent volumes, and it carries no chapter ranges. openBD v1 is also scheduled to end.\n\n## Refs\n- CONTEXT/architecture-context.md"
     },
     {
       "milestone": "M2 Metadata",

@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from dataclasses import FrozenInstanceError, replace
 from datetime import date
 from decimal import Decimal
@@ -19,6 +19,8 @@ from tomarr.providers.base import (
     SeriesVolumeMetadata,
     SeriesVolumes,
     VolumeChapters,
+    VolumeDetails,
+    VolumeDetailsLookup,
     VolumeMetadata,
 )
 
@@ -197,3 +199,34 @@ def test_volume_metadata_is_immutable() -> None:
 
     with pytest.raises(FrozenInstanceError):
         volume.isbn = "9784098517725"  # pyright: ignore[reportAttributeAccessIssue]
+
+
+class VolumeDetailsOnlyAdapter:
+    async def get_volume_details(self, isbns: Sequence[str]) -> Mapping[str, VolumeDetails]:
+        return {}
+
+
+def test_volume_details_adapter_satisfies_volume_details_lookup_only() -> None:
+    adapter = VolumeDetailsOnlyAdapter()
+
+    assert isinstance(adapter, VolumeDetailsLookup)
+    assert not isinstance(adapter, SeriesVolumeMetadata)
+    assert not isinstance(adapter, SeriesSearch)
+
+
+def test_search_adapter_does_not_satisfy_volume_details_lookup() -> None:
+    assert not isinstance(SearchOnlyAdapter(), VolumeDetailsLookup)
+
+
+def test_volume_details_has_nothing_by_default() -> None:
+    details = VolumeDetails()
+
+    assert details.synopsis is None
+    assert details.cover_url is None
+    assert details.release_date is None
+    assert details.release_precision is None
+
+
+def test_volume_details_is_immutable() -> None:
+    with pytest.raises(FrozenInstanceError):
+        VolumeDetails().synopsis = "x"  # pyright: ignore[reportAttributeAccessIssue]

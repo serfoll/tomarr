@@ -14,7 +14,7 @@ class Provider(StrEnum):
     MANGAUPDATES = "mangaupdates"
     RAKUTEN = "rakuten"
     NDL = "ndl"
-    OPENBD = "openbd"
+    GOOGLE_BOOKS = "google_books"
     WEBTOON = "webtoon"
 
 

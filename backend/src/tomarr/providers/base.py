@@ -93,8 +93,25 @@ class SeriesLatestChapter(Protocol):
     async def get_latest_chapter(self, provider_id: str) -> Decimal | None: ...
 
 
+@dataclass(frozen=True)
+class VolumeDetails:
+    """What a Provider says about one Volume it was asked for by ISBN. The lookup result is keyed
+    by ISBN. It is not a `VolumeMetadata`, which needs a Volume number, and these Providers do
+    not give one."""
+
+    synopsis: str | None = None
+    cover_url: str | None = None
+    release_date: date | None = None
+    release_precision: DatePrecision | None = None
+
+
 @runtime_checkable
 class SeriesVolumeMetadata(Protocol):
     async def get_volume_metadata(
         self, title: str, aliases: Sequence[str], thresholds: Thresholds
     ) -> list[VolumeMetadata]: ...
+
+
+@runtime_checkable
+class VolumeDetailsLookup(Protocol):
+    async def get_volume_details(self, isbns: Sequence[str]) -> Mapping[str, VolumeDetails]: ...

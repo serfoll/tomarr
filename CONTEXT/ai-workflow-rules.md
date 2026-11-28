@@ -8,7 +8,7 @@ Check what's decided before reaching for something else. The stack is in `CLAUDE
 
 ## No invented solutions
 
-Don't invent API endpoints, response fields, SDK methods or config keys for external services. Confirm against the provider's documentation, a recorded cassette, or by asking. This matters most for MangaBaka, Rakuten Books, NDL, openBD, Prowlarr, Suwayomi's GraphQL schema, Kavita and the Gemini SDK, where a guessed field name fails silently.
+Don't invent API endpoints, response fields, SDK methods or config keys for external services. Confirm against the provider's documentation, a recorded cassette, or by asking. This matters most for MangaBaka, Rakuten Books, NDL, Google Books, Prowlarr, Suwayomi's GraphQL schema, Kavita and the Gemini SDK, where a guessed field name fails silently.
 
 ## No hallucination
 

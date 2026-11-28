@@ -19,7 +19,7 @@ Self-hosters already running Prowlarr, a download client and Kavita, who read ma
 
 1. The user adds a series. Tomarr resolves the title against MangaBaka and AniList, shows suggestions, and lets the user override the display title and add search aliases.
 2. Tomarr builds the series structure: Editions, Volumes and Chapters (or Episodes for webtoons), each volume-to-chapter Mapping tagged with where it came from.
-3. Japanese volume data (Rakuten Books, NDL, openBD) is attached to the Japanese Edition. If the user has added a Gemini key, volume synopses are translated, with the original kept alongside.
+3. Japanese volume data (Rakuten Books, NDL, Google Books) is attached to the Japanese Edition. If the user has added a Gemini key, volume synopses are translated, with the original kept alongside.
 4. The user picks a Monitor mode, for example chapters until the volume is out, then upgrade to the volume.
 5. Tomarr searches Prowlarr for wanted items, limited to indexers with the user's Prowlarr tag and to their configured categories. It parses every release name, scores it against the quality profile, and grabs the best match when the parse is high-confidence. Low-confidence matches wait in Pending review for one-click approval. RSS sync does the same for new releases on a schedule. For webtoons, the platform's RSS feed tells Tomarr when an episode is out.
 6. If a wanted Chapter still has no acceptable release after the fallback delay, and the user has connected Suwayomi, Tomarr asks Suwayomi to download that chapter from the source linked to the Series. Prowlarr stays the primary source; Suwayomi only fills gaps.
@@ -34,7 +34,7 @@ Self-hosters already running Prowlarr, a download client and Kavita, who read ma
 | Chapter source | Suwayomi, optional fallback for Chapters indexers don't have. The user runs Suwayomi and chooses its extensions (for example the Keiyoushi extension store) |
 | Download clients | qBittorrent, SABnzbd |
 | Library server | Kavita (folder scan after import) |
-| Metadata | MangaBaka (identity hub), AniList, MangaDex, MangaUpdates, Rakuten Books, NDL, openBD, WEBTOON series RSS |
+| Metadata | MangaBaka (identity hub), AniList, MangaDex, MangaUpdates, Rakuten Books, NDL, Google Books, WEBTOON series RSS |
 | LLM | Gemini, bring your own key: synopsis translation, chapter-range extraction from Japanese descriptions, title disambiguation, fallback release parsing |
 | Import | Existing-library import, rename templates, CBR to CBZ, `ComicInfo.xml`, hardlinks where possible |
 | Review | Interactive search with grab and override for any release; Pending review for low-confidence matches; overrides can be saved as parser test cases or Aliases |
@@ -63,7 +63,7 @@ Checked November 2026. Competitors and what they cover:
 Where Tomarr has to win:
 
 1. **Edition-aware volume and chapter mapping with provenance.** Every mapping says where it came from and can be locked. Omnibus and English splits don't corrupt the Japanese structure.
-2. **Japanese-source volume data, translated.** Rakuten Books, NDL and openBD give release dates, upcoming volumes and synopses that English sources lack; Gemini makes them readable.
+2. **Japanese-source volume data, translated.** Rakuten Books, NDL and Google Books give release dates and synopses that English sources lack, and Rakuten Books is the planned source of upcoming volumes. Gemini makes them readable.
 3. **Webtoons as a first-class format.** Episodes and seasons instead of forced volumes, release detection from official RSS.
 4. **Indexers first, Suwayomi for the gaps.** Volumes and well-seeded chapters come from Prowlarr; Chapters that indexers don't carry can still arrive through Suwayomi, under the same monitoring, naming and import rules.
 
